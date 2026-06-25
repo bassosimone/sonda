@@ -8,6 +8,7 @@ import (
 
 	"github.com/bassosimone/deferexit"
 	"github.com/bassosimone/sonda/internal/cli/measure"
+	"github.com/bassosimone/sonda/internal/cli/scan"
 	"github.com/bassosimone/sonda/internal/cli/spool"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vclip"
@@ -27,6 +28,7 @@ func main() {
 
 	// Add subcommands.
 	disp.AddCommand("measure", vclip.CommandFunc(measure.Main), "Run a single network measurement.")
+	disp.AddCommand("scan", vclip.CommandFunc(scan.Main), "Scan specific network endpoints storing results in the spool.")
 	disp.AddCommand("spool", vclip.CommandFunc(spool.Main), "Manage the measurement spool directory.")
 
 	// Execute the root dispatcher command.
