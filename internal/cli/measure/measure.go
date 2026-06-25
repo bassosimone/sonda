@@ -39,6 +39,7 @@ func Main(ctx context.Context, args []string) error {
 	disp.Stdout = env.Stdout
 	disp.AddDescription("Run a single network measurement.")
 	disp.AddCommand("dns", dnsCmd, "Run DNS measurements.")
+	disp.AddCommand("stun", vclip.CommandFunc(stunMain), "STUN binding request.")
 
 	disp.Main(ctx, args)
 	return nil

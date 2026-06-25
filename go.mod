@@ -12,6 +12,7 @@ require (
 	github.com/bassosimone/vclip v0.0.0-20260623171605-f585a395e8a3
 	github.com/bassosimone/vflag v0.0.0-20260623165635-b59716a8b461
 	github.com/miekg/dns v1.1.72
+	github.com/pion/stun/v3 v3.1.6
 )
 
 require (
@@ -26,7 +27,11 @@ require (
 	github.com/bassosimone/sud v0.0.0-20260615113322-cf96916c520d // indirect
 	github.com/bassosimone/textwrap v0.0.0-20260623161521-ecf2c54815db // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/pion/dtls/v3 v3.1.4 // indirect
+	github.com/pion/logging v0.2.4 // indirect
+	github.com/pion/transport/v4 v4.0.2 // indirect
 	github.com/quic-go/quic-go v0.60.0 // indirect
+	github.com/wlynxg/anet v0.0.5 // indirect
 	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/mod v0.37.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
