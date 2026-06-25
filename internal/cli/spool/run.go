@@ -9,13 +9,13 @@ import (
 	"math"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"time"
 
 	"github.com/bassosimone/closepool"
 	"github.com/bassosimone/nop"
 	"github.com/bassosimone/runtimex"
+	"github.com/bassosimone/sonda/internal/paths"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 )
@@ -50,7 +50,7 @@ func runMain(ctx context.Context, args []string) error {
 	runtimex.Assert(len(cmdArgs) > 0)
 
 	// Build the spool directory path.
-	spanDir := filepath.Join(spoolDir, spanID[:4], spanID[4:5], spanID[5:6], spanID)
+	spanDir := paths.SpanDir(spoolDir, spanID)
 	tmpDir := spanDir + ".tmp"
 
 	// Create the temporary spool directory.
@@ -66,7 +66,7 @@ func runMain(ctx context.Context, args []string) error {
 		env.Exit(1)
 	}
 	argvData = append(argvData, '\n')
-	if err := env.WriteFile(filepath.Join(tmpDir, "argv.json"), argvData, 0600); err != nil {
+	if err := env.WriteFile(paths.SpanArgvJSON(tmpDir), argvData, 0600); err != nil {
 		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
 		env.Exit(1)
 	}
@@ -76,7 +76,7 @@ func runMain(ctx context.Context, args []string) error {
 	defer closers.Close() // idempotent
 
 	openFlags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-	stdoutPath := filepath.Join(tmpDir, "stdout.txt")
+	stdoutPath := paths.SpanStdout(tmpDir)
 	stdoutFile, err := env.OpenFile(stdoutPath, openFlags, 0600)
 	if err != nil {
 		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
@@ -84,7 +84,7 @@ func runMain(ctx context.Context, args []string) error {
 	}
 	closers.Add(stdoutFile)
 
-	stderrPath := filepath.Join(tmpDir, "stderr.txt")
+	stderrPath := paths.SpanStderr(tmpDir)
 	stderrFile, err := env.OpenFile(stderrPath, openFlags, 0600)
 	if err != nil {
 		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
@@ -126,7 +126,7 @@ func runMain(ctx context.Context, args []string) error {
 
 	// Write the exit code to the spool directory.
 	exitCodeData := []byte(strconv.Itoa(exitCode) + "\n")
-	if err := env.WriteFile(filepath.Join(tmpDir, "exitcode.txt"), exitCodeData, 0600); err != nil {
+	if err := env.WriteFile(paths.SpanExitCode(tmpDir), exitCodeData, 0600); err != nil {
 		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
 		env.Exit(1)
 	}
