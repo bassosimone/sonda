@@ -27,6 +27,7 @@ func runMain(ctx context.Context, args []string) error {
 
 	// Set command defaults.
 	var (
+		spanID   = nop.NewSpanID()
 		spoolDir = "."
 		timeout  = 5 * time.Minute
 	)
@@ -37,6 +38,7 @@ func runMain(ctx context.Context, args []string) error {
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.Stdout
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
+	fset.StringVar(&spanID, 0, "span-id", "Use `ID` instead of generating a random one.")
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")
 	fset.SetMinMaxPositionalArgs(1, math.MaxInt)
@@ -47,8 +49,7 @@ func runMain(ctx context.Context, args []string) error {
 	cmdArgs := fset.Args()
 	runtimex.Assert(len(cmdArgs) > 0)
 
-	// Generate the span ID and build the spool directory path.
-	spanID := nop.NewSpanID()
+	// Build the spool directory path.
 	spanDir := filepath.Join(spoolDir, spanID[:4], spanID[4:5], spanID[5:6], spanID)
 	tmpDir := spanDir + ".tmp"
 
