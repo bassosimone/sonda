@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/netip"
 	"os"
 
 	"github.com/bassosimone/runtimex"
@@ -37,6 +38,11 @@ func NewResolver(transport DNSTransport) *Resolver {
 
 // LookupHost resolves a domain name and returns both IPv4 and IPv6 addresses.
 func (rx *Resolver) LookupHost(ctx context.Context, domain string) ([]string, error) {
+	// Short-circuit if the input is already an IP address.
+	if addr, err := netip.ParseAddr(domain); err == nil {
+		return []string{addr.String()}, nil
+	}
+
 	// We run a sequential lookup since this is a batch tool.
 	addrsA, errA := rx.Transport.LookupA(ctx, domain)
 	addrsAAAA, errAAAA := rx.Transport.LookupAAAA(ctx, domain)
