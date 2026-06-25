@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bassosimone/closepool"
@@ -52,6 +53,12 @@ func runMain(ctx context.Context, args []string) error {
 	// Build the spool directory path.
 	spanDir := paths.SpanDir(spoolDir, spanID)
 	tmpDir := paths.SpanDirTmp(spoolDir, spanID)
+
+	// Expand @SONDA_SPAN_DIR@ in the command arguments so that inner
+	// commands can reference the span directory for auxiliary files.
+	for i, arg := range cmdArgs {
+		cmdArgs[i] = strings.ReplaceAll(arg, "@SONDA_SPAN_DIR@", tmpDir)
+	}
 
 	// Create the temporary spool directory.
 	if err := env.MkdirAll(tmpDir, 0750); err != nil {
