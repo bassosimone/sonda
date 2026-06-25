@@ -24,6 +24,7 @@ type Environ struct {
 	Args       []string
 	Dialer     Dialer
 	Environ    func() []string
+	Executable func() (string, error)
 	Exit       func(code int)
 	Getenv     func(key string) string
 	MkdirAll   func(path string, perm os.FileMode) error
@@ -39,14 +40,15 @@ type Environ struct {
 // NewEnvironOS returns an [*Environ] wired to real OS operations.
 func NewEnvironOS() *Environ {
 	return &Environ{
-		Args:     os.Args,
-		Dialer:   newDialer(),
-		Environ:  os.Environ,
-		Exit:     deferexit.Panic,
-		Getenv:   os.Getenv,
-		MkdirAll: os.MkdirAll,
-		OpenFile: os.OpenFile,
-		Rename:   os.Rename,
+		Args:       os.Args,
+		Dialer:     newDialer(),
+		Environ:    os.Environ,
+		Executable: os.Executable,
+		Exit:       deferexit.Panic,
+		Getenv:     os.Getenv,
+		MkdirAll:   os.MkdirAll,
+		OpenFile:   os.OpenFile,
+		Rename:     os.Rename,
 		RunCommand: func(cmd *exec.Cmd) error {
 			return cmd.Run()
 		},
