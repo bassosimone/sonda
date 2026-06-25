@@ -51,7 +51,7 @@ func runMain(ctx context.Context, args []string) error {
 
 	// Build the spool directory path.
 	spanDir := paths.SpanDir(spoolDir, spanID)
-	tmpDir := spanDir + ".tmp"
+	tmpDir := paths.SpanDirTmp(spoolDir, spanID)
 
 	// Create the temporary spool directory.
 	if err := env.MkdirAll(tmpDir, 0750); err != nil {

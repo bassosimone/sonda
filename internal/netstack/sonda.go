@@ -5,6 +5,7 @@ package netstack
 import (
 	"context"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/bassosimone/nop"
@@ -58,9 +59,12 @@ func (s *SondaMeasurer) Run(ctx context.Context, op SondaOperation) (string, err
 	// Create the command to run with externally defined spanID so that
 	// later on we can read the `stdout.txt`.
 	spanID := nop.NewSpanID()
+	tmpDir := paths.SpanDirTmp(s.SpoolDir, spanID)
 	args := []string{"spool", "run", "--span-id", spanID, "--spool-dir", s.SpoolDir, "--"}
 	args = append(args, exe)
-	args = append(args, op.Args()...)
+	for _, arg := range op.Args() {
+		args = append(args, strings.ReplaceAll(arg, "@SONDA_SPAN_DIR@", tmpDir))
+	}
 	cmd := exec.CommandContext(ctx, exe, args...)
 
 	// Execute the command.

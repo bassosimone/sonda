@@ -29,3 +29,13 @@ func SpanStderr(spanDir string) string {
 func SpanExitCode(spanDir string) string {
 	return filepath.Join(spanDir, "exitcode.txt")
 }
+
+// SpanDirTmp returns the temporary span directory path (before atomic rename).
+func SpanDirTmp(spoolDir, spanID string) string {
+	return SpanDir(spoolDir, spanID) + ".tmp"
+}
+
+// SpanBodyBin returns the path to body.bin inside a span directory.
+func SpanBodyBin(spanDir string) string {
+	return filepath.Join(spanDir, "body.bin")
+}
