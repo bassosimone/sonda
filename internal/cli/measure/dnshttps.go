@@ -36,6 +36,11 @@ func dnsOverHTTPSMain(ctx context.Context, args []string) error {
 		timeout   = 30 * time.Second
 	)
 
+	// Honor SONDA_SPAN_ID environment variable.
+	if v := env.Getenv("SONDA_SPAN_ID"); v != "" {
+		spanID = v
+	}
+
 	// Parse command line flags
 	fset := vflag.NewFlagSet("sonda measure dns over https", vflag.ExitOnError)
 	fset.Exit = env.Exit
@@ -46,6 +51,7 @@ func dnsOverHTTPSMain(ctx context.Context, args []string) error {
 	fset.StringVar(&httpHost, 0, "http-host", "Use `NAME` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&queryType, 0, "query-type", "Use `TYPE` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&sni, 0, "sni", "Use `NAME` instead of `@DEFAULT_VALUE@`.")
+	fset.StringVar(&spanID, 0, "span-id", "Use `ID` instead of a random one. Honors `SONDA_SPAN_ID`.")
 	fset.StringVar(&target, 0, "target", "Use `ADDR:PORT` instead of `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&urlPath, 0, "url-path", "Use `PATH` instead of `@DEFAULT_VALUE@`.")

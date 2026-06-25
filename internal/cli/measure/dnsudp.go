@@ -31,6 +31,11 @@ func dnsOverUDPMain(ctx context.Context, args []string) error {
 		timeout   = 30 * time.Second
 	)
 
+	// Honor SONDA_SPAN_ID environment variable.
+	if v := env.Getenv("SONDA_SPAN_ID"); v != "" {
+		spanID = v
+	}
+
 	// Parse command line flags
 	fset := vflag.NewFlagSet("sonda measure dns over udp", vflag.ExitOnError)
 	fset.Exit = env.Exit
@@ -39,6 +44,7 @@ func dnsOverUDPMain(ctx context.Context, args []string) error {
 	fset.StringVar(&domain, 0, "domain", "Use `NAME` instead of `@DEFAULT_VALUE@`.")
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.StringVar(&queryType, 0, "query-type", "Use `TYPE` instead of `@DEFAULT_VALUE@`.")
+	fset.StringVar(&spanID, 0, "span-id", "Use `ID` instead of a random one. Honors `SONDA_SPAN_ID`.")
 	fset.StringVar(&target, 0, "target", "Use `ADDR:PORT` instead of `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError

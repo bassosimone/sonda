@@ -3,6 +3,8 @@ module github.com/bassosimone/sonda
 go 1.26.4
 
 require (
+	github.com/bassosimone/closepool v0.0.0-20260622072442-c2ef49d20318
+	github.com/bassosimone/deferexit v0.0.0-20260622074722-e5e245b2f690
 	github.com/bassosimone/dnscodec v0.0.0-20260615114925-94a4c2fbf3b4
 	github.com/bassosimone/errclass v0.0.0-20260622075814-f5cf99a63fcb
 	github.com/bassosimone/nop v0.0.0-20260623171340-ae4190990315
@@ -13,7 +15,6 @@ require (
 )
 
 require (
-	github.com/bassosimone/deferexit v0.0.0-20260622074722-e5e245b2f690 // indirect
 	github.com/bassosimone/dnsoverhttps v0.0.0-20260617121343-ce310417d710 // indirect
 	github.com/bassosimone/dnsoverstream v0.0.0-20260617121659-cac6d5976a4a // indirect
 	github.com/bassosimone/flagparser v0.0.0-20260615115304-f1a0193b86ca // indirect
