@@ -9,48 +9,39 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/paths"
 )
 
-// Resolver performs DNS lookups using [SondaMeasurer].
+// DNSTransport is the interface for DNS lookup transports.
+type DNSTransport interface {
+	LookupA(ctx context.Context, domain string) ([]string, error)
+	LookupAAAA(ctx context.Context, domain string) ([]string, error)
+}
+
+// Resolver performs DNS lookups using a [DNSTransport].
 //
 // Use [NewResolver] to construct.
 type Resolver struct {
-	// Measurer is the measurement runner.
+	// Transport is the underlying DNS transport.
 	//
 	// Set by [NewResolver].
-	Measurer *SondaMeasurer
-
-	// ServerAddr is the DNS server address and port.
-	//
-	// Default: "8.8.8.8:53".
-	ServerAddr string
-
-	// Timeout is the timeout for each DNS query.
-	//
-	// Default: 5s.
-	Timeout time.Duration
+	Transport DNSTransport
 }
 
-// NewResolver creates a [*Resolver] with sensible defaults.
-func NewResolver(measurer *SondaMeasurer) *Resolver {
-	return &Resolver{
-		Measurer:   measurer,
-		ServerAddr: "8.8.8.8:53",
-		Timeout:    5 * time.Second,
-	}
+// NewResolver creates a [*Resolver] with the given transport.
+func NewResolver(transport DNSTransport) *Resolver {
+	return &Resolver{Transport: transport}
 }
 
 // LookupHost resolves a domain name and returns both IPv4 and IPv6 addresses.
 func (rx *Resolver) LookupHost(ctx context.Context, domain string) ([]string, error) {
 	// We run a sequential lookup since this is a batch tool.
-	addrsA, errA := rx.LookupA(ctx, domain)
-	addrsAAAA, errAAAA := rx.LookupAAAA(ctx, domain)
+	addrsA, errA := rx.Transport.LookupA(ctx, domain)
+	addrsAAAA, errAAAA := rx.Transport.LookupAAAA(ctx, domain)
 
-	// Merge the addrs and determin whether we succeeded.
+	// Merge the addrs and determine whether we succeeded.
 	addrs := append(addrsA, addrsAAAA...)
 	if len(addrs) <= 0 {
 		err := errors.Join(errA, errAAAA)
@@ -60,32 +51,14 @@ func (rx *Resolver) LookupHost(ctx context.Context, domain string) ([]string, er
 	return addrs, nil
 }
 
-// LookupA resolves a domain name and returns the addresses.
+// LookupA resolves a domain name and returns the IPv4 addresses.
 func (rx *Resolver) LookupA(ctx context.Context, domain string) ([]string, error) {
-	spanDir, err := rx.Measurer.Run(ctx, &SondaMeasureDNSOverUDP{
-		Domain:    domain,
-		QueryType: "A",
-		Target:    rx.ServerAddr,
-		Timeout:   rx.Timeout,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return readResponseAddrs(spanDir, "responseA")
+	return rx.Transport.LookupA(ctx, domain)
 }
 
 // LookupAAAA resolves a domain name and returns the IPv6 addresses.
 func (rx *Resolver) LookupAAAA(ctx context.Context, domain string) ([]string, error) {
-	spanDir, err := rx.Measurer.Run(ctx, &SondaMeasureDNSOverUDP{
-		Domain:    domain,
-		QueryType: "AAAA",
-		Target:    rx.ServerAddr,
-		Timeout:   rx.Timeout,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return readResponseAddrs(spanDir, "responseAAAA")
+	return rx.Transport.LookupAAAA(ctx, domain)
 }
 
 // readResponseAddrs reads stdout.txt from a span directory and extracts
