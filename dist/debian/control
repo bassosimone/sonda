@@ -1,0 +1,11 @@
+Package: sonda
+Version: @VERSION@
+Section: net
+Priority: optional
+Architecture: @ARCH@
+Maintainer: Simone Basso <bassosimone@gmail.com>
+Homepage: https://github.com/bassosimone/sonda
+Depends: systemd
+Description: Network quality of experience probe
+ Periodically measures DNS, STUN, and other network properties,
+ storing structured results in a local spool for later analysis.

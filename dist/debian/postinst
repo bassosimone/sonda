@@ -1,0 +1,22 @@
+#!/bin/sh
+set -eu
+
+case "$1" in
+    configure)
+        # Create the _sonda system user and group if they don't exist.
+        if ! getent passwd _sonda >/dev/null 2>&1; then
+            adduser --system --group --home /nonexistent \
+                --no-create-home --quiet _sonda
+        fi
+
+        # Ensure the spool directory exists with correct ownership.
+        install -d -o _sonda -g adm -m 2750 /var/spool/sonda
+
+        # Reload systemd to pick up new/updated unit files.
+        systemctl daemon-reload
+
+        # Enable and start the timer.
+        systemctl enable sonda-scan.timer
+        systemctl start sonda-scan.timer
+        ;;
+esac

@@ -1,0 +1,24 @@
+#!/bin/sh
+set -eu
+
+case "$1" in
+    purge)
+        # Remove the spool directory and any collected data.
+        rm -rf /var/spool/sonda
+
+        # Remove the _sonda system user and group.
+        if getent passwd _sonda >/dev/null 2>&1; then
+            deluser --quiet --system _sonda
+        fi
+        if getent group _sonda >/dev/null 2>&1; then
+            delgroup --quiet --system _sonda
+        fi
+        ;;
+
+    remove)
+        # Stop and disable the timer on removal.
+        systemctl stop sonda-scan.timer 2>/dev/null || true
+        systemctl disable sonda-scan.timer 2>/dev/null || true
+        systemctl daemon-reload
+        ;;
+esac

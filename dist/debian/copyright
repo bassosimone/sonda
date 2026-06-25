@@ -1,0 +1,12 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: sonda
+Upstream-Contact: Simone Basso <bassosimone@gmail.com>
+Source: https://github.com/bassosimone/sonda
+
+Files: *
+Copyright: 2025-2026 Simone Basso <bassosimone@gmail.com>
+License: GPL-3.0-or-later
+
+License: GPL-3.0-or-later
+ On Debian systems, the complete text of the GNU General Public
+ License version 3 can be found in `/usr/share/common-licenses/GPL-3'.
