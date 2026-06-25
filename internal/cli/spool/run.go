@@ -40,6 +40,7 @@ func runMain(ctx context.Context, args []string) error {
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")
 	fset.SetMinMaxPositionalArgs(1, math.MaxInt)
+	fset.DisablePermute = true               // make the `--` optional
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
 	// Remaining args after "--" are the command to execute.
