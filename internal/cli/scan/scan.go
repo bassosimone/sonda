@@ -40,16 +40,10 @@ func Main(ctx context.Context, args []string) error {
 		Level: slog.LevelDebug,
 	}))
 
-	// exitCode tracks the overall result.
-	exitCode := 0
-
-	// maybeExitFailure exits immediately when --fail is set,
-	// otherwise records the failure and continues.
-	maybeExitFailure := func() {
-		if fail {
-			env.Exit(1)
-		}
-		exitCode = 1
+	// Honor the `-f/--fail` command line flag.
+	maybeExit := env.Exit
+	if !fail {
+		maybeExit = func(_ int) {}
 	}
 
 	// Create the measurer for running operations through the spool.
@@ -60,14 +54,14 @@ func Main(ctx context.Context, args []string) error {
 	stunAddrs, err := resolver.LookupHost(ctx, "stun.l.google.com")
 	if err != nil {
 		logger.Warn("resolveSTUNServerFailed", slog.Any("err", err))
-		maybeExitFailure()
+		maybeExit(1)
 	}
 
 	// Perform STUN lookups to discover the reflexive address.
 	if len(stunAddrs) > 0 {
 		if _, err := stunLookup(ctx, measurer, stunAddrs, "19302"); err != nil {
 			logger.Warn("stunLookupFailed", slog.Any("err", err))
-			maybeExitFailure()
+			maybeExit(1)
 		}
 	}
 
@@ -75,7 +69,7 @@ func Main(ctx context.Context, args []string) error {
 	dnsAddrs, err := resolver.LookupHost(ctx, "dns.google")
 	if err != nil {
 		logger.Warn("resolveDNSServerFailed", slog.Any("err", err))
-		maybeExitFailure()
+		maybeExit(1)
 	}
 
 	// Perform DNS-over-UDP lookups for www.example.com against each address.
@@ -85,7 +79,7 @@ func Main(ctx context.Context, args []string) error {
 		r := netstack.NewResolver(udp)
 		if _, err := r.LookupHost(ctx, "www.example.com"); err != nil {
 			logger.Warn("dnsOverUDPFailed", slog.String("addr", addr), slog.Any("err", err))
-			maybeExitFailure()
+			maybeExit(1)
 		}
 	}
 
@@ -96,10 +90,9 @@ func Main(ctx context.Context, args []string) error {
 		r := netstack.NewResolver(doh)
 		if _, err := r.LookupHost(ctx, "www.example.com"); err != nil {
 			logger.Warn("dnsOverHTTPSFailed", slog.String("addr", addr), slog.Any("err", err))
-			maybeExitFailure()
+			maybeExit(1)
 		}
 	}
 
-	env.Exit(exitCode)
 	return nil
 }
