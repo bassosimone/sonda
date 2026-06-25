@@ -71,6 +71,7 @@ func stunMain(ctx context.Context, args []string) error {
 
 	// Create the shared pipeline configuration.
 	cfg := nop.NewConfig()
+	cfg.Dialer = env.Dialer
 	cfg.ErrClassifier = nop.ErrClassifierFunc(errclass.New)
 
 	// Create the dialing pipeline (UDP connect, no protocol wrapping).

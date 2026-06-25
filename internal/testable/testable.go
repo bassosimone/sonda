@@ -4,17 +4,25 @@
 package testable
 
 import (
+	"context"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 
 	"github.com/bassosimone/deferexit"
 )
 
+// Dialer abstracts network dialing.
+type Dialer interface {
+	DialContext(ctx context.Context, network, address string) (net.Conn, error)
+}
+
 // Environ abstracts away side effects (I/O, exit) so that commands
 // can be tested without real I/O or process termination.
 type Environ struct {
 	Args       []string
+	Dialer     Dialer
 	Environ    func() []string
 	Exit       func(code int)
 	Getenv     func(key string) string
@@ -32,6 +40,7 @@ type Environ struct {
 func NewEnvironOS() *Environ {
 	return &Environ{
 		Args:     os.Args,
+		Dialer:   newDialer(),
 		Environ:  os.Environ,
 		Exit:     deferexit.Panic,
 		Getenv:   os.Getenv,
@@ -46,6 +55,12 @@ func NewEnvironOS() *Environ {
 		Stderr:    os.Stderr,
 		WriteFile: os.WriteFile,
 	}
+}
+
+func newDialer() *net.Dialer {
+	d := &net.Dialer{}
+	d.SetMultipathTCP(false)
+	return d
 }
 
 // Env is the global [*Environ].
