@@ -4,12 +4,14 @@ package measure
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/netip"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/bassosimone/closepool"
@@ -28,13 +30,13 @@ func httpMain(ctx context.Context, args []string) error {
 	// Set command defaults.
 	var (
 		bodyFile  = ""
+		headers   []string
 		httpHost  = "1.1.1.1"
 		method    = "GET"
 		spanID    = nop.NewSpanID()
 		target    = "1.1.1.1:80"
 		timeout   = 30 * time.Second
 		urlPath   = "/"
-		userAgent = ""
 	)
 
 	// Honor SONDA_SPAN_ID environment variable.
@@ -49,13 +51,13 @@ func httpMain(ctx context.Context, args []string) error {
 	fset.Stdout = env.Stdout
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.StringVar(&bodyFile, 0, "body-file", "Save the response body to `FILE`. Empty means discard.")
+	fset.StringSliceVar(&headers, 'H', "header", "Add `KEY: VALUE` request header. Repeatable.")
 	fset.StringVar(&httpHost, 0, "http-host", "Use `NAME` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&method, 0, "method", "Use `METHOD` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&spanID, 0, "span-id", "Use `ID` instead of a random one. Honors `SONDA_SPAN_ID`.")
 	fset.StringVar(&target, 0, "target", "Use `ADDR:PORT` instead of `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&urlPath, 0, "url-path", "Use `PATH` instead of `@DEFAULT_VALUE@`.")
-	fset.StringVar(&userAgent, 0, "user-agent", "Use `STRING`. Empty means no User-Agent header.")
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
 	// Emit structured logs to the stdout tied together by a span ID.
@@ -111,7 +113,15 @@ func httpMain(ctx context.Context, args []string) error {
 		logger.Error("newRequestFailed", slog.Any("err", err))
 		env.Exit(1)
 	}
-	httpReq.Header.Set("User-Agent", userAgent)
+	for _, h := range headers {
+		key, value, ok := strings.Cut(h, ":")
+		if !ok {
+			logger.Error("parseHeaderFailed", slog.String("header", h))
+			fmt.Fprintf(env.Stderr, "sonda measure http: invalid header (missing ':'): %s\n", h)
+			env.Exit(2)
+		}
+		httpReq.Header.Add(strings.TrimSpace(key), strings.TrimSpace(value))
+	}
 
 	// Perform the HTTP round trip.
 	resp, err := httpConn.RoundTrip(httpReq)
