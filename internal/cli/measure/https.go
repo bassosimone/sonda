@@ -28,12 +28,13 @@ func httpsMain(ctx context.Context, args []string) error {
 
 	// Set command defaults.
 	var (
+		bodyFile  = ""
 		httpHost  = "1.1.1.1"
+		method    = "GET"
 		sni       = "1.1.1.1"
 		spanID    = nop.NewSpanID()
 		target    = "1.1.1.1:443"
 		timeout   = 30 * time.Second
-		bodyFile  = ""
 		urlPath   = "/"
 		userAgent = ""
 	)
@@ -51,6 +52,7 @@ func httpsMain(ctx context.Context, args []string) error {
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.StringVar(&bodyFile, 0, "body-file", "Save the response body to `FILE`. Empty means discard.")
 	fset.StringVar(&httpHost, 0, "http-host", "Use `NAME` instead of `@DEFAULT_VALUE@`.")
+	fset.StringVar(&method, 0, "method", "Use `METHOD` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&sni, 0, "sni", "Use `NAME` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&spanID, 0, "span-id", "Use `ID` instead of a random one. Honors `SONDA_SPAN_ID`.")
 	fset.StringVar(&target, 0, "target", "Use `ADDR:PORT` instead of `@DEFAULT_VALUE@`.")
@@ -109,7 +111,7 @@ func httpsMain(ctx context.Context, args []string) error {
 
 	// Build the HTTP request.
 	httpURL := (&url.URL{Scheme: "https", Host: httpHost, Path: urlPath}).String()
-	httpReq, err := http.NewRequestWithContext(ctx, "GET", httpURL, http.NoBody)
+	httpReq, err := http.NewRequestWithContext(ctx, method, httpURL, http.NoBody)
 	if err != nil {
 		logger.Error("newRequestFailed", slog.Any("err", err))
 		env.Exit(1)
