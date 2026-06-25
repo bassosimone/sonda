@@ -10,8 +10,10 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
+	"os"
 	"time"
 
+	"github.com/bassosimone/closepool"
 	"github.com/bassosimone/errclass"
 	"github.com/bassosimone/nop"
 	"github.com/bassosimone/runtimex"
@@ -31,6 +33,7 @@ func httpsMain(ctx context.Context, args []string) error {
 		spanID    = nop.NewSpanID()
 		target    = "1.1.1.1:443"
 		timeout   = 30 * time.Second
+		bodyFile  = ""
 		urlPath   = "/"
 		userAgent = ""
 	)
@@ -46,6 +49,7 @@ func httpsMain(ctx context.Context, args []string) error {
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.Stdout
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
+	fset.StringVar(&bodyFile, 0, "body-file", "Save the response body to `FILE`. Empty means discard.")
 	fset.StringVar(&httpHost, 0, "http-host", "Use `NAME` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&sni, 0, "sni", "Use `NAME` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&spanID, 0, "span-id", "Use `ID` instead of a random one. Honors `SONDA_SPAN_ID`.")
@@ -120,17 +124,33 @@ func httpsMain(ctx context.Context, args []string) error {
 	}
 	defer resp.Body.Close()
 
-	// TODO(bassosimone): we eventually want the ability to save the body
-	// but that is not a priority for now.
+	// Determine where to write the body.
+	closers := &closepool.Pool{}
+	var bodyDst io.Writer = io.Discard
+	if bodyFile != "" {
+		filep, err := os.OpenFile(bodyFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0640)
+		if err != nil {
+			logger.Error("createBodyFileFailed", slog.Any("err", err))
+			env.Exit(1)
+		}
+		closers.Add(filep)
+		bodyDst = filep
+	}
 
 	// Drain the body to trigger nop's body stream logging and measure
 	// the total download time.
-	bodySize, err := io.Copy(io.Discard, resp.Body)
+	bodySize, err := io.Copy(bodyDst, resp.Body)
 	if err != nil {
 		logger.Error("readBodyFailed", slog.Any("err", err))
 		env.Exit(1)
 	}
 	logger.Info("httpResponseBody", slog.Int64("size", bodySize))
+
+	// Make sure we successfully closed the body file.
+	if err := closers.Close(); err != nil {
+		logger.Error("closeBodyFileFailed", slog.Any("err", err))
+		env.Exit(1)
+	}
 
 	return nil
 }
