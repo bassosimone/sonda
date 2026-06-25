@@ -54,7 +54,7 @@ func runMain(ctx context.Context, args []string) error {
 	tmpDir := spanDir + ".tmp"
 
 	// Create the temporary spool directory.
-	if err := env.MkdirAll(tmpDir, 0700); err != nil {
+	if err := env.MkdirAll(tmpDir, 0750); err != nil {
 		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
 		env.Exit(1)
 	}
@@ -66,7 +66,7 @@ func runMain(ctx context.Context, args []string) error {
 		env.Exit(1)
 	}
 	argvData = append(argvData, '\n')
-	if err := env.WriteFile(paths.SpanArgvJSON(tmpDir), argvData, 0600); err != nil {
+	if err := env.WriteFile(paths.SpanArgvJSON(tmpDir), argvData, 0640); err != nil {
 		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
 		env.Exit(1)
 	}
@@ -77,7 +77,7 @@ func runMain(ctx context.Context, args []string) error {
 
 	openFlags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	stdoutPath := paths.SpanStdout(tmpDir)
-	stdoutFile, err := env.OpenFile(stdoutPath, openFlags, 0600)
+	stdoutFile, err := env.OpenFile(stdoutPath, openFlags, 0640)
 	if err != nil {
 		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
 		env.Exit(1)
@@ -85,7 +85,7 @@ func runMain(ctx context.Context, args []string) error {
 	closers.Add(stdoutFile)
 
 	stderrPath := paths.SpanStderr(tmpDir)
-	stderrFile, err := env.OpenFile(stderrPath, openFlags, 0600)
+	stderrFile, err := env.OpenFile(stderrPath, openFlags, 0640)
 	if err != nil {
 		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
 		env.Exit(1)
@@ -126,7 +126,7 @@ func runMain(ctx context.Context, args []string) error {
 
 	// Write the exit code to the spool directory.
 	exitCodeData := []byte(strconv.Itoa(exitCode) + "\n")
-	if err := env.WriteFile(paths.SpanExitCode(tmpDir), exitCodeData, 0600); err != nil {
+	if err := env.WriteFile(paths.SpanExitCode(tmpDir), exitCodeData, 0640); err != nil {
 		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
 		env.Exit(1)
 	}
