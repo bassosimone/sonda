@@ -100,6 +100,161 @@ func (op *SondaMeasureSTUN) Args() []string {
 	return args
 }
 
+// SondaMeasureHTTP is the operation for `sonda measure http`.
+type SondaMeasureHTTP struct {
+	// BodyFile is the path to save the response body.
+	//
+	// Optional; default: discard.
+	BodyFile string
+
+	// Headers contains additional HTTP headers as "Key: Value" strings.
+	//
+	// Optional.
+	Headers []string
+
+	// HTTPHost is the HTTP Host header value.
+	//
+	// Optional; default: "1.1.1.1".
+	HTTPHost string
+
+	// Method is the HTTP method.
+	//
+	// Optional; default: "GET".
+	Method string
+
+	// Target is the server address and port.
+	//
+	// Optional; default: "1.1.1.1:80".
+	Target string
+
+	// Timeout is the measurement timeout.
+	//
+	// Optional; default: 30s.
+	Timeout time.Duration
+
+	// URLPath is the URL path.
+	//
+	// Optional; default: "/".
+	URLPath string
+}
+
+// Args implements [SondaOperation].
+func (op *SondaMeasureHTTP) Args() []string {
+	args := []string{"measure", "http"}
+
+	if op.BodyFile != "" {
+		args = append(args, "--body-file", op.BodyFile)
+	}
+
+	for _, h := range op.Headers {
+		args = append(args, "--header", h)
+	}
+
+	if op.HTTPHost != "" {
+		args = append(args, "--http-host", op.HTTPHost)
+	}
+
+	if op.Method != "" {
+		args = append(args, "--method", op.Method)
+	}
+
+	if op.Target != "" {
+		args = append(args, "--target", op.Target)
+	}
+
+	if op.Timeout != 0 {
+		args = append(args, "--timeout", op.Timeout.String())
+	}
+
+	if op.URLPath != "" {
+		args = append(args, "--url-path", op.URLPath)
+	}
+
+	return args
+}
+
+// SondaMeasureHTTPS is the operation for `sonda measure https`.
+type SondaMeasureHTTPS struct {
+	// BodyFile is the path to save the response body.
+	//
+	// Optional; default: discard.
+	BodyFile string
+
+	// Headers contains additional HTTP headers as "Key: Value" strings.
+	//
+	// Optional.
+	Headers []string
+
+	// HTTPHost is the HTTP Host header value.
+	//
+	// Optional; default: "1.1.1.1".
+	HTTPHost string
+
+	// Method is the HTTP method.
+	//
+	// Optional; default: "GET".
+	Method string
+
+	// SNI is the TLS Server Name Indication.
+	//
+	// Optional; default: "1.1.1.1".
+	SNI string
+
+	// Target is the server address and port.
+	//
+	// Optional; default: "1.1.1.1:443".
+	Target string
+
+	// Timeout is the measurement timeout.
+	//
+	// Optional; default: 30s.
+	Timeout time.Duration
+
+	// URLPath is the URL path.
+	//
+	// Optional; default: "/".
+	URLPath string
+}
+
+// Args implements [SondaOperation].
+func (op *SondaMeasureHTTPS) Args() []string {
+	args := []string{"measure", "https"}
+
+	if op.BodyFile != "" {
+		args = append(args, "--body-file", op.BodyFile)
+	}
+
+	for _, h := range op.Headers {
+		args = append(args, "--header", h)
+	}
+
+	if op.HTTPHost != "" {
+		args = append(args, "--http-host", op.HTTPHost)
+	}
+
+	if op.Method != "" {
+		args = append(args, "--method", op.Method)
+	}
+
+	if op.SNI != "" {
+		args = append(args, "--sni", op.SNI)
+	}
+
+	if op.Target != "" {
+		args = append(args, "--target", op.Target)
+	}
+
+	if op.Timeout != 0 {
+		args = append(args, "--timeout", op.Timeout.String())
+	}
+
+	if op.URLPath != "" {
+		args = append(args, "--url-path", op.URLPath)
+	}
+
+	return args
+}
+
 // SondaMeasureDNSOverUDP is the operation for `sonda measure dns over udp`.
 type SondaMeasureDNSOverUDP struct {
 	// Domain is the domain name to resolve.
