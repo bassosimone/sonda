@@ -27,7 +27,7 @@ func main() {
 	disp.Stdout = env.Stdout
 
 	// Add subcommands.
-	disp.AddCommand("measure", vclip.CommandFunc(measure.Main), "Run a single network measurement.")
+	disp.AddCommand("measure", vclip.CommandFunc(measure.Main), "Run a single low-level network measurement.")
 	disp.AddCommand("scan", vclip.CommandFunc(scan.Main), "Scan specific network endpoints storing results in the spool.")
 	disp.AddCommand("spool", vclip.CommandFunc(spool.Main), "Manage the measurement spool directory.")
 

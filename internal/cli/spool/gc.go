@@ -4,7 +4,7 @@ package spool
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,16 +39,17 @@ func gcMain(ctx context.Context, args []string) error {
 
 	// Compute the cutoff time.
 	cutoff := time.Now().Add(-maxAge)
+	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
 	// Walk the spool sharding structure: spoolDir/XXXX/X/X/<spanID>.
-	gcWalkDir(env, spoolDir, cutoff, 3)
+	gcWalkDir(logger, spoolDir, cutoff, 3)
 	return nil
 }
 
 // gcWalkDir walks the spool sharding tree recursively. At depth > 0,
 // it descends into subdirectories and removes empty ones. At depth 0,
 // it processes span directories.
-func gcWalkDir(env *testable.Environ, dir string, cutoff time.Time, depth int) {
+func gcWalkDir(logger *slog.Logger, dir string, cutoff time.Time, depth int) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return
@@ -59,17 +60,17 @@ func gcWalkDir(env *testable.Environ, dir string, cutoff time.Time, depth int) {
 		}
 		if depth > 0 {
 			child := filepath.Join(dir, e.Name())
-			gcWalkDir(env, child, cutoff, depth-1)
+			gcWalkDir(logger, child, cutoff, depth-1)
 			os.Remove(child)
 		} else {
-			gcMaybeRemoveSpan(env, dir, e.Name(), cutoff)
+			gcMaybeRemoveSpan(logger, dir, e.Name(), cutoff)
 		}
 	}
 }
 
 // gcMaybeRemoveSpan removes a span directory if its UUIDv7 timestamp is older
 // than the cutoff. Handles both final and .tmp directories.
-func gcMaybeRemoveSpan(env *testable.Environ, parent, name string, cutoff time.Time) {
+func gcMaybeRemoveSpan(logger *slog.Logger, parent, name string, cutoff time.Time) {
 	// Entries are UUIDv7 with an optional `.tmp` prefix if in progress
 	// that said it's fine to delete very old in progress entries.
 	uuidStr := strings.TrimSuffix(name, ".tmp")
@@ -91,6 +92,6 @@ func gcMaybeRemoveSpan(env *testable.Environ, parent, name string, cutoff time.T
 	// Remove the directory entry.
 	spanPath := filepath.Join(parent, name)
 	if err := os.RemoveAll(spanPath); err != nil {
-		fmt.Fprintf(env.Stderr, "sonda spool gc: %s\n", err)
+		logger.Warn("failed to remove span", slog.String("path", spanPath), slog.Any("err", err))
 	}
 }

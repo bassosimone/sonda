@@ -5,7 +5,7 @@ package spool
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"log/slog"
 	"math"
 	"os"
 	"os/exec"
@@ -25,6 +25,7 @@ import (
 func runMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.Env
+	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
 	// Set command defaults.
 	var (
@@ -62,19 +63,19 @@ func runMain(ctx context.Context, args []string) error {
 
 	// Create the temporary spool directory.
 	if err := env.MkdirAll(tmpDir, 0750); err != nil {
-		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
+		logger.Error("failed to create spool directory", slog.Any("err", err))
 		env.Exit(1)
 	}
 
 	// Record the command that will be executed.
 	argvData, err := json.Marshal(cmdArgs)
 	if err != nil {
-		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
+		logger.Error("failed to marshal argv", slog.Any("err", err))
 		env.Exit(1)
 	}
 	argvData = append(argvData, '\n')
 	if err := env.WriteFile(paths.SpanArgvJSON(tmpDir), argvData, 0640); err != nil {
-		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
+		logger.Error("failed to write argv.json", slog.Any("err", err))
 		env.Exit(1)
 	}
 
@@ -86,7 +87,7 @@ func runMain(ctx context.Context, args []string) error {
 	stdoutPath := paths.SpanStdout(tmpDir)
 	stdoutFile, err := env.OpenFile(stdoutPath, openFlags, 0640)
 	if err != nil {
-		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
+		logger.Error("failed to open stdout", slog.Any("err", err))
 		env.Exit(1)
 	}
 	closers.Add(stdoutFile)
@@ -94,7 +95,7 @@ func runMain(ctx context.Context, args []string) error {
 	stderrPath := paths.SpanStderr(tmpDir)
 	stderrFile, err := env.OpenFile(stderrPath, openFlags, 0640)
 	if err != nil {
-		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
+		logger.Error("failed to open stderr", slog.Any("err", err))
 		env.Exit(1)
 	}
 	closers.Add(stderrFile)
@@ -127,20 +128,20 @@ func runMain(ctx context.Context, args []string) error {
 
 	// Make sure we successfully closed both stdout.txt and stderr.txt.
 	if err := closers.Close(); err != nil {
-		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
+		logger.Error("failed to close output files", slog.Any("err", err))
 		env.Exit(1)
 	}
 
 	// Write the exit code to the spool directory.
 	exitCodeData := []byte(strconv.Itoa(exitCode) + "\n")
 	if err := env.WriteFile(paths.SpanExitCode(tmpDir), exitCodeData, 0640); err != nil {
-		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
+		logger.Error("failed to write exit code", slog.Any("err", err))
 		env.Exit(1)
 	}
 
 	// Atomically rename the temporary directory to the final path.
 	if err := env.Rename(tmpDir, spanDir); err != nil {
-		fmt.Fprintf(env.Stderr, "sonda spool run: %s\n", err)
+		logger.Error("failed to finalize span directory", slog.Any("err", err))
 		env.Exit(1)
 	}
 

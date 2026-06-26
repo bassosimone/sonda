@@ -37,10 +37,10 @@ func Main(ctx context.Context, args []string) error {
 	disp.Exit = env.Exit
 	disp.Stderr = env.Stderr
 	disp.Stdout = env.Stdout
-	disp.AddDescription("Run a single network measurement.")
+	disp.AddDescription("Run a single low-level network measurement.")
 	disp.AddCommand("dns", dnsCmd, "Run DNS measurements.")
-	disp.AddCommand("http", vclip.CommandFunc(httpMain), "HTTP GET measurement.")
-	disp.AddCommand("https", vclip.CommandFunc(httpsMain), "HTTPS GET measurement.")
+	disp.AddCommand("http", vclip.CommandFunc(httpMain), "Run HTTP measurement.")
+	disp.AddCommand("https", vclip.CommandFunc(httpsMain), "Run HTTPS measurement.")
 	disp.AddCommand("stun", vclip.CommandFunc(stunMain), "STUN binding request.")
 
 	disp.Main(ctx, args)

@@ -5,7 +5,7 @@ package spool
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,13 +39,14 @@ func extractMain(ctx context.Context, args []string) error {
 	runtimex.PanicOnError0(fset.Parse(args))
 
 	cutoff := time.Now().Add(-maxAge)
-	extractWalkDir(env, spoolDir, cutoff, 3)
+	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
+	extractWalkDir(logger, spoolDir, cutoff, 3)
 	return nil
 }
 
 // extractWalkDir walks the spool sharding tree recursively. At depth > 0,
 // it descends into subdirectories. At depth 0, it processes span directories.
-func extractWalkDir(env *testable.Environ, dir string, cutoff time.Time, depth int) {
+func extractWalkDir(logger *slog.Logger, dir string, cutoff time.Time, depth int) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return
@@ -56,16 +57,16 @@ func extractWalkDir(env *testable.Environ, dir string, cutoff time.Time, depth i
 		}
 		if depth > 0 {
 			child := filepath.Join(dir, e.Name())
-			extractWalkDir(env, child, cutoff, depth-1)
+			extractWalkDir(logger, child, cutoff, depth-1)
 		} else {
-			extractMaybeProcessSpan(env, dir, e.Name(), cutoff)
+			extractMaybeProcessSpan(logger, dir, e.Name(), cutoff)
 		}
 	}
 }
 
 // extractMaybeProcessSpan processes a span directory if its UUIDv7 timestamp
 // is within the cutoff. Skips .tmp directories (incomplete spans).
-func extractMaybeProcessSpan(env *testable.Environ, parent, name string, cutoff time.Time) {
+func extractMaybeProcessSpan(logger *slog.Logger, parent, name string, cutoff time.Time) {
 	// Skip entry if the data is still being generated.
 	if strings.HasSuffix(name, ".tmp") {
 		return
@@ -96,7 +97,7 @@ func extractMaybeProcessSpan(env *testable.Environ, parent, name string, cutoff 
 	// Extract events from the `stdout.txt` file.
 	rows, err := extractParseSpan(spanDir)
 	if err != nil {
-		fmt.Fprintf(env.Stderr, "sonda spool extract: %s: %v\n", spanDir, err)
+		logger.Warn("failed to parse span", slog.String("spanDir", spanDir), slog.Any("err", err))
 		return
 	}
 	if len(rows) <= 0 {
@@ -105,10 +106,10 @@ func extractMaybeProcessSpan(env *testable.Environ, parent, name string, cutoff 
 
 	// Convert to Parquet format and write the file.
 	if err := extractWriteParquet(spanDir, rows); err != nil {
-		fmt.Fprintf(env.Stderr, "sonda spool extract: %s: write: %v\n", spanDir, err)
+		logger.Warn("failed to write metrics", slog.String("spanDir", spanDir), slog.Any("err", err))
 		return
 	}
-	fmt.Fprintf(env.Stderr, "sonda spool extract: %s: %d rows\n", spanDir, len(rows))
+	logger.Info("extracted metrics", slog.String("spanDir", spanDir), slog.Int("rows", len(rows)))
 }
 
 var extractDoneEvents = map[string]bool{

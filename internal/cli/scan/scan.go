@@ -42,9 +42,7 @@ func Main(ctx context.Context, args []string) error {
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
 	// Emit structured logs to stderr.
-	logger := slog.New(slog.NewJSONHandler(env.Stderr, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
+	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
 	// Honor the `-f/--fail` command line flag.
 	maybeExit := env.Exit
@@ -59,7 +57,7 @@ func Main(ctx context.Context, args []string) error {
 	resolver := netstack.NewResolver(netstack.NewDNSOverUDPTransport(measurer))
 	stunAddrs, err := resolver.LookupHost(ctx, "stun.l.google.com")
 	if err != nil {
-		logger.Warn("resolveSTUNServerFailed", slog.Any("err", err))
+		logger.Warn("failed to resolve STUN server", slog.Any("err", err))
 		maybeExit(1)
 	}
 
@@ -68,7 +66,7 @@ func Main(ctx context.Context, args []string) error {
 	if len(stunAddrs) > 0 {
 		reflexives, err := stunLookup(ctx, measurer, stunAddrs, "19302")
 		if err != nil {
-			logger.Warn("stunLookupFailed", slog.Any("err", err))
+			logger.Warn("STUN lookup failed", slog.Any("err", err))
 			maybeExit(1)
 		}
 		var tags []string
@@ -89,7 +87,7 @@ func Main(ctx context.Context, args []string) error {
 	// Resolve dns.google to obtain DNS server addresses.
 	dnsAddrs, err := resolver.LookupHost(ctx, "dns.google")
 	if err != nil {
-		logger.Warn("resolveDNSServerFailed", slog.Any("err", err))
+		logger.Warn("failed to resolve DNS server", slog.Any("err", err))
 		maybeExit(1)
 	}
 
@@ -99,7 +97,7 @@ func Main(ctx context.Context, args []string) error {
 		udp.ServerAddr = net.JoinHostPort(addr, "53")
 		r := netstack.NewResolver(udp)
 		if _, err := r.LookupHost(ctx, "www.example.com"); err != nil {
-			logger.Warn("dnsOverUDPFailed", slog.String("addr", addr), slog.Any("err", err))
+			logger.Warn("DNS over UDP failed", slog.String("addr", addr), slog.Any("err", err))
 			maybeExit(1)
 		}
 	}
@@ -110,7 +108,7 @@ func Main(ctx context.Context, args []string) error {
 		doh.ServerAddr = net.JoinHostPort(addr, "443")
 		r := netstack.NewResolver(doh)
 		if _, err := r.LookupHost(ctx, "www.example.com"); err != nil {
-			logger.Warn("dnsOverHTTPSFailed", slog.String("addr", addr), slog.Any("err", err))
+			logger.Warn("DNS over HTTPS failed", slog.String("addr", addr), slog.Any("err", err))
 			maybeExit(1)
 		}
 	}
@@ -123,12 +121,12 @@ func Main(ctx context.Context, args []string) error {
 	txp := netstack.NewHTTPTransport(measurer, resolver)
 	httpsReq, err := http.NewRequestWithContext(ctx, "GET", "https://www.example.com/", http.NoBody)
 	if err != nil {
-		logger.Warn("newHTTPSRequestFailed", slog.Any("err", err))
+		logger.Warn("failed to create HTTPS request", slog.Any("err", err))
 		maybeExit(1)
 	} else {
 		resp, err := txp.RoundTrip(httpsReq)
 		if err != nil {
-			logger.Warn("httpsGetFailed", slog.Any("err", err))
+			logger.Warn("HTTPS GET failed", slog.Any("err", err))
 			maybeExit(1)
 		} else {
 			resp.Body.Close()
@@ -138,13 +136,13 @@ func Main(ctx context.Context, args []string) error {
 	// Extract Parquet metrics from recent spans.
 	exe, err := env.Executable()
 	if err != nil {
-		logger.Warn("executableFailed", slog.Any("err", err))
+		logger.Warn("failed to find executable", slog.Any("err", err))
 		maybeExit(1)
 	} else {
 		extractArgs := []string{"spool", "extract", "--spool-dir", spoolDir, "--max-age", "1h"}
 		cmd := exec.CommandContext(ctx, exe, extractArgs...)
 		if err := env.RunCommand(cmd); err != nil {
-			logger.Warn("spoolExtractFailed", slog.Any("err", err))
+			logger.Warn("spool extract failed", slog.Any("err", err))
 			maybeExit(1)
 		}
 	}
@@ -154,7 +152,7 @@ func Main(ctx context.Context, args []string) error {
 		gcArgs := []string{"spool", "gc", "--spool-dir", spoolDir, "--max-age", maxAge.String()}
 		cmd := exec.CommandContext(ctx, exe, gcArgs...)
 		if err := env.RunCommand(cmd); err != nil {
-			logger.Warn("spoolGCFailed", slog.Any("err", err))
+			logger.Warn("spool gc failed", slog.Any("err", err))
 			maybeExit(1)
 		}
 	}
