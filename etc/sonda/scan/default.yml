@@ -1,0 +1,39 @@
+# Default scan workflow for sonda.
+#
+# This file is installed to `/etc/sonda/scan/default.yml`.
+
+steps:
+  - name: "STUN lookup"
+    run: stun
+    with:
+      server: stun.l.google.com
+
+  - name: "DNS over UDP via Google"
+    run: dns-over-udp
+    with:
+      server: dns.google
+      query: www.example.com
+
+  - name: "DNS over HTTPS via Google"
+    run: dns-over-https
+    with:
+      server: dns.google
+      query: www.example.com
+
+  - name: "HTTPS GET www.example.com"
+    run: https
+    with:
+      host: www.example.com
+
+  - name: "Extract metrics"
+    run: extract
+    with:
+      max_age: 1h
+
+  - name: "Load metrics"
+    run: load
+
+  - name: "Garbage collect"
+    run: gc
+    with:
+      max_age: 6h

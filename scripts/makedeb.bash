@@ -21,6 +21,10 @@ install -d "$stage/lib/systemd/system"
 install -m 644 dist/systemd/sonda-scan.service "$stage/lib/systemd/system/"
 install -m 644 dist/systemd/sonda-scan.timer "$stage/lib/systemd/system/"
 
+# Install scan config file.
+install -d "$stage/etc/sonda/scan"
+install -m 644 etc/sonda/scan/default.yml "$stage/etc/sonda/scan/"
+
 # Install copyright.
 install -d "$stage/usr/share/doc/sonda"
 install -m 644 dist/debian/copyright "$stage/usr/share/doc/sonda/"
@@ -33,6 +37,12 @@ sed -e "s/@VERSION@/$ver/g" -e "s/@ARCH@/$arch/g" \
 # Install maintainer scripts.
 install -m 755 dist/debian/postinst "$stage/DEBIAN/"
 install -m 755 dist/debian/postrm "$stage/DEBIAN/"
+
+# Declare conffiles so dpkg preserves local edits on upgrade.
+cat > "$stage/DEBIAN/conffiles" <<'CONFFILES'
+/etc/sonda/scan/default.yml
+CONFFILES
+chmod 644 "$stage/DEBIAN/conffiles"
 
 # Generate md5sums.
 ( cd "$stage" && find . -type f -not -path './DEBIAN/*' -printf '%P\n' \

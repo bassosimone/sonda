@@ -21,6 +21,7 @@ func Main(ctx context.Context, args []string) error {
 
 	// Set command defaults.
 	var (
+		configFile = ""
 		fail       = false
 		metricsDir = "."
 		spoolDir   = "."
@@ -33,6 +34,7 @@ func Main(ctx context.Context, args []string) error {
 	fset.Stdout = env.Stdout
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.BoolVar(&fail, 'f', "fail", "Exit with error on first failure.")
+	fset.StringVar(&configFile, 0, "config-file", "Load steps from `FILE` instead of using built-in defaults.")
 	fset.StringVar(&metricsDir, 0, "metrics-dir", "Write daily Parquet files to `DIR` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
@@ -44,6 +46,17 @@ func Main(ctx context.Context, args []string) error {
 	measurer := netstack.NewSondaMeasurer(env, spoolDir)
 	resolver := netstack.NewResolver(netstack.NewDNSOverUDPTransport(measurer))
 	state := &sharedState{}
+
+	// Determine which steps to execute.
+	steps := defaultSteps
+	if configFile != "" {
+		loaded, err := loadConfigFile(configFile)
+		if err != nil {
+			logger.Error("loading config", slog.Any("err", err))
+			env.Exit(2)
+		}
+		steps = loaded
+	}
 
 	// Build the runner registry.
 	runners := map[string]stepRunner{
@@ -57,7 +70,7 @@ func Main(ctx context.Context, args []string) error {
 	}
 
 	// Execute each step in order.
-	for _, step := range defaultSteps {
+	for _, step := range steps {
 		runner, ok := runners[step.Run]
 		if !ok {
 			logger.Warn("unknown step", slog.String("run", step.Run))
@@ -77,16 +90,16 @@ func Main(ctx context.Context, args []string) error {
 // singleStep describes a single operation in a scan workflow.
 type singleStep struct {
 	// Name is a human-readable label for this step.
-	Name string
+	Name string `yaml:"name"`
 
 	// Run selects the operation to execute (e.g., "stun",
 	// "dns-over-udp", "dns-over-https", "https", "extract",
 	// "load", "gc").
-	Run string
+	Run string `yaml:"run"`
 
 	// With contains operation-specific parameters (e.g., "server",
 	// "query", "host").
-	With map[string]string
+	With map[string]string `yaml:"with"`
 }
 
 // stepRunner executes a step's operation.
@@ -94,7 +107,7 @@ type stepRunner interface {
 	RunStep(ctx context.Context, with map[string]string) error
 }
 
-// defaultSteps defines the default scan workflow.
+// defaultSteps is a minimal fallback used when no --config-file is given.
 var defaultSteps = []singleStep{
 	{Name: "STUN lookup", Run: "stun", With: map[string]string{
 		"server": "stun.l.google.com",
@@ -103,15 +116,6 @@ var defaultSteps = []singleStep{
 		"server": "dns.google",
 		"query":  "www.example.com",
 	}},
-	{Name: "DNS over HTTPS via Google", Run: "dns-over-https", With: map[string]string{
-		"server": "dns.google",
-		"query":  "www.example.com",
-	}},
-	{Name: "HTTPS GET www.example.com", Run: "https", With: map[string]string{
-		"host": "www.example.com",
-	}},
-	{Name: "Extract metrics", Run: "extract", With: map[string]string{}},
-	{Name: "Load metrics", Run: "load", With: map[string]string{}},
 	{Name: "Garbage collect", Run: "gc", With: map[string]string{}},
 }
 

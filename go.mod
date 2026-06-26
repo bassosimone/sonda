@@ -29,6 +29,7 @@ require (
 	github.com/bassosimone/safeconn v0.0.0-20260623163941-cb87a84f7523 // indirect
 	github.com/bassosimone/sud v0.0.0-20260615113322-cf96916c520d // indirect
 	github.com/bassosimone/textwrap v0.0.0-20260623161521-ecf2c54815db // indirect
+	github.com/goccy/go-yaml v1.19.2 // indirect
 	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/parquet-go/bitpack v1.0.0 // indirect
 	github.com/parquet-go/jsonlite v1.5.2 // indirect

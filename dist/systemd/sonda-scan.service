@@ -5,7 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/sonda scan --spool-dir /var/spool/sonda --metrics-dir /var/lib/sonda/metrics
+ExecStart=/usr/bin/sonda scan --config-file /etc/sonda/scan/default.yml --spool-dir /var/spool/sonda --metrics-dir /var/lib/sonda/metrics
 User=_sonda
 Group=_sonda
 
