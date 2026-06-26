@@ -4,8 +4,6 @@ package netstack
 
 import (
 	"bufio"
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -16,6 +14,7 @@ import (
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/paths"
+	"github.com/bassosimone/sonda/internal/structured"
 )
 
 // HTTPTransport performs HTTP/HTTPS round trips using [SondaMeasurer].
@@ -190,42 +189,21 @@ func readHTTPRoundTripDone(spanDir string) (int, http.Header, error) {
 
 	scanner := bufio.NewScanner(filep)
 	for scanner.Scan() {
-		dec := json.NewDecoder(bytes.NewReader(scanner.Bytes()))
-		dec.UseNumber()
-		var entry map[string]any
-		if err := dec.Decode(&entry); err != nil {
+		ev, err := structured.ParseEvent(scanner.Bytes())
+		if err != nil {
 			continue
 		}
-		if entry["msg"] != "httpRoundTripDone" {
+		if ev.Msg != "httpRoundTripDone" {
 			continue
 		}
-
-		// Extract status code.
-		statusNumber, ok := entry["httpResponseStatusCode"].(json.Number)
-		if !ok {
+		if ev.HTTPResponseStatusCode == 0 {
 			return 0, nil, errors.New("httpRoundTripDone: missing status code")
 		}
-		statusCode64, err := statusNumber.Int64()
-		if err != nil {
-			return 0, nil, fmt.Errorf("httpRoundTripDone: invalid status code: %w", err)
+		headers := ev.HTTPResponseHeaders
+		if headers == nil {
+			headers = make(http.Header)
 		}
-		statusCode := int(statusCode64)
-
-		// Extract response headers.
-		headers := make(http.Header)
-		if rawHeaders, ok := entry["httpResponseHeaders"].(map[string]any); ok {
-			for key, val := range rawHeaders {
-				if values, ok := val.([]any); ok {
-					for _, v := range values {
-						if s, ok := v.(string); ok {
-							headers.Add(key, s)
-						}
-					}
-				}
-			}
-		}
-
-		return statusCode, headers, nil
+		return ev.HTTPResponseStatusCode, headers, nil
 	}
 
 	if err := scanner.Err(); err != nil {

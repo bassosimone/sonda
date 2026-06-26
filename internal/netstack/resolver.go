@@ -5,7 +5,6 @@ package netstack
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/netip"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/paths"
+	"github.com/bassosimone/sonda/internal/structured"
 )
 
 // DNSTransport is the interface for DNS lookup transports.
@@ -68,7 +68,7 @@ func (rx *Resolver) LookupAAAA(ctx context.Context, domain string) ([]string, er
 }
 
 // readResponseAddrs reads stdout.txt from a span directory and extracts
-// addresses from lines matching the given message name.
+// addresses from the structured log event identified by msgName.
 func readResponseAddrs(spanDir, msgName string) ([]string, error) {
 	filep, err := os.Open(paths.SpanStdout(spanDir))
 	if err != nil {
@@ -79,22 +79,14 @@ func readResponseAddrs(spanDir, msgName string) ([]string, error) {
 	var addrs []string
 	scanner := bufio.NewScanner(filep)
 	for scanner.Scan() {
-		var entry map[string]any
-		if err := json.Unmarshal(scanner.Bytes(), &entry); err != nil {
+		ev, err := structured.ParseEvent(scanner.Bytes())
+		if err != nil {
 			continue
 		}
-		if entry["msg"] != msgName {
+		if ev.Msg != msgName {
 			continue
 		}
-		values, ok := entry["value"].([]any)
-		if !ok {
-			continue
-		}
-		for _, v := range values {
-			if s, ok := v.(string); ok {
-				addrs = append(addrs, s)
-			}
-		}
+		addrs = append(addrs, ev.DNSRecordsList...)
 	}
 
 	if err := scanner.Err(); err != nil {

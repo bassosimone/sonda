@@ -5,12 +5,12 @@ package netstack
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/bassosimone/sonda/internal/paths"
+	"github.com/bassosimone/sonda/internal/structured"
 )
 
 // STUNLookupper looks up the public IP address using [SondaMeasurer].
@@ -55,7 +55,7 @@ func (lk *STUNLookupper) LookupIPAddr(ctx context.Context) (string, error) {
 }
 
 // readReflexiveAddr reads stdout.txt from a span directory and extracts
-// the reflexive IP address from the "reflexiveAddress" message.
+// the reflexive IP address from the "stunBindingResult" message.
 func readReflexiveAddr(spanDir string) (string, error) {
 	filep, err := os.Open(paths.SpanStdout(spanDir))
 	if err != nil {
@@ -65,18 +65,17 @@ func readReflexiveAddr(spanDir string) (string, error) {
 
 	scanner := bufio.NewScanner(filep)
 	for scanner.Scan() {
-		var entry map[string]any
-		if err := json.Unmarshal(scanner.Bytes(), &entry); err != nil {
+		ev, err := structured.ParseEvent(scanner.Bytes())
+		if err != nil {
 			continue
 		}
-		if entry["msg"] != "reflexiveAddress" {
+		if ev.Msg != "stunBindingResult" {
 			continue
 		}
-		ip, ok := entry["ip"].(string)
-		if !ok {
+		if ev.STUNReflexiveAddr == "" {
 			continue
 		}
-		return ip, nil
+		return ev.STUNReflexiveAddr, nil
 	}
 
 	if err := scanner.Err(); err != nil {

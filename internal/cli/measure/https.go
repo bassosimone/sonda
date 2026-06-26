@@ -69,18 +69,21 @@ func httpsMain(ctx context.Context, args []string) error {
 	}))
 	logger = logger.With("spanID", spanID)
 
-	// Log the measurement start / done events.
-	logger.Info("measurementStart")
-	defer logger.Info("measurementDone")
+	// Log the command start / done span events.
+	t0 := time.Now()
+	logger.Info("sondaCommandStart", slog.Time("t", t0))
+	defer func() {
+		logger.Info("sondaCommandDone", slog.Time("t0", t0), slog.Time("t", time.Now()))
+	}()
 
 	// Log the command line arguments for reproducibility.
 	fullArgs := append([]string{"sonda", "measure", "https"}, args...)
-	logger.Info("commandLineArgs", slog.Any("args", fullArgs))
+	logger.Info("sondaCommandLineArgs", slog.Any("cliArgs", fullArgs))
 
 	// Parse target as an endpoint.
 	epnt, err := netip.ParseAddrPort(target)
 	if err != nil {
-		logger.Error("parseTargetFailed", slog.Any("err", err))
+		logger.Error("sondaFailure", slog.String("operation", "parseTarget"), slog.Any("err", err))
 		env.Exit(2)
 	}
 
@@ -106,7 +109,7 @@ func httpsMain(ctx context.Context, args []string) error {
 	// Dial the HTTPS connection.
 	httpConn, err := dialPipe.Call(ctx, nop.Unit{})
 	if err != nil {
-		logger.Error("dialFailed", slog.Any("err", err))
+		logger.Error("sondaFailure", slog.String("operation", "dial"), slog.Any("err", err))
 		env.Exit(1)
 	}
 	defer httpConn.Close()
@@ -115,13 +118,13 @@ func httpsMain(ctx context.Context, args []string) error {
 	httpURL := (&url.URL{Scheme: "https", Host: httpHost, Path: urlPath}).String()
 	httpReq, err := http.NewRequestWithContext(ctx, method, httpURL, http.NoBody)
 	if err != nil {
-		logger.Error("newRequestFailed", slog.Any("err", err))
+		logger.Error("sondaFailure", slog.String("operation", "newRequest"), slog.Any("err", err))
 		env.Exit(1)
 	}
 	for _, h := range headers {
 		key, value, ok := strings.Cut(h, ":")
 		if !ok {
-			logger.Error("parseHeaderFailed", slog.String("header", h))
+			logger.Error("sondaFailure", slog.String("operation", "parseHeader"), slog.String("err", "missing colon"))
 			fmt.Fprintf(env.Stderr, "sonda measure https: invalid header (missing ':'): %s\n", h)
 			env.Exit(2)
 		}
@@ -131,7 +134,7 @@ func httpsMain(ctx context.Context, args []string) error {
 	// Perform the HTTP round trip.
 	resp, err := httpConn.RoundTrip(httpReq)
 	if err != nil {
-		logger.Error("roundTripFailed", slog.Any("err", err))
+		logger.Error("sondaFailure", slog.String("operation", "roundTrip"), slog.Any("err", err))
 		env.Exit(1)
 	}
 	defer resp.Body.Close()
@@ -142,7 +145,7 @@ func httpsMain(ctx context.Context, args []string) error {
 	if bodyFile != "" {
 		filep, err := os.OpenFile(bodyFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0640)
 		if err != nil {
-			logger.Error("createBodyFileFailed", slog.Any("err", err))
+			logger.Error("sondaFailure", slog.String("operation", "createBodyFile"), slog.Any("err", err))
 			env.Exit(1)
 		}
 		closers.Add(filep)
@@ -153,14 +156,14 @@ func httpsMain(ctx context.Context, args []string) error {
 	// the total download time.
 	bodySize, err := io.Copy(bodyDst, resp.Body)
 	if err != nil {
-		logger.Error("readBodyFailed", slog.Any("err", err))
+		logger.Error("sondaFailure", slog.String("operation", "readBody"), slog.Any("err", err))
 		env.Exit(1)
 	}
-	logger.Info("httpResponseBody", slog.Int64("size", bodySize))
+	logger.Info("sondaHttpResponseBodyStats", slog.Int64("httpResponseBodySize", bodySize))
 
 	// Make sure we successfully closed the body file.
 	if err := closers.Close(); err != nil {
-		logger.Error("closeBodyFileFailed", slog.Any("err", err))
+		logger.Error("sondaFailure", slog.String("operation", "closeBodyFile"), slog.Any("err", err))
 		env.Exit(1)
 	}
 

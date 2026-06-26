@@ -55,25 +55,28 @@ func dnsOverUDPMain(ctx context.Context, args []string) error {
 	}))
 	logger = logger.With("spanID", spanID)
 
-	// Log the measurement start / done events
-	logger.Info("measurementStart")
-	defer logger.Info("measurementDone")
+	// Log the command start / done span events.
+	t0 := time.Now()
+	logger.Info("sondaCommandStart", slog.Time("t", t0))
+	defer func() {
+		logger.Info("sondaCommandDone", slog.Time("t0", t0), slog.Time("t", time.Now()))
+	}()
 
 	// Log the command line arguments for reproducibility.
 	fullArgs := append([]string{"sonda", "measure", "dns", "over", "udp"}, args...)
-	logger.Info("commandLineArgs", slog.Any("args", fullArgs))
+	logger.Info("sondaCommandLineArgs", slog.Any("cliArgs", fullArgs))
 
 	// Parse the query type string.
 	dnsType, ok := dns.StringToType[queryType]
 	if !ok {
-		logger.Error("parseQueryTypeFailed", slog.String("queryType", queryType))
+		logger.Error("sondaFailure", slog.String("operation", "parseQueryType"), slog.String("err", "unknown query type"))
 		env.Exit(2)
 	}
 
 	// Parse target as an endpoint.
 	epnt, err := netip.ParseAddrPort(target)
 	if err != nil {
-		logger.Error("parseTargetFailed", slog.Any("err", err))
+		logger.Error("sondaFailure", slog.String("operation", "parseTarget"), slog.Any("err", err))
 		env.Exit(2)
 	}
 
@@ -97,7 +100,7 @@ func dnsOverUDPMain(ctx context.Context, args []string) error {
 	// Dial the DNS connection.
 	dnsConn, err := dialPipe.Call(ctx, nop.Unit{})
 	if err != nil {
-		logger.Error("dialFailed", slog.Any("err", err))
+		logger.Error("sondaFailure", slog.String("operation", "dial"), slog.Any("err", err))
 		env.Exit(1)
 	}
 	defer dnsConn.Close()
@@ -106,20 +109,20 @@ func dnsOverUDPMain(ctx context.Context, args []string) error {
 	dnsQuery := dnscodec.NewQuery(domain, dnsType)
 	dnsResp, err := dnsConn.Exchange(ctx, dnsQuery)
 	if err != nil {
-		logger.Error("exchangeFailed", slog.Any("err", err))
+		logger.Error("sondaFailure", slog.String("operation", "exchange"), slog.Any("err", err))
 		env.Exit(1)
 	}
 
 	// Print A, AAAA, and CNAME records.
 	// TODO(bassosimone): we may want to support logging other response types.
 	if cnames, err := dnsResp.RecordsCNAME(); err == nil {
-		logger.Info("responseCNAME", slog.Any("value", cnames))
+		logger.Info("sondaDnsRecordsCNAME", slog.Any("dnsRecordsList", cnames))
 	}
 	if addrs, err := dnsResp.RecordsA(); err == nil {
-		logger.Info("responseA", slog.Any("value", addrs))
+		logger.Info("sondaDnsRecordsA", slog.Any("dnsRecordsList", addrs))
 	}
 	if addrs, err := dnsResp.RecordsAAAA(); err == nil {
-		logger.Info("responseAAAA", slog.Any("value", addrs))
+		logger.Info("sondaDnsRecordsAAAA", slog.Any("dnsRecordsList", addrs))
 	}
 	return nil
 }

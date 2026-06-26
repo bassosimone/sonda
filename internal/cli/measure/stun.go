@@ -50,18 +50,21 @@ func stunMain(ctx context.Context, args []string) error {
 	}))
 	logger = logger.With("spanID", spanID)
 
-	// Log the measurement start / done events.
-	logger.Info("measurementStart")
-	defer logger.Info("measurementDone")
+	// Log the command start / done span events.
+	t0 := time.Now()
+	logger.Info("sondaCommandStart", slog.Time("t", t0))
+	defer func() {
+		logger.Info("sondaCommandDone", slog.Time("t0", t0), slog.Time("t", time.Now()))
+	}()
 
 	// Log the command line arguments for reproducibility.
 	fullArgs := append([]string{"sonda", "measure", "stun"}, args...)
-	logger.Info("commandLineArgs", slog.Any("args", fullArgs))
+	logger.Info("sondaCommandLineArgs", slog.Any("cliArgs", fullArgs))
 
 	// Parse target as an endpoint.
 	epnt, err := netip.ParseAddrPort(target)
 	if err != nil {
-		logger.Error("parseTargetFailed", slog.Any("err", err))
+		logger.Error("sondaFailure", slog.String("operation", "parseTarget"), slog.Any("err", err))
 		env.Exit(2)
 	}
 
@@ -84,7 +87,7 @@ func stunMain(ctx context.Context, args []string) error {
 	// Dial the UDP connection.
 	conn, err := dialPipe.Call(ctx, nop.Unit{})
 	if err != nil {
-		logger.Error("dialFailed", slog.Any("err", err))
+		logger.Error("sondaFailure", slog.String("operation", "dial"), slog.Any("err", err))
 		env.Exit(1)
 	}
 	defer conn.Close()
@@ -94,7 +97,7 @@ func stunMain(ctx context.Context, args []string) error {
 
 	// Write the binding request.
 	if _, err := conn.Write(message.Raw); err != nil {
-		logger.Error("writeFailed", slog.Any("err", err))
+		logger.Error("sondaFailure", slog.String("operation", "write"), slog.Any("err", err))
 		env.Exit(1)
 	}
 
@@ -102,7 +105,7 @@ func stunMain(ctx context.Context, args []string) error {
 	buf := make([]byte, 1024)
 	nread, err := conn.Read(buf)
 	if err != nil {
-		logger.Error("readFailed", slog.Any("err", err))
+		logger.Error("sondaFailure", slog.String("operation", "read"), slog.Any("err", err))
 		env.Exit(1)
 	}
 
@@ -110,20 +113,20 @@ func stunMain(ctx context.Context, args []string) error {
 	resp := new(stun.Message)
 	resp.Raw = buf[:nread]
 	if err := resp.Decode(); err != nil {
-		logger.Error("decodeFailed", slog.Any("err", err))
+		logger.Error("sondaFailure", slog.String("operation", "decode"), slog.Any("err", err))
 		env.Exit(1)
 	}
 
 	// Extract the reflexive address.
 	var xorAddr stun.XORMappedAddress
 	if err := xorAddr.GetFrom(resp); err != nil {
-		logger.Error("getXORMappedAddressFailed", slog.Any("err", err))
+		logger.Error("sondaFailure", slog.String("operation", "getXORMappedAddress"), slog.Any("err", err))
 		env.Exit(1)
 	}
 
-	logger.Info("reflexiveAddress",
-		slog.String("ip", xorAddr.IP.String()),
-		slog.Int("port", xorAddr.Port),
+	logger.Info("stunBindingResult",
+		slog.String("stunReflexiveAddr", xorAddr.IP.String()),
+		slog.Int("stunReflexivePort", xorAddr.Port),
 	)
 
 	return nil

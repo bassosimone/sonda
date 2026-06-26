@@ -68,7 +68,7 @@ func (t *DNSOverHTTPSTransport) LookupA(ctx context.Context, domain string) ([]s
 	if err != nil {
 		return nil, err
 	}
-	return readResponseAddrs(spanDir, "responseA")
+	return readResponseAddrs(spanDir, "sondaDnsRecordsA")
 }
 
 // LookupAAAA resolves a domain name and returns the IPv6 addresses.
@@ -85,5 +85,5 @@ func (t *DNSOverHTTPSTransport) LookupAAAA(ctx context.Context, domain string) (
 	if err != nil {
 		return nil, err
 	}
-	return readResponseAddrs(spanDir, "responseAAAA")
+	return readResponseAddrs(spanDir, "sondaDnsRecordsAAAA")
 }
