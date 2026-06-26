@@ -21,6 +21,7 @@ func Main(ctx context.Context, args []string) error {
 	disp.Stderr = env.Stderr
 	disp.Stdout = env.Stdout
 	disp.AddDescription("Manage the measurement spool directory.")
+	disp.AddCommand("gc", vclip.CommandFunc(gcMain), "Remove old span directories.")
 	disp.AddCommand("run", vclip.CommandFunc(runMain), "Execute a command and collect its output.")
 
 	disp.Main(ctx, args)
