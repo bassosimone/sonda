@@ -3,28 +3,79 @@
 # This file is installed to `/etc/sonda/scan/default.yml`.
 
 steps:
+  #
+  # STUN
+  #
   - name: "STUN lookup"
     run: stun
     with:
       server: stun.l.google.com
 
+  #
+  # DNS over UDP
+  #
   - name: "DNS over UDP via Google"
     run: dns-over-udp
     with:
       server: dns.google
       query: www.example.com
 
+  - name: "DNS over UDP via Quad9"
+    run: dns-over-udp
+    with:
+      server: dns.quad9.net
+      query: www.example.com
+
+  - name: "DNS over UDP via Cloudflare"
+    run: dns-over-udp
+    with:
+      server: one.one.one.one
+      query: www.example.com
+
+  #
+  # DNS over HTTPS
+  #
   - name: "DNS over HTTPS via Google"
     run: dns-over-https
     with:
       server: dns.google
       query: www.example.com
 
+  - name: "DNS over HTTPS via Quad9"
+    run: dns-over-https
+    with:
+      server: dns.quad9.net
+      query: www.example.com
+
+  - name: "DNS over HTTPS via Cloudflare"
+    run: dns-over-https
+    with:
+      server: cloudflare-dns.com
+      query: www.example.com
+
+  #
+  # HTTPS
+  #
   - name: "HTTPS GET www.example.com"
     run: https
     with:
       host: www.example.com
 
+  - name: "HTTPS GET Google generate_204"
+    run: https
+    with:
+      host: www.google.com
+      url_path: /generate_204
+
+  - name: "HTTPS GET Cloudflare cdn-cgi/trace"
+    run: https
+    with:
+      host: www.cloudflare.com
+      url_path: /cdn-cgi/trace
+
+  #
+  # Housekeeping
+  #
   - name: "Extract metrics"
     run: extract
     with:
