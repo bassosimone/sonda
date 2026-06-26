@@ -47,6 +47,13 @@ func Main(ctx context.Context, args []string) error {
 	resolver := netstack.NewResolver(netstack.NewDNSOverUDPTransport(measurer))
 	state := &sharedState{}
 
+	// TODO(bassosimone): probe IPv6 connectivity here using a UDP connect
+	// to a well-known v6 address (e.g., net.Dial("udp6", "[2001:4860:4860::8888]:53")).
+	// If it fails with syscall.ENETUNREACH, store "no_ipv6" in sharedState so
+	// that runners can skip v6 addresses in their loops. This avoids ~8k rows/day
+	// of ENETUNREACH noise on v4-only hosts. Consider a rfc6724.go file that
+	// performs the check and returns a boolean. See also RFC 6724 §6 Rule 1.
+
 	// Determine which steps to execute.
 	steps := defaultSteps
 	if configFile != "" {
