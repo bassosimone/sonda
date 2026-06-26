@@ -5,13 +5,13 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/sonda scan --spool-dir /var/spool/sonda
+ExecStart=/usr/bin/sonda scan --spool-dir /var/spool/sonda --metrics-dir /var/lib/sonda/metrics
 User=_sonda
 Group=_sonda
 
 NoNewPrivileges=yes
 ProtectSystem=strict
-ReadWritePaths=/var/spool/sonda
+ReadWritePaths=/var/spool/sonda /var/lib/sonda/metrics
 ProtectHome=yes
 PrivateTmp=yes
 PrivateDevices=yes

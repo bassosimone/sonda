@@ -25,9 +25,10 @@ func Main(ctx context.Context, args []string) error {
 
 	// Set command defaults.
 	var (
-		fail     = false
-		maxAge   = 6 * time.Hour
-		spoolDir = "."
+		fail       = false
+		maxAge     = 6 * time.Hour
+		metricsDir = "."
+		spoolDir   = "."
 	)
 
 	// Parse command line flags.
@@ -37,6 +38,7 @@ func Main(ctx context.Context, args []string) error {
 	fset.Stdout = env.Stdout
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.BoolVar(&fail, 'f', "fail", "Exit with error on first failure.")
+	fset.StringVar(&metricsDir, 0, "metrics-dir", "Write daily Parquet files to `DIR` instead of `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&maxAge, 0, "spool-max-age", "Remove spans older than `DURATION` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
@@ -143,6 +145,16 @@ func Main(ctx context.Context, args []string) error {
 		cmd := exec.CommandContext(ctx, exe, extractArgs...)
 		if err := env.RunCommand(cmd); err != nil {
 			logger.Warn("spool extract failed", slog.Any("err", err))
+			maybeExit(1)
+		}
+	}
+
+	// Load span metrics into daily aggregate Parquet files.
+	if exe != "" {
+		loadArgs := []string{"metrics", "load", "--spool-dir", spoolDir, "--metrics-dir", metricsDir}
+		cmd := exec.CommandContext(ctx, exe, loadArgs...)
+		if err := env.RunCommand(cmd); err != nil {
+			logger.Warn("metrics load failed", slog.Any("err", err))
 			maybeExit(1)
 		}
 	}

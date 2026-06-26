@@ -50,3 +50,9 @@ func SpanMetricsParquet(spanDir string) string {
 func SpanMetricsParquetTmp(spanDir string) string {
 	return filepath.Join(spanDir, "metrics.parquet.tmp")
 }
+
+// SpanMetricsLoaded returns the path to the sentinel file that marks
+// a span's metrics as loaded into the daily aggregate.
+func SpanMetricsLoaded(spanDir string) string {
+	return filepath.Join(spanDir, "metrics.loaded")
+}

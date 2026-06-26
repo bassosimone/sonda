@@ -12,6 +12,9 @@ case "$1" in
         # Ensure the spool directory exists with correct ownership.
         install -d -o _sonda -g adm -m 2750 /var/spool/sonda
 
+        # Ensure the metrics directory exists with correct ownership.
+        install -d -o _sonda -g adm -m 2750 /var/lib/sonda/metrics
+
         # Reload systemd to pick up new/updated unit files.
         systemctl daemon-reload
 
