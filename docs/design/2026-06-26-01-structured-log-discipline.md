@@ -113,6 +113,30 @@ has its own tests verifying its field names.
 
 - Minimal pointer usage. Only `*Failure` uses a pointer.
 
+## Contextual tags
+
+Measurement commands accept a repeatable `--tag KEY=VALUE` flag.
+Each tag is added to the logger via `logger.With(key, value)`,
+so it appears on every structured log line emitted by that span.
+
+Tags are the mechanism for injecting session-level context into
+individual measurements. The orchestrator (e.g., `sonda scan`)
+discovers context — such as the reflexive IPv4/IPv6 addresses
+from a STUN lookup — and propagates it to subsequent measurements
+via `netstack.ContextWithTags(ctx, tags)`. The `SondaMeasurer`
+reads tags from the context and appends `--tag` flags to the
+inner command, avoiding shared mutable state.
+
+Current tag keys:
+
+- `reflexiveAddrV4`: the public IPv4 address discovered by STUN.
+- `reflexiveAddrV6`: the public IPv6 address discovered by STUN.
+
+Tag keys follow the same naming rules as other field names
+(JavaScript casing, qualified). New tags can be added without
+changing the measurement commands as they are generic key-value
+pairs.
+
 ## Parsing contract
 
 All consumers use `structured.ParseEvent(line []byte)` instead
@@ -139,6 +163,13 @@ parsing mechanism is now typed.
 |        `sondaDnsRecordsAAAA`  | Notification |                          `dnsRecordsList` |
 |       `sondaDnsRecordsCNAME`  | Notification |                          `dnsRecordsList` |
 |           `stunBindingResult` | Notification | `stunReflexiveAddr`, `stunReflexivePort`  |
+
+### Contextual tags (injected via `--tag`, present on all events)
+
+|             Field |                                      Source |
+|-------------------|---------------------------------------------|
+| `reflexiveAddrV4` |  STUN lookup, injected by `sonda scan`      |
+| `reflexiveAddrV6` |  STUN lookup, injected by `sonda scan`      |
 
 ### Nop pipeline (see nop docs for full list)
 

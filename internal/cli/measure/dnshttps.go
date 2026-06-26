@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/netip"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/bassosimone/dnscodec"
@@ -30,10 +31,11 @@ func dnsOverHTTPSMain(ctx context.Context, args []string) error {
 		httpHost  = "dns.google"
 		queryType = "A"
 		sni       = "dns.google"
-		target    = "8.8.8.8:443"
-		urlPath   = "/dns-query"
 		spanID    = nop.NewSpanID()
+		tags      []string
+		target    = "8.8.8.8:443"
 		timeout   = 30 * time.Second
+		urlPath   = "/dns-query"
 	)
 
 	// Honor SONDA_SPAN_ID environment variable.
@@ -52,6 +54,7 @@ func dnsOverHTTPSMain(ctx context.Context, args []string) error {
 	fset.StringVar(&queryType, 0, "query-type", "Use `TYPE` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&sni, 0, "sni", "Use `NAME` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&spanID, 0, "span-id", "Use `ID` instead of a random one. Honors `SONDA_SPAN_ID`.")
+	fset.StringSliceVar(&tags, 0, "tag", "Add contextual `KEY=VALUE` tag. Repeatable.")
 	fset.StringVar(&target, 0, "target", "Use `ADDR:PORT` instead of `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&urlPath, 0, "url-path", "Use `PATH` instead of `@DEFAULT_VALUE@`.")
@@ -62,6 +65,11 @@ func dnsOverHTTPSMain(ctx context.Context, args []string) error {
 		Level: slog.LevelDebug,
 	}))
 	logger = logger.With("spanID", spanID)
+	for _, tag := range tags {
+		if key, value, ok := strings.Cut(tag, "="); ok {
+			logger = logger.With(key, value)
+		}
+	}
 
 	// Log the command start / done span events.
 	t0 := time.Now()

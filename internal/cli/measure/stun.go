@@ -6,6 +6,7 @@ import (
 	"context"
 	"log/slog"
 	"net/netip"
+	"strings"
 	"time"
 
 	"github.com/bassosimone/errclass"
@@ -23,8 +24,9 @@ func stunMain(ctx context.Context, args []string) error {
 
 	// Set command defaults.
 	var (
-		target  = "74.125.250.129:19302"
 		spanID  = nop.NewSpanID()
+		tags    []string
+		target  = "74.125.250.129:19302"
 		timeout = 30 * time.Second
 	)
 
@@ -40,6 +42,7 @@ func stunMain(ctx context.Context, args []string) error {
 	fset.Stdout = env.Stdout
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.StringVar(&spanID, 0, "span-id", "Use `ID` instead of a random one. Honors `SONDA_SPAN_ID`.")
+	fset.StringSliceVar(&tags, 0, "tag", "Add contextual `KEY=VALUE` tag. Repeatable.")
 	fset.StringVar(&target, 0, "target", "Use `ADDR:PORT` instead of `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
@@ -49,6 +52,11 @@ func stunMain(ctx context.Context, args []string) error {
 		Level: slog.LevelDebug,
 	}))
 	logger = logger.With("spanID", spanID)
+	for _, tag := range tags {
+		if key, value, ok := strings.Cut(tag, "="); ok {
+			logger = logger.With(key, value)
+		}
+	}
 
 	// Log the command start / done span events.
 	t0 := time.Now()

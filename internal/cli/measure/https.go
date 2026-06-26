@@ -36,6 +36,7 @@ func httpsMain(ctx context.Context, args []string) error {
 		method    = "GET"
 		sni       = "1.1.1.1"
 		spanID    = nop.NewSpanID()
+		tags      []string
 		target    = "1.1.1.1:443"
 		timeout   = 30 * time.Second
 		urlPath   = "/"
@@ -58,6 +59,7 @@ func httpsMain(ctx context.Context, args []string) error {
 	fset.StringVar(&method, 0, "method", "Use `METHOD` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&sni, 0, "sni", "Use `NAME` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&spanID, 0, "span-id", "Use `ID` instead of a random one. Honors `SONDA_SPAN_ID`.")
+	fset.StringSliceVar(&tags, 0, "tag", "Add contextual `KEY=VALUE` tag. Repeatable.")
 	fset.StringVar(&target, 0, "target", "Use `ADDR:PORT` instead of `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&urlPath, 0, "url-path", "Use `PATH` instead of `@DEFAULT_VALUE@`.")
@@ -68,6 +70,11 @@ func httpsMain(ctx context.Context, args []string) error {
 		Level: slog.LevelDebug,
 	}))
 	logger = logger.With("spanID", spanID)
+	for _, tag := range tags {
+		if key, value, ok := strings.Cut(tag, "="); ok {
+			logger = logger.With(key, value)
+		}
+	}
 
 	// Log the command start / done span events.
 	t0 := time.Now()

@@ -6,6 +6,7 @@ import (
 	"context"
 	"log/slog"
 	"net/netip"
+	"strings"
 	"time"
 
 	"github.com/bassosimone/dnscodec"
@@ -26,8 +27,9 @@ func dnsOverUDPMain(ctx context.Context, args []string) error {
 	var (
 		domain    = "www.example.com"
 		queryType = "A"
-		target    = "8.8.8.8:53"
 		spanID    = nop.NewSpanID()
+		tags      []string
+		target    = "8.8.8.8:53"
 		timeout   = 30 * time.Second
 	)
 
@@ -45,6 +47,7 @@ func dnsOverUDPMain(ctx context.Context, args []string) error {
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.StringVar(&queryType, 0, "query-type", "Use `TYPE` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&spanID, 0, "span-id", "Use `ID` instead of a random one. Honors `SONDA_SPAN_ID`.")
+	fset.StringSliceVar(&tags, 0, "tag", "Add contextual `KEY=VALUE` tag. Repeatable.")
 	fset.StringVar(&target, 0, "target", "Use `ADDR:PORT` instead of `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
@@ -54,6 +57,11 @@ func dnsOverUDPMain(ctx context.Context, args []string) error {
 		Level: slog.LevelDebug,
 	}))
 	logger = logger.With("spanID", spanID)
+	for _, tag := range tags {
+		if key, value, ok := strings.Cut(tag, "="); ok {
+			logger = logger.With(key, value)
+		}
+	}
 
 	// Log the command start / done span events.
 	t0 := time.Now()

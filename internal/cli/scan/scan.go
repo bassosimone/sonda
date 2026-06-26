@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/netip"
 	"os/exec"
 	"time"
 
@@ -62,11 +63,26 @@ func Main(ctx context.Context, args []string) error {
 		maybeExit(1)
 	}
 
-	// Perform STUN lookups to discover the reflexive address.
+	// Perform STUN lookups to discover the reflexive address and
+	// inject them as contextual tags for subsequent measurements.
 	if len(stunAddrs) > 0 {
-		if _, err := stunLookup(ctx, measurer, stunAddrs, "19302"); err != nil {
+		reflexives, err := stunLookup(ctx, measurer, stunAddrs, "19302")
+		if err != nil {
 			logger.Warn("stunLookupFailed", slog.Any("err", err))
 			maybeExit(1)
+		}
+		var tags []string
+		for _, addr := range reflexives {
+			if ip, err := netip.ParseAddr(addr); err == nil {
+				if ip.Is4() {
+					tags = append(tags, "reflexiveAddrV4="+addr)
+				} else {
+					tags = append(tags, "reflexiveAddrV6="+addr)
+				}
+			}
+		}
+		if len(tags) > 0 {
+			ctx = netstack.ContextWithTags(ctx, tags)
 		}
 	}
 

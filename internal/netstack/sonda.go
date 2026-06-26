@@ -61,6 +61,9 @@ func (s *SondaMeasurer) Run(ctx context.Context, op SondaOperation) (string, err
 	args := []string{"spool", "run", "--span-id", spanID, "--spool-dir", s.SpoolDir, "--"}
 	args = append(args, exe)
 	args = append(args, op.Args()...)
+	for _, tag := range TagsFromContext(ctx) {
+		args = append(args, "--tag", tag)
+	}
 	cmd := exec.CommandContext(ctx, exe, args...)
 
 	// Execute the command.

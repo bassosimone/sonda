@@ -107,6 +107,12 @@ type Event struct {
 	// Used by: sondaDnsRecordsA, sondaDnsRecordsAAAA, sondaDnsRecordsCNAME
 
 	DNSRecordsList []string `json:"dnsRecordsList,omitempty"`
+
+	// --- sonda command layer: contextual tags ---
+	// Used by: all events (injected via --tag)
+
+	ReflexiveAddrV4 string `json:"reflexiveAddrV4,omitempty"`
+	ReflexiveAddrV6 string `json:"reflexiveAddrV6,omitempty"`
 }
 
 // ParseEvent parses a single JSON structured log line into an [*Event].
