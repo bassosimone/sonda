@@ -49,6 +49,8 @@ func (r *dnsOverHTTPSRunner) RunStep(ctx context.Context, with map[string]string
 	// Perform a DNS-over-HTTPS lookup against each resolved address.
 	for _, addr := range addrs {
 		txp := netstack.NewDNSOverHTTPSTransport(r.Measurer)
+		txp.HTTPHost = server
+		txp.SNI = server
 		txp.ServerAddr = net.JoinHostPort(addr, port)
 		resolver := netstack.NewResolver(txp)
 		if _, err := resolver.LookupHost(ctx, query); err != nil {
