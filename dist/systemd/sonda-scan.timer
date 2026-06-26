@@ -3,7 +3,7 @@ Description=Run sonda scan periodically
 
 [Timer]
 OnActiveSec=10s
-OnUnitInactiveSec=60s
+OnUnitInactiveSec=5min
 AccuracySec=1s
 Persistent=true
 
