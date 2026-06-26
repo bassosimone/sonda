@@ -6,11 +6,7 @@ package scan
 import (
 	"context"
 	"log/slog"
-	"net"
-	"net/http"
-	"net/netip"
-	"os/exec"
-	"time"
+	"sync"
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/netstack"
@@ -26,7 +22,6 @@ func Main(ctx context.Context, args []string) error {
 	// Set command defaults.
 	var (
 		fail       = false
-		maxAge     = 6 * time.Hour
 		metricsDir = "."
 		spoolDir   = "."
 	)
@@ -39,135 +34,110 @@ func Main(ctx context.Context, args []string) error {
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.BoolVar(&fail, 'f', "fail", "Exit with error on first failure.")
 	fset.StringVar(&metricsDir, 0, "metrics-dir", "Write daily Parquet files to `DIR` instead of `@DEFAULT_VALUE@`.")
-	fset.DurationVar(&maxAge, 0, "spool-max-age", "Remove spans older than `DURATION` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
 	// Emit structured logs to stderr.
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
-	// Honor the `-f/--fail` command line flag.
-	maybeExit := env.Exit
-	if !fail {
-		maybeExit = func(_ int) {}
-	}
-
-	// Create the measurer for running operations through the spool.
+	// Construct shared dependencies.
 	measurer := netstack.NewSondaMeasurer(env, spoolDir)
-
-	// Resolve stun.l.google.com to obtain STUN server addresses.
 	resolver := netstack.NewResolver(netstack.NewDNSOverUDPTransport(measurer))
-	stunAddrs, err := resolver.LookupHost(ctx, "stun.l.google.com")
-	if err != nil {
-		logger.Warn("failed to resolve STUN server", slog.Any("err", err))
-		maybeExit(1)
+	state := &sharedState{}
+
+	// Build the runner registry.
+	runners := map[string]stepRunner{
+		"stun":           &stunRunner{Logger: logger, Measurer: measurer, Resolver: resolver, State: state},
+		"dns-over-udp":   &dnsOverUDPRunner{Logger: logger, Measurer: measurer, Resolver: resolver, State: state},
+		"dns-over-https": &dnsOverHTTPSRunner{Logger: logger, Measurer: measurer, Resolver: resolver, State: state},
+		"https":          &httpsRunner{Logger: logger, Measurer: measurer, Resolver: resolver, State: state},
+		"extract":        &extractRunner{Env: env, Logger: logger, SpoolDir: spoolDir},
+		"load":           &loadRunner{Env: env, Logger: logger, MetricsDir: metricsDir, SpoolDir: spoolDir},
+		"gc":             &gcRunner{Env: env, Logger: logger, SpoolDir: spoolDir},
 	}
 
-	// Perform STUN lookups to discover the reflexive address and
-	// inject them as contextual tags for subsequent measurements.
-	if len(stunAddrs) > 0 {
-		reflexives, err := stunLookup(ctx, measurer, stunAddrs, "19302")
-		if err != nil {
-			logger.Warn("STUN lookup failed", slog.Any("err", err))
-			maybeExit(1)
+	// Execute each step in order.
+	for _, step := range defaultSteps {
+		runner, ok := runners[step.Run]
+		if !ok {
+			logger.Warn("unknown step", slog.String("run", step.Run))
+			continue
 		}
-		var tags []string
-		for _, addr := range reflexives {
-			if ip, err := netip.ParseAddr(addr); err == nil {
-				if ip.Is4() {
-					tags = append(tags, "reflexiveAddrV4="+addr)
-				} else {
-					tags = append(tags, "reflexiveAddrV6="+addr)
-				}
+		if err := runner.RunStep(ctx, step.With); err != nil {
+			logger.Warn("step failed", slog.String("name", step.Name), slog.Any("err", err))
+			if fail {
+				env.Exit(1)
 			}
-		}
-		if len(tags) > 0 {
-			ctx = netstack.ContextWithTags(ctx, tags)
-		}
-	}
-
-	// Resolve dns.google to obtain DNS server addresses.
-	dnsAddrs, err := resolver.LookupHost(ctx, "dns.google")
-	if err != nil {
-		logger.Warn("failed to resolve DNS server", slog.Any("err", err))
-		maybeExit(1)
-	}
-
-	// Perform DNS-over-UDP lookups for www.example.com against each address.
-	for _, addr := range dnsAddrs {
-		udp := netstack.NewDNSOverUDPTransport(measurer)
-		udp.ServerAddr = net.JoinHostPort(addr, "53")
-		r := netstack.NewResolver(udp)
-		if _, err := r.LookupHost(ctx, "www.example.com"); err != nil {
-			logger.Warn("DNS over UDP failed", slog.String("addr", addr), slog.Any("err", err))
-			maybeExit(1)
-		}
-	}
-
-	// Perform DNS-over-HTTPS lookups for www.example.com against each address.
-	for _, addr := range dnsAddrs {
-		doh := netstack.NewDNSOverHTTPSTransport(measurer)
-		doh.ServerAddr = net.JoinHostPort(addr, "443")
-		r := netstack.NewResolver(doh)
-		if _, err := r.LookupHost(ctx, "www.example.com"); err != nil {
-			logger.Warn("DNS over HTTPS failed", slog.String("addr", addr), slog.Any("err", err))
-			maybeExit(1)
-		}
-	}
-
-	// TODO(bassosimone): the HTTPTransport tries addresses sequentially and
-	// stops at the first success. For measurement purposes, we should instead
-	// resolve explicitly and run SondaMeasureHTTPS against each address.
-
-	// Perform an HTTPS GET of https://www.example.com/.
-	txp := netstack.NewHTTPTransport(measurer, resolver)
-	httpsReq, err := http.NewRequestWithContext(ctx, "GET", "https://www.example.com/", http.NoBody)
-	if err != nil {
-		logger.Warn("failed to create HTTPS request", slog.Any("err", err))
-		maybeExit(1)
-	} else {
-		resp, err := txp.RoundTrip(httpsReq)
-		if err != nil {
-			logger.Warn("HTTPS GET failed", slog.Any("err", err))
-			maybeExit(1)
-		} else {
-			resp.Body.Close()
-		}
-	}
-
-	// Extract Parquet metrics from recent spans.
-	exe, err := env.Executable()
-	if err != nil {
-		logger.Warn("failed to find executable", slog.Any("err", err))
-		maybeExit(1)
-	} else {
-		extractArgs := []string{"spool", "extract", "--spool-dir", spoolDir, "--max-age", "1h"}
-		cmd := exec.CommandContext(ctx, exe, extractArgs...)
-		if err := env.RunCommand(cmd); err != nil {
-			logger.Warn("spool extract failed", slog.Any("err", err))
-			maybeExit(1)
-		}
-	}
-
-	// Load span metrics into daily aggregate Parquet files.
-	if exe != "" {
-		loadArgs := []string{"metrics", "load", "--spool-dir", spoolDir, "--metrics-dir", metricsDir}
-		cmd := exec.CommandContext(ctx, exe, loadArgs...)
-		if err := env.RunCommand(cmd); err != nil {
-			logger.Warn("metrics load failed", slog.Any("err", err))
-			maybeExit(1)
-		}
-	}
-
-	// Garbage-collect old span directories.
-	if exe != "" {
-		gcArgs := []string{"spool", "gc", "--spool-dir", spoolDir, "--max-age", maxAge.String()}
-		cmd := exec.CommandContext(ctx, exe, gcArgs...)
-		if err := env.RunCommand(cmd); err != nil {
-			logger.Warn("spool gc failed", slog.Any("err", err))
-			maybeExit(1)
 		}
 	}
 
 	return nil
+}
+
+// singleStep describes a single operation in a scan workflow.
+type singleStep struct {
+	// Name is a human-readable label for this step.
+	Name string
+
+	// Run selects the operation to execute (e.g., "stun",
+	// "dns-over-udp", "dns-over-https", "https", "extract",
+	// "load", "gc").
+	Run string
+
+	// With contains operation-specific parameters (e.g., "server",
+	// "query", "host").
+	With map[string]string
+}
+
+// stepRunner executes a step's operation.
+type stepRunner interface {
+	RunStep(ctx context.Context, with map[string]string) error
+}
+
+// defaultSteps defines the default scan workflow.
+var defaultSteps = []singleStep{
+	{Name: "STUN lookup", Run: "stun", With: map[string]string{
+		"server": "stun.l.google.com",
+	}},
+	{Name: "DNS over UDP via Google", Run: "dns-over-udp", With: map[string]string{
+		"server": "dns.google",
+		"query":  "www.example.com",
+	}},
+	{Name: "DNS over HTTPS via Google", Run: "dns-over-https", With: map[string]string{
+		"server": "dns.google",
+		"query":  "www.example.com",
+	}},
+	{Name: "HTTPS GET www.example.com", Run: "https", With: map[string]string{
+		"host": "www.example.com",
+	}},
+	{Name: "Extract metrics", Run: "extract", With: map[string]string{}},
+	{Name: "Load metrics", Run: "load", With: map[string]string{}},
+	{Name: "Garbage collect", Run: "gc", With: map[string]string{}},
+}
+
+// sharedState holds state that steps can read and write during a scan.
+type sharedState struct {
+	mu   sync.Mutex
+	tags map[string]string
+}
+
+// SetTag sets a tag by key, overwriting any previous value.
+func (s *sharedState) SetTag(key, value string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.tags == nil {
+		s.tags = make(map[string]string)
+	}
+	s.tags[key] = value
+}
+
+// Tags returns the current tags as a slice of "key=value" strings.
+func (s *sharedState) Tags() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	result := make([]string, 0, len(s.tags))
+	for k, v := range s.tags {
+		result = append(result, k+"="+v)
+	}
+	return result
 }
