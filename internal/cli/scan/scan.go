@@ -7,6 +7,7 @@ import (
 	"context"
 	"log/slog"
 	"net"
+	"net/http"
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/netstack"
@@ -91,6 +92,26 @@ func Main(ctx context.Context, args []string) error {
 		if _, err := r.LookupHost(ctx, "www.example.com"); err != nil {
 			logger.Warn("dnsOverHTTPSFailed", slog.String("addr", addr), slog.Any("err", err))
 			maybeExit(1)
+		}
+	}
+
+	// TODO(bassosimone): the HTTPTransport tries addresses sequentially and
+	// stops at the first success. For measurement purposes, we should instead
+	// resolve explicitly and run SondaMeasureHTTPS against each address.
+
+	// Perform an HTTPS GET of https://www.example.com/.
+	txp := netstack.NewHTTPTransport(measurer, resolver)
+	httpsReq, err := http.NewRequestWithContext(ctx, "GET", "https://www.example.com/", http.NoBody)
+	if err != nil {
+		logger.Warn("newHTTPSRequestFailed", slog.Any("err", err))
+		maybeExit(1)
+	} else {
+		resp, err := txp.RoundTrip(httpsReq)
+		if err != nil {
+			logger.Warn("httpsGetFailed", slog.Any("err", err))
+			maybeExit(1)
+		} else {
+			resp.Body.Close()
 		}
 	}
 
