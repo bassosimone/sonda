@@ -8,6 +8,8 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os/exec"
+	"time"
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/netstack"
@@ -23,6 +25,7 @@ func Main(ctx context.Context, args []string) error {
 	// Set command defaults.
 	var (
 		fail     = false
+		maxAge   = 6 * time.Hour
 		spoolDir = "."
 	)
 
@@ -33,6 +36,7 @@ func Main(ctx context.Context, args []string) error {
 	fset.Stdout = env.Stdout
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.BoolVar(&fail, 'f', "fail", "Exit with error on first failure.")
+	fset.DurationVar(&maxAge, 0, "spool-max-age", "Remove spans older than `DURATION` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
@@ -112,6 +116,20 @@ func Main(ctx context.Context, args []string) error {
 			maybeExit(1)
 		} else {
 			resp.Body.Close()
+		}
+	}
+
+	// Garbage-collect old span directories.
+	exe, err := env.Executable()
+	if err != nil {
+		logger.Warn("executableFailed", slog.Any("err", err))
+		maybeExit(1)
+	} else {
+		gcArgs := []string{"spool", "gc", "--spool-dir", spoolDir, "--max-age", maxAge.String()}
+		cmd := exec.CommandContext(ctx, exe, gcArgs...)
+		if err := env.RunCommand(cmd); err != nil {
+			logger.Warn("spoolGCFailed", slog.Any("err", err))
+			maybeExit(1)
 		}
 	}
 
