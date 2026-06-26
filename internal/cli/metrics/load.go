@@ -172,6 +172,10 @@ func loadDailyPath(metricsDir, day string) string {
 	)
 }
 
+// TODO(bassosimone): loadAppendDaily is O(n²) for bulk loads because it
+// reads and rewrites the daily file for every span. Batch all spans by day
+// first, then write each daily file once.
+
 // loadAppendDaily appends rows to the daily aggregate Parquet file,
 // reading existing rows first if the file already exists.
 func loadAppendDaily(metricsDir, day string, newRows []structured.Metrics) error {
