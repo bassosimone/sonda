@@ -135,12 +135,22 @@ func Main(ctx context.Context, args []string) error {
 		}
 	}
 
-	// Garbage-collect old span directories.
+	// Extract Parquet metrics from recent spans.
 	exe, err := env.Executable()
 	if err != nil {
 		logger.Warn("executableFailed", slog.Any("err", err))
 		maybeExit(1)
 	} else {
+		extractArgs := []string{"spool", "extract", "--spool-dir", spoolDir, "--max-age", "1h"}
+		cmd := exec.CommandContext(ctx, exe, extractArgs...)
+		if err := env.RunCommand(cmd); err != nil {
+			logger.Warn("spoolExtractFailed", slog.Any("err", err))
+			maybeExit(1)
+		}
+	}
+
+	// Garbage-collect old span directories.
+	if exe != "" {
 		gcArgs := []string{"spool", "gc", "--spool-dir", spoolDir, "--max-age", maxAge.String()}
 		cmd := exec.CommandContext(ctx, exe, gcArgs...)
 		if err := env.RunCommand(cmd); err != nil {

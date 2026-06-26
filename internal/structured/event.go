@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package structured defines the union type for all structured log events
-// emitted by sonda measurement commands.
 package structured
 
 import (

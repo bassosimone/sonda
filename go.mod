@@ -11,11 +11,14 @@ require (
 	github.com/bassosimone/runtimex v0.0.0-20260615112505-ee72c4f0769e
 	github.com/bassosimone/vclip v0.0.0-20260623171605-f585a395e8a3
 	github.com/bassosimone/vflag v0.0.0-20260623165635-b59716a8b461
+	github.com/google/uuid v1.6.0
 	github.com/miekg/dns v1.1.72
+	github.com/parquet-go/parquet-go v0.30.1
 	github.com/pion/stun/v3 v3.1.6
 )
 
 require (
+	github.com/andybalholm/brotli v1.2.1 // indirect
 	github.com/bassosimone/dnsoverhttps v0.0.0-20260617121343-ce310417d710 // indirect
 	github.com/bassosimone/dnsoverstream v0.0.0-20260617121659-cac6d5976a4a // indirect
 	github.com/bassosimone/flagparser v0.0.0-20260615115304-f1a0193b86ca // indirect
@@ -26,11 +29,15 @@ require (
 	github.com/bassosimone/safeconn v0.0.0-20260623163941-cb87a84f7523 // indirect
 	github.com/bassosimone/sud v0.0.0-20260615113322-cf96916c520d // indirect
 	github.com/bassosimone/textwrap v0.0.0-20260623161521-ecf2c54815db // indirect
-	github.com/google/uuid v1.6.0 // indirect
+	github.com/klauspost/compress v1.18.6 // indirect
+	github.com/parquet-go/bitpack v1.0.0 // indirect
+	github.com/parquet-go/jsonlite v1.5.2 // indirect
+	github.com/pierrec/lz4/v4 v4.1.27 // indirect
 	github.com/pion/dtls/v3 v3.1.4 // indirect
 	github.com/pion/logging v0.2.4 // indirect
 	github.com/pion/transport/v4 v4.0.2 // indirect
 	github.com/quic-go/quic-go v0.60.0 // indirect
+	github.com/twpayne/go-geom v1.6.1 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
 	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/mod v0.37.0 // indirect
@@ -39,4 +46,5 @@ require (
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
 	golang.org/x/tools v0.46.0 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 )

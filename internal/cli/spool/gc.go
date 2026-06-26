@@ -70,6 +70,8 @@ func gcWalkDir(env *testable.Environ, dir string, cutoff time.Time, depth int) {
 // gcMaybeRemoveSpan removes a span directory if its UUIDv7 timestamp is older
 // than the cutoff. Handles both final and .tmp directories.
 func gcMaybeRemoveSpan(env *testable.Environ, parent, name string, cutoff time.Time) {
+	// Entries are UUIDv7 with an optional `.tmp` prefix if in progress
+	// that said it's fine to delete very old in progress entries.
 	uuidStr := strings.TrimSuffix(name, ".tmp")
 	id, err := uuid.Parse(uuidStr)
 	if err != nil {
@@ -78,11 +80,15 @@ func gcMaybeRemoveSpan(env *testable.Environ, parent, name string, cutoff time.T
 	if id.Version() != 7 {
 		return
 	}
+
+	// Determine whether this entry is too new to remove.
 	sec, nsec := id.Time().UnixTime()
 	ts := time.Unix(sec, nsec)
 	if !ts.Before(cutoff) {
 		return
 	}
+
+	// Remove the directory entry.
 	spanPath := filepath.Join(parent, name)
 	if err := os.RemoveAll(spanPath); err != nil {
 		fmt.Fprintf(env.Stderr, "sonda spool gc: %s\n", err)
