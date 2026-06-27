@@ -7,9 +7,9 @@ personal tool for monitoring the access-network quality.
 
 - [ ] adapt `README.md` to be like e.g. `npte` or `runtimex`
 
-- [ ] add `.github/dependabot.yml`
+- [x] add `.github/dependabot.yml`
 
-- [ ] add `.github/workflows/go.yml`
+- [x] add `.github/workflows/go.yml`
 
 - [x] add `man/` with manpage
 
