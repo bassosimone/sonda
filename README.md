@@ -1,6 +1,6 @@
 # Sonda
 
-[![Go](https://github.com/bassosimone/sonda/actions/workflows/go.yml/badge.svg)](https://github.com/bassosimone/sonda/actions) [![Python](https://github.com/bassosimone/sonda/actions/workflows/python.yml/badge.svg)](https://github.com/bassosimone/sonda/actions)
+[![Go](https://github.com/bassosimone/sonda/actions/workflows/go.yml/badge.svg)](https://github.com/bassosimone/sonda/actions) [![Python](https://github.com/bassosimone/sonda/actions/workflows/python.yml/badge.svg)](https://github.com/bassosimone/sonda/actions) [![codecov](https://codecov.io/gh/bassosimone/sonda/branch/main/graph/badge.svg)](https://codecov.io/gh/bassosimone/sonda)
 
 `sonda` is an experimental network probe that periodically measures DNS,
 STUN, and other network properties, storing structured results in a local
