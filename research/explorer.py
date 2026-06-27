@@ -367,7 +367,7 @@ def render_waterfall_section(wf, title, key_prefix):
         "Time (UTC)", "Target", "Provider",
         "Operations", "Duration (ms)", "Error",
     ]
-    display_df["Time"] = display_df["Time"].dt.strftime("%b %d %H:%M:%S")
+    display_df["Time (UTC)"] = display_df["Time (UTC)"].dt.strftime("%b %d %H:%M:%S")
 
     span_labels = [
         f"#{i} {row['Time (UTC)']} | {row['Target']} | {row['Provider']}"
