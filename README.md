@@ -13,5 +13,5 @@ personal tool for monitoring the access-network quality.
 
 - [x] add `man/` with manpage
 
-- [ ] add `CLAUDE.md`
+- [x] add `CLAUDE.md`
 
