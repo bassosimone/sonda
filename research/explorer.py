@@ -252,7 +252,7 @@ def plot_timeseries(df: pd.DataFrame, group_col: str, value_col: str = "duration
             line=dict(color=color, width=2, dash=dash),
         ))
     fig.update_layout(
-        xaxis_title="time", yaxis_title=ylabel,
+        xaxis_title="time (UTC)", yaxis_title=ylabel,
         xaxis=dict(tickformat="%d %b %H:%M", showgrid=True),
         yaxis_showgrid=True, hovermode="x unified",
     )
@@ -364,13 +364,13 @@ def render_waterfall_section(wf, title, key_prefix):
         "operations", "wall_time_ms", "has_error",
     ]].copy()
     display_df.columns = [
-        "Time", "Target", "Provider",
+        "Time (UTC)", "Target", "Provider",
         "Operations", "Duration (ms)", "Error",
     ]
     display_df["Time"] = display_df["Time"].dt.strftime("%b %d %H:%M:%S")
 
     span_labels = [
-        f"#{i} {row['Time']} | {row['Target']} | {row['Provider']}"
+        f"#{i} {row['Time (UTC)']} | {row['Target']} | {row['Provider']}"
         f" | {row['Operations']} | {row['Duration (ms)']}ms"
         for i, (_, row) in enumerate(display_df.iterrows())
     ]
@@ -952,7 +952,7 @@ def render_errors_tab(fdf):
             name=phase, line=dict(color=color, width=2),
         ))
     fig.update_layout(
-        xaxis_title="time", yaxis_title="error rate (%)",
+        xaxis_title="time (UTC)", yaxis_title="error rate (%)",
         xaxis=dict(tickformat="%d %b %H:%M", showgrid=True),
         yaxis_showgrid=True, hovermode="x unified",
     )
