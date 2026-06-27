@@ -1,0 +1,27 @@
+.TH SONDA 1 "@DATE@" "sonda @VERSION@" "User Commands"
+.SH NAME
+sonda \- network quality of experience probe
+.SH SYNOPSIS
+.B sonda
+.I command
+.RI [ args ...]
+.SH DESCRIPTION
+.B sonda
+is an experimental network probe that periodically measures DNS, STUN,
+and other network properties, storing structured results in a local spool
+for later analysis.
+.PP
+This tool is under active development and its interface may change.
+For the full list of commands and per\-command help, run:
+.PP
+.RS 4
+.B sonda \-\-help
+.br
+.BI "sonda " command " \-\-help"
+.RE
+.SH AUTHOR
+Simone Basso <bassosimone@gmail.com>
+.SH LICENSE
+GPL\-3.0\-or\-later. See
+.I /usr/share/common-licenses/GPL-3
+for the full text.

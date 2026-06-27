@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/bassosimone/deferexit"
+	"github.com/bassosimone/sonda/internal/buildcfg"
 	"github.com/bassosimone/sonda/internal/cli/measure"
 	"github.com/bassosimone/sonda/internal/cli/metrics"
 	"github.com/bassosimone/sonda/internal/cli/scan"
@@ -26,6 +27,9 @@ func main() {
 	disp.Exit = env.Exit
 	disp.Stderr = env.Stderr
 	disp.Stdout = env.Stdout
+
+	// Wire version reporting.
+	disp.AddVersionHandlers(buildcfg.Version)
 
 	// Add subcommands.
 	disp.AddCommand("measure", vclip.CommandFunc(measure.Main), "Run a single low-level network measurement.")

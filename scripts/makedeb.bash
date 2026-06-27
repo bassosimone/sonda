@@ -2,7 +2,7 @@
 set -euo pipefail
 
 cd "$(dirname "$(dirname "$(readlink -f "$0")")")"
-ver="0.0.0~$(date -u +%Y%m%d%H%M%S)-1"
+ver="$(git describe --tags 2>/dev/null | sed 's/^v//' || echo '0.0.0')~$(date -u +%Y%m%d%H%M%S)-1"
 stage="$(mktemp -d)"
 chmod 755 "$stage"
 
@@ -13,8 +13,16 @@ set -x
 
 # Build the binary.
 install -d "$stage/usr/bin"
-go build -ldflags="-s -w" -o "$stage/usr/bin/sonda" .
+ldflags_buildcfg="github.com/bassosimone/sonda/internal/buildcfg"
+go build -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" -o "$stage/usr/bin/sonda" .
 chmod 755 "$stage/usr/bin/sonda"
+
+# Install manpage.
+install -d "$stage/usr/share/man/man1"
+sed -e "s/@VERSION@/$ver/g" -e "s/@DATE@/$(date -u +%Y-%m-%d)/g" \
+    man/sonda.1 > "$stage/usr/share/man/man1/sonda.1"
+gzip -9n "$stage/usr/share/man/man1/sonda.1"
+chmod 644 "$stage/usr/share/man/man1/sonda.1.gz"
 
 # Install systemd units.
 install -d "$stage/lib/systemd/system"

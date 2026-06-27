@@ -11,7 +11,7 @@ personal tool for monitoring the access-network quality.
 
 - [ ] add `.github/workflows/go.yml`
 
-- [ ] add `man/` with manpage
+- [x] add `man/` with manpage
 
 - [ ] add `CLAUDE.md`
 
