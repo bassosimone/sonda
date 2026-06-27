@@ -1,3 +1,5 @@
 *.deb
+__pycache__/
 /sonda
 /sonda.exe
+/.venv/
