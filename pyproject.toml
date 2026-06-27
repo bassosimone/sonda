@@ -10,3 +10,8 @@ dependencies = [
     "pyarrow",
     "streamlit",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+]
