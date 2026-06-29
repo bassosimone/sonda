@@ -247,9 +247,10 @@ def plot_timeseries(df: pd.DataFrame, group_col: str, value_col: str = "duration
         if len(median) == 0:
             continue
         fig.add_trace(go.Scatter(
-            x=median.index, y=median.values, mode="lines",
+            x=median.index, y=median.values, mode="lines+markers",
             name=name,
             line=dict(color=color, width=2, dash=dash),
+            marker=dict(size=4),
         ))
     fig.update_layout(
         xaxis_title="time (UTC)", yaxis_title=ylabel,
@@ -948,8 +949,9 @@ def render_errors_tab(fdf):
             continue
         color = OP_COLORS.get(OP_LABELS_INV.get(phase, ""), "#999999")
         fig.add_trace(go.Scatter(
-            x=hourly.index, y=hourly.values, mode="lines",
+            x=hourly.index, y=hourly.values, mode="lines+markers",
             name=phase, line=dict(color=color, width=2),
+            marker=dict(size=4),
         ))
     fig.update_layout(
         xaxis_title="time (UTC)", yaxis_title="error rate (%)",
