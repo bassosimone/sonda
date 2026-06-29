@@ -757,27 +757,43 @@ def render_ttfb_tab(fdf):
         st.warning("Need both DNS and HTTP data to estimate TTFB.")
         return
 
+    vantage_ips = set()
+    for col in ("reflexive_addr_v4", "reflexive_addr_v6"):
+        if col in fdf.columns:
+            vantage_ips.update(fdf[col].dropna().unique())
+    vantage_ips = sorted(vantage_ips)
+
     dns_providers = sorted(dns_df["provider"].unique())
     dns_protocols = sorted(dns_df["measurement"].unique())
     target_providers = sorted(http_df["provider"].unique())
 
     st.subheader("Estimated TTFB distribution")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
+        sel_vantage = st.selectbox(
+            "Vantage point", vantage_ips, key="ttfb_vantage",
+        )
+    with col2:
         sel_dns_provider = st.selectbox(
             "DNS resolver", dns_providers, key="ttfb_dns_provider",
         )
-    with col2:
+    with col3:
         sel_dns_protocol = st.selectbox(
             "DNS protocol", dns_protocols, key="ttfb_dns_protocol",
         )
-    with col3:
+    with col4:
         sel_target = st.selectbox(
             "Target", target_providers, key="ttfb_target",
         )
 
+    vantage_mask = pd.Series(False, index=fdf.index)
+    for col in ("reflexive_addr_v4", "reflexive_addr_v6"):
+        if col in fdf.columns:
+            vantage_mask = vantage_mask | (fdf[col] == sel_vantage)
+
     dns_for_provider = dns_df[
+        vantage_mask.reindex(dns_df.index, fill_value=False) &
         (dns_df["provider"] == sel_dns_provider) &
         (dns_df["measurement"] == sel_dns_protocol)
     ]
@@ -787,7 +803,10 @@ def render_ttfb_tab(fdf):
         doh_total = span_total_duration(fdf, dns_for_provider["span_id"])
         dns_samples = doh_total["duration_ms"].dropna().values
 
-    target_http = http_df[http_df["provider"] == sel_target]
+    target_http = http_df[
+        vantage_mask.reindex(http_df.index, fill_value=False) &
+        (http_df["provider"] == sel_target)
+    ]
     conn_total = span_total_duration(fdf, target_http["span_id"])
     conn_samples = conn_total["duration_ms"].dropna().values
 
