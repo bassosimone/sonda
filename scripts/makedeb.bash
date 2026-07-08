@@ -2,7 +2,7 @@
 set -euo pipefail
 
 cd "$(dirname "$(dirname "$(readlink -f "$0")")")"
-ver="$(git describe --tags 2>/dev/null | sed 's/^v//' || echo '0.0.0')~$(date -u +%Y%m%d%H%M%S)-1"
+ver="$(git describe --tags 2>/dev/null | sed 's/^v//')~$(date -u +%Y%m%d%H%M%S)-1"
 stage="$(mktemp -d)"
 chmod 755 "$stage"
 
@@ -52,7 +52,8 @@ cat > "$stage/DEBIAN/conffiles" <<'CONFFILES'
 CONFFILES
 chmod 644 "$stage/DEBIAN/conffiles"
 
-# Generate md5sums.
+# Generate md5sums of every shipped file (everything outside DEBIAN/).
+# Paths are filesystem-relative without a leading slash, per dpkg format.
 ( cd "$stage" && find . -type f -not -path './DEBIAN/*' -printf '%P\n' \
   | xargs -r md5sum > DEBIAN/md5sums )
 chmod 644 "$stage/DEBIAN/md5sums"

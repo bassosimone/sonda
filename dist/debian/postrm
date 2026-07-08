@@ -5,6 +5,7 @@ case "$1" in
     purge)
         # Remove the spool directory and any collected data.
         rm -rf /var/spool/sonda
+        rm -rf /var/lib/sonda
 
         # Remove the _sonda system user and group.
         if getent passwd _sonda >/dev/null 2>&1; then
