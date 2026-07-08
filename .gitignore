@@ -1,5 +1,6 @@
 *.deb
 __pycache__/
+/coverage.out
 /sonda
 /sonda.exe
 /.venv/
