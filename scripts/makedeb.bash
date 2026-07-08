@@ -2,7 +2,7 @@
 set -euo pipefail
 
 cd "$(dirname "$(dirname "$(readlink -f "$0")")")"
-ver="$(git describe --tags 2>/dev/null | sed 's/^v//')~$(date -u +%Y%m%d%H%M%S)-1"
+ver="$(git describe --tags | sed 's/^v//')~$(date -u +%Y%m%d%H%M%S)-1"
 stage="$(mktemp -d)"
 chmod 755 "$stage"
 
