@@ -3,14 +3,14 @@ module github.com/bassosimone/sonda
 go 1.26.4
 
 require (
-	github.com/bassosimone/closepool v0.0.0-20260817125228-04059f8b42c1
-	github.com/bassosimone/deferexit v0.0.0-20260817125430-6ac3f4d6768a
-	github.com/bassosimone/dnscodec v0.0.0-20260817130841-5191fab705bf
-	github.com/bassosimone/errclass v0.0.0-20260817125659-c83ce110ced7
-	github.com/bassosimone/nop v0.0.0-20260821120340-b6bf9c249b2e
-	github.com/bassosimone/runtimex v0.0.0-20260817130226-a470a996118d
-	github.com/bassosimone/vclip v0.0.0-20260821120826-16cb19278b28
-	github.com/bassosimone/vflag v0.0.0-20260821094319-8b4cca87cb7a
+	github.com/bassosimone/closepool v0.0.0-20260823101641-96f861c1173c
+	github.com/bassosimone/deferexit v0.0.0-20260823101823-0f95a017ebaf
+	github.com/bassosimone/dnscodec v0.0.0-20260824080712-9849cea06676
+	github.com/bassosimone/errclass v0.0.0-20260823102002-b6487371e21a
+	github.com/bassosimone/nop v0.0.0-20260826161927-d2687c7393d7
+	github.com/bassosimone/runtimex v0.0.0-20260823103059-603841e26ca3
+	github.com/bassosimone/vclip v0.0.0-20260826162233-c160f756f16c
+	github.com/bassosimone/vflag v0.0.0-20260826080943-520f354fef69
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/uuid v1.6.0
 	github.com/miekg/dns v1.1.73
@@ -20,16 +20,16 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.2.2 // indirect
-	github.com/bassosimone/dnsoverhttps v0.0.0-20260821093254-a83043300529 // indirect
-	github.com/bassosimone/dnsoverstream v0.0.0-20260821093515-ab70d4cc3387 // indirect
-	github.com/bassosimone/flagparser v0.0.0-20260817131103-382c730be712 // indirect
-	github.com/bassosimone/flagscanner v0.0.0-20260817125829-500b835a9da5 // indirect
-	github.com/bassosimone/iox v0.0.0-20260821091747-84c4362d303b // indirect
-	github.com/bassosimone/minest v0.0.0-20260821093816-292735704d1a // indirect
-	github.com/bassosimone/must v0.0.0-20260821092040-0deb5316b37d // indirect
-	github.com/bassosimone/safeconn v0.0.0-20260821092244-4a32cfbd19f5 // indirect
-	github.com/bassosimone/sud v0.0.0-20260817130418-9ae81fa039e4 // indirect
-	github.com/bassosimone/textwrap v0.0.0-20260721155105-b5619ff4e449 // indirect
+	github.com/bassosimone/dnsoverhttps v0.0.0-20260826073019-ca0a822a5ab2 // indirect
+	github.com/bassosimone/dnsoverstream v0.0.0-20260826073304-36e321447375 // indirect
+	github.com/bassosimone/flagparser v0.0.0-20260824081041-6c062c926c7b // indirect
+	github.com/bassosimone/flagscanner v0.0.0-20260823102942-9c9efa51e541 // indirect
+	github.com/bassosimone/iox v0.0.0-20260825073803-437e2897df22 // indirect
+	github.com/bassosimone/minest v0.0.0-20260826073425-c29c4de182ad // indirect
+	github.com/bassosimone/must v0.0.0-20260825074710-ce6682ec0b5f // indirect
+	github.com/bassosimone/safeconn v0.0.0-20260825075154-716ecc55474d // indirect
+	github.com/bassosimone/sud v0.0.0-20260823103232-ed5fcedb72f9 // indirect
+	github.com/bassosimone/textwrap v0.0.0-20260823103449-8d700213ddc3 // indirect
 	github.com/klauspost/compress v1.19.2 // indirect
 	github.com/parquet-go/bitpack v1.1.0 // indirect
 	github.com/parquet-go/jsonlite v1.5.5 // indirect
