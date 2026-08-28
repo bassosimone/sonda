@@ -1,6 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
+# Debian policy wants 0755 directories; `install -d` applies the build
+# user's umask to the intermediate directories it creates.
+umask 022
+
 cd "$(dirname "$(dirname "$(readlink -f "$0")")")"
 ver="$(git describe --tags | sed 's/^v//')~$(date -u +%Y%m%d%H%M%S)-1"
 stage="$(mktemp -d)"
