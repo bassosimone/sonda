@@ -1,4 +1,5 @@
 #!/bin/bash
+# Build deps: git, go, objdump (computes the libc6 dependency), dpkg-deb.
 set -euo pipefail
 
 # Debian policy wants 0755 directories; `install -d` applies the build
