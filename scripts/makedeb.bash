@@ -40,9 +40,9 @@ gzip -9n "$stage/usr/share/man/man1/sonda.1"
 chmod 644 "$stage/usr/share/man/man1/sonda.1.gz"
 
 # Install systemd units.
-install -d "$stage/lib/systemd/system"
-install -m 644 dist/unix/lib/systemd/system/sonda-scan.service "$stage/lib/systemd/system/"
-install -m 644 dist/unix/lib/systemd/system/sonda-scan.timer "$stage/lib/systemd/system/"
+install -d "$stage/usr/lib/systemd/system"
+install -m 644 dist/unix/usr/lib/systemd/system/sonda-scan.service "$stage/usr/lib/systemd/system/"
+install -m 644 dist/unix/usr/lib/systemd/system/sonda-scan.timer "$stage/usr/lib/systemd/system/"
 
 # Install scan config file.
 install -d "$stage/etc/sonda/scan"
