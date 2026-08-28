@@ -35,18 +35,18 @@ libc_ver="$(objdump -T "$stage/usr/bin/sonda" \
 # Install manpage.
 install -d "$stage/usr/share/man/man1"
 sed -e "s/@VERSION@/$ver/g" -e "s/@DATE@/$(date -u +%Y-%m-%d)/g" \
-    man/sonda.1 > "$stage/usr/share/man/man1/sonda.1"
+    dist/unix/usr/share/man/man1/sonda.1 > "$stage/usr/share/man/man1/sonda.1"
 gzip -9n "$stage/usr/share/man/man1/sonda.1"
 chmod 644 "$stage/usr/share/man/man1/sonda.1.gz"
 
 # Install systemd units.
 install -d "$stage/lib/systemd/system"
-install -m 644 dist/systemd/sonda-scan.service "$stage/lib/systemd/system/"
-install -m 644 dist/systemd/sonda-scan.timer "$stage/lib/systemd/system/"
+install -m 644 dist/unix/lib/systemd/system/sonda-scan.service "$stage/lib/systemd/system/"
+install -m 644 dist/unix/lib/systemd/system/sonda-scan.timer "$stage/lib/systemd/system/"
 
 # Install scan config file.
 install -d "$stage/etc/sonda/scan"
-install -m 644 etc/sonda/scan/default.yml "$stage/etc/sonda/scan/"
+install -m 644 dist/unix/etc/sonda/scan/default.yml "$stage/etc/sonda/scan/"
 
 # Install copyright.
 install -d "$stage/usr/share/doc/sonda"
