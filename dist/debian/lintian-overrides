@@ -1,0 +1,4 @@
+# We deliberately ship no Debian changelog: the package is built
+# ad hoc from git, where the history lives; a changelog would just
+# duplicate `git log` at build time.
+sonda: no-changelog

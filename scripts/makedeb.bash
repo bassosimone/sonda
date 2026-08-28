@@ -52,6 +52,10 @@ install -m 644 etc/sonda/scan/default.yml "$stage/etc/sonda/scan/"
 install -d "$stage/usr/share/doc/sonda"
 install -m 644 dist/debian/copyright "$stage/usr/share/doc/sonda/"
 
+# Install lintian overrides.
+install -d "$stage/usr/share/lintian/overrides"
+install -m 644 dist/debian/lintian-overrides "$stage/usr/share/lintian/overrides/sonda"
+
 # Install control file with substitutions.
 #
 # Note: binary control files do not allow comments: strip them.
