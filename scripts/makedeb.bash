@@ -1,5 +1,6 @@
 #!/bin/bash
-# Build deps: git, go, objdump (computes the libc6 dependency), dpkg-deb.
+# Build deps: git, go, objdump (computes the libc6 dependency),
+# dpkg-deb, lintian.
 set -euo pipefail
 
 # Debian policy wants 0755 directories; `install -d` applies the build
@@ -82,3 +83,6 @@ chmod 644 "$stage/DEBIAN/conffiles"
 chmod 644 "$stage/DEBIAN/md5sums"
 
 dpkg-deb --root-owner-group --build "$stage" "sonda_${ver}_${arch}.deb"
+
+# Check the package for policy violations.
+lintian --tag-display-limit 0 "sonda_${ver}_${arch}.deb"
