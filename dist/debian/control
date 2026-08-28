@@ -5,7 +5,16 @@ Priority: optional
 Architecture: @ARCH@
 Maintainer: Simone Basso <bassosimone@gmail.com>
 Homepage: https://github.com/bassosimone/sonda
-Depends: libc6 (>= @LIBC@), systemd
+# Comment lines are stripped by makedeb.bash: binary control files do
+# not allow comments, but we want derivations next to the constants.
+#
+# adduser: postinst creates the _sonda system user with adduser and
+# postrm removes it with deluser; both live in the adduser package,
+# which is not essential, so we must declare it.
+#
+# @LIBC@ is the highest GLIBC_x.y symbol version referenced by the
+# sonda binary, computed by makedeb.bash at build time.
+Depends: adduser, libc6 (>= @LIBC@), systemd
 Description: Network quality of experience probe
  Periodically measures DNS, STUN, and other network properties,
  storing structured results in a local spool for later analysis.
