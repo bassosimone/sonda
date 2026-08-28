@@ -16,10 +16,20 @@ arch="$(go env GOARCH)"
 set -x
 
 # Build the binary.
+#
+# -buildmode=pie yields a PIE so the kernel can randomize the load
+# address (ASLR); sonda runs unattended as a network client, so opt
+# into hardening.
 install -d "$stage/usr/bin"
 ldflags_buildcfg="github.com/bassosimone/sonda/internal/buildcfg"
-go build -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" -o "$stage/usr/bin/sonda" .
+go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" -o "$stage/usr/bin/sonda" .
 chmod 755 "$stage/usr/bin/sonda"
+
+# Compute the libc6 version the binary actually requires: the highest
+# GLIBC_x.y symbol version it references. This mirrors what
+# dpkg-shlibdeps derives for real Debian packages.
+libc_ver="$(objdump -T "$stage/usr/bin/sonda" \
+    | grep -oE 'GLIBC_[0-9.]+' | sed 's/^GLIBC_//' | sort -uV | tail -1)"
 
 # Install manpage.
 install -d "$stage/usr/share/man/man1"
@@ -44,6 +54,7 @@ install -m 644 dist/debian/copyright "$stage/usr/share/doc/sonda/"
 # Install control file with substitutions.
 install -d "$stage/DEBIAN"
 sed -e "s/@VERSION@/$ver/g" -e "s/@ARCH@/$arch/g" \
+    -e "s/@LIBC@/$libc_ver/g" \
     dist/debian/control > "$stage/DEBIAN/control"
 
 # Install maintainer scripts.
