@@ -1,11 +1,23 @@
 #!/bin/sh
-set -eu
+set -e
+
+# The systemd handling below adapts the maintainer-script snippets
+# from `/usr/share/debhelper/autoscripts/` in `debhelper==13.31ubuntu1`.
 
 case "$1" in
     purge)
         # Remove the spool directory and any collected data.
         rm -rf /var/spool/sonda
         rm -rf /var/lib/sonda
+
+        # Adapted from autoscripts/postrm-systemd: remove the enable
+        # symlinks and the helper's state file. The -x guard exists
+        # because purge may run long after remove, when only essential
+        # packages can be relied upon (init-system-helpers is
+        # essential today, but the reference stays defensive).
+        if [ -x "/usr/bin/deb-systemd-helper" ]; then
+            deb-systemd-helper purge 'sonda-scan.timer' >/dev/null || true
+        fi
 
         # Remove the _sonda system user and group.
         if getent passwd _sonda >/dev/null 2>&1; then
@@ -17,9 +29,11 @@ case "$1" in
         ;;
 
     remove)
-        # Stop and disable the timer on removal.
-        systemctl stop sonda-scan.timer 2>/dev/null || true
-        systemctl disable sonda-scan.timer 2>/dev/null || true
-        systemctl daemon-reload
+        # Adapted from autoscripts/postrm-systemd-reload-only: forget
+        # the units of the removed package, but only when systemd is
+        # running (not in a chroot).
+        if [ -d /run/systemd/system ]; then
+            systemctl --system daemon-reload >/dev/null || true
+        fi
         ;;
 esac

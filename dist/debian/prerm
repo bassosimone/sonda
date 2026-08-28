@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+
+# The systemd handling below adapts the maintainer-script snippets
+# from `/usr/share/debhelper/autoscripts/` in `debhelper==13.31ubuntu1`.
+
+# Adapted from autoscripts/prerm-systemd. The template carries no
+# "$1" check of its own; dh_installsystemd adds the remove condition
+# when generating, and we express it with our usual case statement.
+case "$1" in
+    remove)
+        # Stop the timer, but only when systemd is running (not in a
+        # chroot) and respecting policy-rc.d.
+        if [ -z "$DPKG_ROOT" ] && [ -d /run/systemd/system ]; then
+            deb-systemd-invoke stop 'sonda-scan.timer' >/dev/null || true
+        fi
+        ;;
+esac

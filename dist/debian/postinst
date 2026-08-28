@@ -1,5 +1,8 @@
 #!/bin/sh
-set -eu
+set -e
+
+# The systemd handling below adapts the maintainer-script snippets
+# from `/usr/share/debhelper/autoscripts/` in `debhelper==13.31ubuntu1`.
 
 case "$1" in
     configure)
@@ -14,12 +17,34 @@ case "$1" in
 
         # Ensure the metrics directory exists with correct ownership.
         install -d -o _sonda -g adm -m 2750 /var/lib/sonda/metrics
-
-        # Reload systemd to pick up new/updated unit files.
-        systemctl daemon-reload
-
-        # Enable and start the timer.
-        systemctl enable sonda-scan.timer
-        systemctl start sonda-scan.timer
         ;;
 esac
+
+# Enable the timer on first installation only and otherwise rely on
+# what has been configured by the sysadmin.
+#
+# Adapted from autoscripts/postinst-systemd-enable, dropping the
+# transitional unmask line to be removed after trixie+1.
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+    # was-enabled defaults to true, so new installations run enable.
+    if deb-systemd-helper --quiet was-enabled 'sonda-scan.timer'; then
+        # Enables the unit on first installation, creates new
+        # symlinks on upgrades if the unit file has changed.
+        deb-systemd-helper enable 'sonda-scan.timer' >/dev/null || true
+    else
+        # Update the statefile to add new symlinks (if any), which need to be
+        # cleaned up on purge. Also remove old symlinks.
+        deb-systemd-helper update-state 'sonda-scan.timer' >/dev/null || true
+    fi
+fi
+
+# Reload systemd and start the timer, but only when systemd is
+# running (not in a chroot) and respecting policy-rc.d.
+#
+# Adapted from autoscripts/postinst-systemd-start.
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+    if [ -z "$DPKG_ROOT" ] && [ -d /run/systemd/system ]; then
+        systemctl --system daemon-reload >/dev/null || true
+        deb-systemd-invoke start 'sonda-scan.timer' >/dev/null || true
+    fi
+fi

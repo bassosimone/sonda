@@ -67,6 +67,7 @@ sed -e "s/@VERSION@/$ver/g" -e "s/@ARCH@/$arch/g" \
 # Install maintainer scripts.
 install -m 755 dist/debian/postinst "$stage/DEBIAN/"
 install -m 755 dist/debian/postrm "$stage/DEBIAN/"
+install -m 755 dist/debian/prerm "$stage/DEBIAN/"
 
 # Declare conffiles so dpkg preserves local edits on upgrade.
 cat > "$stage/DEBIAN/conffiles" <<'CONFFILES'
