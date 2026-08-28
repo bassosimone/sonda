@@ -17,10 +17,14 @@ permissions, and installing systemd units for periodic execution.
 Packaging artifacts live under `dist/`, not `scripts/`:
 
 - `dist/debian/` — Debian control file (templated), copyright,
-  and maintainer scripts (`postinst`, `postrm`).
-- `dist/systemd/` — timer and service units.
+  lintian overrides, and maintainer scripts (`postinst`,
+  `postrm`, `prerm`).
+- `dist/unix/` — static files (systemd units, manpage, default
+  scan config) laid out mirroring their install paths on a
+  modern Unix (e.g. `dist/unix/usr/share/man/man1/sonda.1`).
 - `scripts/makedeb.bash` — builds the Go binary, substitutes
-  templates, assembles the staging tree, and calls `dpkg-deb`.
+  templates, assembles the staging tree, calls `dpkg-deb`, and
+  runs `lintian` on the result (errors fail the build).
   Contains no heredocs; all metadata lives in `dist/`.
 
 The binary installs to `/usr/bin/sonda`, not `/usr/sbin/`,
@@ -67,9 +71,9 @@ Systemd hardening directives are applied in three tiers:
    `MemoryDenyWriteExecute=yes`, `RestrictRealtime=yes`,
    `SystemCallFilter=@system-service`.
 
-All three tiers are safe for a statically-linked Go binary
-that only needs outbound network access (UDP for DNS/STUN,
-HTTPS for DoH) and write access to the spool.
+All three tiers are safe for a Go binary that only needs
+outbound network access (UDP for DNS/STUN, HTTPS for DoH)
+and write access to the spool.
 
 ## Spool permissions
 
@@ -93,25 +97,37 @@ automatically. The resulting permission model:
 
 ## Package lifecycle
 
+The systemd interactions follow the maintainer-script snippets
+that `dh_installsystemd` generates for real Debian packages
+(see the comments in the scripts themselves): enabling goes
+through `deb-systemd-helper`, so upgrades honour the sysadmin's
+enable/disable choice; starting and stopping go through
+`deb-systemd-invoke`, which respects `policy-rc.d`; and every
+interaction is skipped when systemd is not running (chroots).
+
 `postinst` (runs on install and upgrade):
 
 1. Creates the `_sonda` system user and group if absent.
-2. Creates `/var/spool/sonda` with `2750 _sonda:adm`.
-3. Reloads systemd and enables/starts the timer.
+2. Creates `/var/spool/sonda` and `/var/lib/sonda/metrics`
+   with `2750 _sonda:adm`.
+3. Reloads systemd and enables/starts the timer as above.
+
+`prerm` (runs on remove): stops the timer.
 
 `postrm` (runs on remove and purge):
 
-- On `remove`: stops and disables the timer.
-- On `purge`: removes the spool directory and deletes
-  the `_sonda` user and group.
+- On `remove`: reloads systemd to forget the removed units.
+- On `purge`: removes the spool and metrics directories, the
+  enable symlinks with their helper state, and the `_sonda`
+  user and group.
 
 The split means `apt remove` preserves collected data and
 the system user; `apt purge` cleans up completely.
 
 ## Versioning
 
-The package version is `0.0.0~timestamp-1` until the
-repository is published and tagged. The `~` sorts lower
-than any release version in dpkg, so any future `0.1.0`
-will be seen as an upgrade. Once tags exist, the script
-will switch to `git describe --tags`.
+The package version derives from `git describe --tags` plus
+a UTC timestamp (e.g. `0.3.0~20260828105453-1`). The `~`
+sorts lower than the bare tag version in dpkg, so a future
+tagged release is seen as an upgrade over the snapshots
+built before it.
