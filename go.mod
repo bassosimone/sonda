@@ -3,14 +3,14 @@ module github.com/bassosimone/sonda
 go 1.26.4
 
 require (
-	github.com/bassosimone/closepool v0.0.0-20260828072703-e4e18db93a56
-	github.com/bassosimone/deferexit v0.0.0-20260828072731-f9256f880c34
-	github.com/bassosimone/dnscodec v0.0.0-20260828081951-db31461e8991
-	github.com/bassosimone/errclass v0.0.0-20260828073715-fc855052d7a1
-	github.com/bassosimone/nop v0.0.0-20260828094028-6af3d7c5df7a
-	github.com/bassosimone/runtimex v0.0.0-20260828074549-6e2e561f98d1
-	github.com/bassosimone/vclip v0.0.0-20260828094436-cb4bf11d5bdd
-	github.com/bassosimone/vflag v0.0.0-20260828092355-3cab5f4711d4
+	github.com/bassosimone/closepool v0.0.0-20260920130209-ecd5a8f12e9b
+	github.com/bassosimone/deferexit v0.0.0-20260920130353-344b1a39a3c4
+	github.com/bassosimone/dnscodec v0.0.0-20260920134140-e91c2ba33014
+	github.com/bassosimone/errclass v0.0.0-20260920130548-7c6065cbf578
+	github.com/bassosimone/nop v0.0.0-20260920140226-89b218104885
+	github.com/bassosimone/runtimex v0.0.0-20260920130843-b72080259a60
+	github.com/bassosimone/vclip v0.0.0-20260920140331-32845f1c2f1a
+	github.com/bassosimone/vflag v0.0.0-20260920135752-105f5b45ed82
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/uuid v1.6.0
 	github.com/miekg/dns v1.1.73
@@ -19,30 +19,31 @@ require (
 )
 
 require (
-	github.com/andybalholm/brotli v1.2.3 // indirect
-	github.com/bassosimone/dnsoverhttps v0.0.0-20260828090108-a6b161c6a736 // indirect
-	github.com/bassosimone/dnsoverstream v0.0.0-20260828091045-36cf95ac480c // indirect
-	github.com/bassosimone/flagparser v0.0.0-20260828082109-edbc8ebcae44 // indirect
-	github.com/bassosimone/flagscanner v0.0.0-20260828074539-cf54a52b2823 // indirect
-	github.com/bassosimone/iox v0.0.0-20260828083231-4108e983e8cc // indirect
-	github.com/bassosimone/minest v0.0.0-20260828091418-dcb1a872e8a0 // indirect
-	github.com/bassosimone/must v0.0.0-20260828084513-347de4e2df4c // indirect
-	github.com/bassosimone/safeconn v0.0.0-20260828084738-4fe9eb52c89a // indirect
-	github.com/bassosimone/sud v0.0.0-20260828074603-034e1e4e30f0 // indirect
-	github.com/bassosimone/textwrap v0.0.0-20260828074613-3a15e93369e2 // indirect
-	github.com/klauspost/compress v1.19.2 // indirect
+	github.com/andybalholm/brotli v1.2.4 // indirect
+	github.com/bassosimone/dnsoverhttps v0.0.0-20260920135418-3d304980c0a4 // indirect
+	github.com/bassosimone/dnsoverstream v0.0.0-20260920135504-fac4d723fdbc // indirect
+	github.com/bassosimone/flagparser v0.0.0-20260920134238-622c743feb8a // indirect
+	github.com/bassosimone/flagscanner v0.0.0-20260920130738-11546ab7262e // indirect
+	github.com/bassosimone/iox v0.0.0-20260920134829-97daf4c1a668 // indirect
+	github.com/bassosimone/minest v0.0.0-20260920135554-8479929affc1 // indirect
+	github.com/bassosimone/must v0.0.0-20260920134909-0e0911cde875 // indirect
+	github.com/bassosimone/safeconn v0.0.0-20260920135006-cffeabe7db91 // indirect
+	github.com/bassosimone/sud v0.0.0-20260920130940-9f9736245d9d // indirect
+	github.com/bassosimone/textwrap v0.0.0-20260920134026-7a0b23602d17 // indirect
+	github.com/klauspost/compress v1.20.0 // indirect
 	github.com/parquet-go/bitpack v1.1.0 // indirect
 	github.com/parquet-go/jsonlite v1.5.5 // indirect
-	github.com/pierrec/lz4/v4 v4.1.29 // indirect
-	github.com/pion/dtls/v3 v3.1.6 // indirect
+	github.com/pierrec/lz4/v4 v4.1.30 // indirect
+	github.com/pion/dtls/v3 v3.1.9 // indirect
 	github.com/pion/logging v0.2.4 // indirect
-	github.com/pion/transport/v4 v4.1.0 // indirect
-	github.com/quic-go/quic-go v0.61.0 // indirect
+	github.com/pion/transport/v4 v4.1.1 // indirect
+	github.com/pion/transport/v5 v5.0.1 // indirect
+	github.com/quic-go/quic-go v0.62.0 // indirect
 	github.com/twpayne/go-geom v1.6.1 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
-	golang.org/x/net v0.58.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/net v0.59.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
