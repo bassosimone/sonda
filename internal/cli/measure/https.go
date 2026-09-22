@@ -30,16 +30,16 @@ func httpsMain(ctx context.Context, args []string) error {
 
 	// Set command defaults.
 	var (
-		bodyFile  = ""
-		headers   []string
-		httpHost  = "1.1.1.1"
-		method    = "GET"
-		sni       = "1.1.1.1"
-		spanID    = nop.NewSpanID()
-		tags      []string
-		target    = "1.1.1.1:443"
-		timeout   = 30 * time.Second
-		urlPath   = "/"
+		bodyFile = ""
+		headers  []string
+		httpHost = "1.1.1.1"
+		method   = "GET"
+		sni      = "1.1.1.1"
+		spanID   = nop.NewSpanID()
+		tags     []string
+		target   = "1.1.1.1:443"
+		timeout  = 30 * time.Second
+		urlPath  = "/"
 	)
 
 	// Honor SONDA_SPAN_ID environment variable.
