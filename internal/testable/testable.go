@@ -12,6 +12,7 @@ import (
 	"os/exec"
 
 	"github.com/bassosimone/deferexit"
+	"github.com/bassosimone/runtimex"
 )
 
 // Dialer abstracts network dialing.
@@ -75,3 +76,25 @@ func newDialer() *net.Dialer {
 
 // Env is the global [*Environ].
 var Env = NewEnvironOS()
+
+// contextKey is the key used for binding a [*Environ] to a context.
+type contextKey struct{}
+
+// WithEnviron returns a new [context.Context] bound to the given [*Environ].
+//
+// This method panics if the `ctx` is nil or `env` is nil.
+func WithEnviron(ctx context.Context, env *Environ) context.Context {
+	runtimex.Assert(ctx != nil && env != nil)
+	return context.WithValue(ctx, contextKey{}, env)
+}
+
+// ContextEnviron returns the [*Environ] previously associated with
+// the [context.Context] using [WithEnviron] or the default [*Environ]
+// when no previous association was created with the context.
+func ContextEnviron(ctx context.Context) *Environ {
+	env, _ := ctx.Value(contextKey{}).(*Environ)
+	if env == nil {
+		env = Env
+	}
+	return env
+}

@@ -21,7 +21,7 @@ import (
 // dnsOverUDPMain is the main function of the `sonda measure dns over udp` subcommand.
 func dnsOverUDPMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
-	env := testable.Env
+	env := testable.ContextEnviron(ctx)
 
 	// Set command defaults.
 	var (

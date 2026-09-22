@@ -13,7 +13,7 @@ import (
 
 // Main is the main function of the `sonda measure` subcommand.
 func Main(ctx context.Context, args []string) error {
-	env := testable.Env
+	env := testable.ContextEnviron(ctx)
 
 	// Create the `sonda measure dns over` dispatcher.
 	overCmd := vclip.NewDispatcherCommand("over", vflag.ExitOnError)

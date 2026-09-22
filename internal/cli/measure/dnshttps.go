@@ -23,7 +23,7 @@ import (
 // dnsOverHTTPSMain is the main function of the `sonda measure dns over https` subcommand.
 func dnsOverHTTPSMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
-	env := testable.Env
+	env := testable.ContextEnviron(ctx)
 
 	// Set command defaults.
 	var (

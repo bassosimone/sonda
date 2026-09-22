@@ -25,7 +25,7 @@ import (
 // httpMain is the main function of the `sonda measure http` subcommand.
 func httpMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
-	env := testable.Env
+	env := testable.ContextEnviron(ctx)
 
 	// Set command defaults.
 	var (
