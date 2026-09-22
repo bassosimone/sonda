@@ -20,6 +20,7 @@ func Main(ctx context.Context, args []string) error {
 	overCmd.Exit = env.Exit
 	overCmd.Stderr = env.Stderr
 	overCmd.Stdout = env.Stdout
+
 	overCmd.AddDescription("Select the transport protocol.")
 	overCmd.AddCommand("https", vclip.CommandFunc(dnsOverHTTPSMain), "DNS over HTTPS (DoH).")
 	overCmd.AddCommand("udp", vclip.CommandFunc(dnsOverUDPMain), "DNS over UDP.")
@@ -29,6 +30,7 @@ func Main(ctx context.Context, args []string) error {
 	dnsCmd.Exit = env.Exit
 	dnsCmd.Stderr = env.Stderr
 	dnsCmd.Stdout = env.Stdout
+
 	dnsCmd.AddDescription("Run DNS measurements.")
 	dnsCmd.AddCommand("over", overCmd, "Select the DNS transport protocol.")
 
@@ -37,6 +39,7 @@ func Main(ctx context.Context, args []string) error {
 	disp.Exit = env.Exit
 	disp.Stderr = env.Stderr
 	disp.Stdout = env.Stdout
+
 	disp.AddDescription("Run a single low-level network measurement.")
 	disp.AddCommand("dns", dnsCmd, "Run DNS measurements.")
 	disp.AddCommand("http", vclip.CommandFunc(httpMain), "Run HTTP measurement.")

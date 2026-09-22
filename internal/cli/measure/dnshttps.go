@@ -48,6 +48,7 @@ func dnsOverHTTPSMain(ctx context.Context, args []string) error {
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.Stdout
+
 	fset.StringVar(&domain, 0, "domain", "Use `NAME` instead of `@DEFAULT_VALUE@`.")
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.StringVar(&httpHost, 0, "http-host", "Use `NAME` instead of `@DEFAULT_VALUE@`.")
@@ -58,6 +59,7 @@ func dnsOverHTTPSMain(ctx context.Context, args []string) error {
 	fset.StringVar(&target, 0, "target", "Use `ADDR:PORT` instead of `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&urlPath, 0, "url-path", "Use `PATH` instead of `@DEFAULT_VALUE@`.")
+
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
 	// Emit structured logs to the stdout tied together by a span ID.
@@ -85,14 +87,22 @@ func dnsOverHTTPSMain(ctx context.Context, args []string) error {
 	// Parse the query type string.
 	dnsType, ok := dns.StringToType[queryType]
 	if !ok {
-		logger.Error("sondaFailure", slog.String("operation", "parseQueryType"), slog.String("err", "unknown query type"))
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "parseQueryType"),
+			slog.String("err", "unknown query type"),
+		)
 		env.Exit(2)
 	}
 
 	// Parse target as an endpoint.
 	epnt, err := netip.ParseAddrPort(target)
 	if err != nil {
-		logger.Error("sondaFailure", slog.String("operation", "parseTarget"), slog.Any("err", err))
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "parseTarget"),
+			slog.Any("err", err),
+		)
 		env.Exit(2)
 	}
 
@@ -115,12 +125,17 @@ func dnsOverHTTPSMain(ctx context.Context, args []string) error {
 	httpConnOp := nop.NewHTTPConnFuncTLS(cfg, logger)
 	dohURL := (&url.URL{Scheme: "https", Host: httpHost, Path: urlPath}).String()
 	wrapOp := nop.NewDNSOverHTTPSConnFunc(cfg, dohURL, logger)
-	dialPipe := nop.Compose7(epntOp, connectOp, observeOp, autoCancelOp, tlsHandshakeOp, httpConnOp, wrapOp)
+	dialPipe := nop.Compose7(epntOp, connectOp, observeOp, autoCancelOp,
+		tlsHandshakeOp, httpConnOp, wrapOp)
 
 	// Dial the DNS connection.
 	dnsConn, err := dialPipe.Call(ctx, nop.Unit{})
 	if err != nil {
-		logger.Error("sondaFailure", slog.String("operation", "dial"), slog.Any("err", err))
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "dial"),
+			slog.Any("err", err),
+		)
 		env.Exit(1)
 	}
 	defer dnsConn.Close()
@@ -129,7 +144,11 @@ func dnsOverHTTPSMain(ctx context.Context, args []string) error {
 	dnsQuery := dnscodec.NewQuery(domain, dnsType)
 	dnsResp, err := dnsConn.Exchange(ctx, dnsQuery)
 	if err != nil {
-		logger.Error("sondaFailure", slog.String("operation", "exchange"), slog.Any("err", err))
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "exchange"),
+			slog.Any("err", err),
+		)
 		env.Exit(1)
 	}
 

@@ -40,11 +40,13 @@ func stunMain(ctx context.Context, args []string) error {
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.Stdout
+
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.StringVar(&spanID, 0, "span-id", "Use `ID` instead of a random one. Honors `SONDA_SPAN_ID`.")
 	fset.StringSliceVar(&tags, 0, "tag", "Add contextual `KEY=VALUE` tag. Repeatable.")
 	fset.StringVar(&target, 0, "target", "Use `ADDR:PORT` instead of `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")
+
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
 	// Emit structured logs to the stdout tied together by a span ID.
@@ -72,7 +74,11 @@ func stunMain(ctx context.Context, args []string) error {
 	// Parse target as an endpoint.
 	epnt, err := netip.ParseAddrPort(target)
 	if err != nil {
-		logger.Error("sondaFailure", slog.String("operation", "parseTarget"), slog.Any("err", err))
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "parseTarget"),
+			slog.Any("err", err),
+		)
 		env.Exit(2)
 	}
 
@@ -95,7 +101,11 @@ func stunMain(ctx context.Context, args []string) error {
 	// Dial the UDP connection.
 	conn, err := dialPipe.Call(ctx, nop.Unit{})
 	if err != nil {
-		logger.Error("sondaFailure", slog.String("operation", "dial"), slog.Any("err", err))
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "dial"),
+			slog.Any("err", err),
+		)
 		env.Exit(1)
 	}
 	defer conn.Close()
@@ -105,7 +115,11 @@ func stunMain(ctx context.Context, args []string) error {
 
 	// Write the binding request.
 	if _, err := conn.Write(message.Raw); err != nil {
-		logger.Error("sondaFailure", slog.String("operation", "write"), slog.Any("err", err))
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "write"),
+			slog.Any("err", err),
+		)
 		env.Exit(1)
 	}
 
@@ -113,7 +127,11 @@ func stunMain(ctx context.Context, args []string) error {
 	buf := make([]byte, 1024)
 	nread, err := conn.Read(buf)
 	if err != nil {
-		logger.Error("sondaFailure", slog.String("operation", "read"), slog.Any("err", err))
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "read"),
+			slog.Any("err", err),
+		)
 		env.Exit(1)
 	}
 
@@ -121,14 +139,22 @@ func stunMain(ctx context.Context, args []string) error {
 	resp := new(stun.Message)
 	resp.Raw = buf[:nread]
 	if err := resp.Decode(); err != nil {
-		logger.Error("sondaFailure", slog.String("operation", "decode"), slog.Any("err", err))
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "decode"),
+			slog.Any("err", err),
+		)
 		env.Exit(1)
 	}
 
 	// Extract the reflexive address.
 	var xorAddr stun.XORMappedAddress
 	if err := xorAddr.GetFrom(resp); err != nil {
-		logger.Error("sondaFailure", slog.String("operation", "getXORMappedAddress"), slog.Any("err", err))
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "getXORMappedAddress"),
+			slog.Any("err", err),
+		)
 		env.Exit(1)
 	}
 

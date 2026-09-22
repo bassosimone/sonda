@@ -5,7 +5,6 @@ package measure
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -52,6 +51,7 @@ func httpsMain(ctx context.Context, args []string) error {
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.Stdout
+
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.StringVar(&bodyFile, 0, "body-file", "Save the response body to `FILE`. Empty means discard.")
 	fset.StringSliceVar(&headers, 'H', "header", "Add `KEY: VALUE` request header. Repeatable.")
@@ -63,6 +63,7 @@ func httpsMain(ctx context.Context, args []string) error {
 	fset.StringVar(&target, 0, "target", "Use `ADDR:PORT` instead of `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&urlPath, 0, "url-path", "Use `PATH` instead of `@DEFAULT_VALUE@`.")
+
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
 	// Emit structured logs to the stdout tied together by a span ID.
@@ -90,7 +91,11 @@ func httpsMain(ctx context.Context, args []string) error {
 	// Parse target as an endpoint.
 	epnt, err := netip.ParseAddrPort(target)
 	if err != nil {
-		logger.Error("sondaFailure", slog.String("operation", "parseTarget"), slog.Any("err", err))
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "parseTarget"),
+			slog.Any("err", err),
+		)
 		env.Exit(2)
 	}
 
@@ -116,7 +121,11 @@ func httpsMain(ctx context.Context, args []string) error {
 	// Dial the HTTPS connection.
 	httpConn, err := dialPipe.Call(ctx, nop.Unit{})
 	if err != nil {
-		logger.Error("sondaFailure", slog.String("operation", "dial"), slog.Any("err", err))
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "dial"),
+			slog.Any("err", err),
+		)
 		env.Exit(1)
 	}
 	defer httpConn.Close()
@@ -125,14 +134,22 @@ func httpsMain(ctx context.Context, args []string) error {
 	httpURL := (&url.URL{Scheme: "https", Host: httpHost, Path: urlPath}).String()
 	httpReq, err := http.NewRequestWithContext(ctx, method, httpURL, http.NoBody)
 	if err != nil {
-		logger.Error("sondaFailure", slog.String("operation", "newRequest"), slog.Any("err", err))
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "newRequest"),
+			slog.Any("err", err),
+		)
 		env.Exit(1)
 	}
 	for _, h := range headers {
 		key, value, ok := strings.Cut(h, ":")
 		if !ok {
-			logger.Error("sondaFailure", slog.String("operation", "parseHeader"), slog.String("err", "missing colon"))
-			fmt.Fprintf(env.Stderr, "sonda measure https: invalid header (missing ':'): %s\n", h)
+			logger.Error(
+				"sondaFailure",
+				slog.String("operation", "parseHeader"),
+				slog.String("header", h),
+				slog.String("err", "missing colon"),
+			)
 			env.Exit(2)
 		}
 		httpReq.Header.Add(strings.TrimSpace(key), strings.TrimSpace(value))
@@ -141,7 +158,11 @@ func httpsMain(ctx context.Context, args []string) error {
 	// Perform the HTTP round trip.
 	resp, err := httpConn.RoundTrip(httpReq)
 	if err != nil {
-		logger.Error("sondaFailure", slog.String("operation", "roundTrip"), slog.Any("err", err))
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "roundTrip"),
+			slog.Any("err", err),
+		)
 		env.Exit(1)
 	}
 	defer resp.Body.Close()
@@ -152,7 +173,11 @@ func httpsMain(ctx context.Context, args []string) error {
 	if bodyFile != "" {
 		filep, err := os.OpenFile(bodyFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0640)
 		if err != nil {
-			logger.Error("sondaFailure", slog.String("operation", "createBodyFile"), slog.Any("err", err))
+			logger.Error(
+				"sondaFailure",
+				slog.String("operation", "createBodyFile"),
+				slog.Any("err", err),
+			)
 			env.Exit(1)
 		}
 		closers.Add(filep)
@@ -163,14 +188,22 @@ func httpsMain(ctx context.Context, args []string) error {
 	// the total download time.
 	bodySize, err := io.Copy(bodyDst, resp.Body)
 	if err != nil {
-		logger.Error("sondaFailure", slog.String("operation", "readBody"), slog.Any("err", err))
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "readBody"),
+			slog.Any("err", err),
+		)
 		env.Exit(1)
 	}
 	logger.Info("sondaHttpResponseBodyStats", slog.Int64("httpResponseBodySize", bodySize))
 
 	// Make sure we successfully closed the body file.
 	if err := closers.Close(); err != nil {
-		logger.Error("sondaFailure", slog.String("operation", "closeBodyFile"), slog.Any("err", err))
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "closeBodyFile"),
+			slog.Any("err", err),
+		)
 		env.Exit(1)
 	}
 
