@@ -78,6 +78,7 @@ func stunMain(ctx context.Context, args []string) error {
 			"sondaFailure",
 			slog.String("operation", "parseTarget"),
 			slog.Any("err", err),
+			slog.Int("exitCode", 2),
 		)
 		env.Exit(2)
 	}
@@ -105,6 +106,7 @@ func stunMain(ctx context.Context, args []string) error {
 			"sondaFailure",
 			slog.String("operation", "dial"),
 			slog.Any("err", err),
+			slog.Int("exitCode", 1),
 		)
 		env.Exit(1)
 	}
@@ -119,6 +121,7 @@ func stunMain(ctx context.Context, args []string) error {
 			"sondaFailure",
 			slog.String("operation", "write"),
 			slog.Any("err", err),
+			slog.Int("exitCode", 1),
 		)
 		env.Exit(1)
 	}
@@ -131,6 +134,7 @@ func stunMain(ctx context.Context, args []string) error {
 			"sondaFailure",
 			slog.String("operation", "read"),
 			slog.Any("err", err),
+			slog.Int("exitCode", 1),
 		)
 		env.Exit(1)
 	}
@@ -143,6 +147,7 @@ func stunMain(ctx context.Context, args []string) error {
 			"sondaFailure",
 			slog.String("operation", "decode"),
 			slog.Any("err", err),
+			slog.Int("exitCode", 1),
 		)
 		env.Exit(1)
 	}
@@ -154,6 +159,7 @@ func stunMain(ctx context.Context, args []string) error {
 			"sondaFailure",
 			slog.String("operation", "getXORMappedAddress"),
 			slog.Any("err", err),
+			slog.Int("exitCode", 1),
 		)
 		env.Exit(1)
 	}

@@ -83,6 +83,7 @@ func dnsOverUDPMain(ctx context.Context, args []string) error {
 			"sondaFailure",
 			slog.String("operation", "parseQueryType"),
 			slog.String("err", "unknown query type"),
+			slog.Int("exitCode", 2),
 		)
 		env.Exit(2)
 	}
@@ -94,6 +95,7 @@ func dnsOverUDPMain(ctx context.Context, args []string) error {
 			"sondaFailure",
 			slog.String("operation", "parseTarget"),
 			slog.Any("err", err),
+			slog.Int("exitCode", 2),
 		)
 		env.Exit(2)
 	}
@@ -122,6 +124,7 @@ func dnsOverUDPMain(ctx context.Context, args []string) error {
 			"sondaFailure",
 			slog.String("operation", "dial"),
 			slog.Any("err", err),
+			slog.Int("exitCode", 1),
 		)
 		env.Exit(1)
 	}
@@ -135,6 +138,7 @@ func dnsOverUDPMain(ctx context.Context, args []string) error {
 			"sondaFailure",
 			slog.String("operation", "exchange"),
 			slog.Any("err", err),
+			slog.Int("exitCode", 1),
 		)
 		env.Exit(1)
 	}

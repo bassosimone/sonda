@@ -92,6 +92,7 @@ func httpMain(ctx context.Context, args []string) error {
 			"sondaFailure",
 			slog.String("operation", "parseTarget"),
 			slog.Any("err", err),
+			slog.Int("exitCode", 2),
 		)
 		env.Exit(2)
 	}
@@ -120,6 +121,7 @@ func httpMain(ctx context.Context, args []string) error {
 			"sondaFailure",
 			slog.String("operation", "dial"),
 			slog.Any("err", err),
+			slog.Int("exitCode", 1),
 		)
 		env.Exit(1)
 	}
@@ -133,6 +135,7 @@ func httpMain(ctx context.Context, args []string) error {
 			"sondaFailure",
 			slog.String("operation", "newRequest"),
 			slog.Any("err", err),
+			slog.Int("exitCode", 1),
 		)
 		env.Exit(1)
 	}
@@ -144,6 +147,7 @@ func httpMain(ctx context.Context, args []string) error {
 				slog.String("operation", "parseHeader"),
 				slog.String("header", h),
 				slog.String("err", "missing colon"),
+				slog.Int("exitCode", 2),
 			)
 			env.Exit(2)
 		}
@@ -157,6 +161,7 @@ func httpMain(ctx context.Context, args []string) error {
 			"sondaFailure",
 			slog.String("operation", "roundTrip"),
 			slog.Any("err", err),
+			slog.Int("exitCode", 1),
 		)
 		env.Exit(1)
 	}
@@ -172,6 +177,7 @@ func httpMain(ctx context.Context, args []string) error {
 				"sondaFailure",
 				slog.String("operation", "createBodyFile"),
 				slog.Any("err", err),
+				slog.Int("exitCode", 1),
 			)
 			env.Exit(1)
 		}
@@ -187,6 +193,7 @@ func httpMain(ctx context.Context, args []string) error {
 			"sondaFailure",
 			slog.String("operation", "readBody"),
 			slog.Any("err", err),
+			slog.Int("exitCode", 1),
 		)
 		env.Exit(1)
 	}
@@ -198,6 +205,7 @@ func httpMain(ctx context.Context, args []string) error {
 			"sondaFailure",
 			slog.String("operation", "closeBodyFile"),
 			slog.Any("err", err),
+			slog.Int("exitCode", 1),
 		)
 		env.Exit(1)
 	}
