@@ -20,6 +20,11 @@ type Dialer interface {
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)
 }
 
+// File is an abstract [*os.File] as returned by [os.OpenFile].
+//
+// The type is wide enough to accommodate both readers and writers.
+type File = io.ReadWriteCloser
+
 // Environ abstracts away side effects (I/O, exit) so that commands
 // can be tested without real I/O or process termination.
 type Environ struct {
@@ -31,12 +36,15 @@ type Environ struct {
 	Getenv           func(key string) string
 	LogFatalOnError0 func(err error)
 	MkdirAll         func(path string, perm os.FileMode) error
-	OpenFile         func(name string, flag int, perm os.FileMode) (*os.File, error)
 	Rename           func(oldpath, newpath string) error
 	RunCommand       func(cmd *exec.Cmd) error
 	Stdin            io.Reader
 	Stderr           io.Writer
 	WriteFile        func(name string, data []byte, perm os.FileMode) error
+
+	// OpenFile is like [os.OpenFile] but abstract in the returned file type, to accommodate
+	// testing and hosting in a library, where the [File] could be memory or a pipe.
+	OpenFile func(name string, flag int, perm os.FileMode) (File, error)
 
 	// Stdout carries a command's output and UsageStdout carries its
 	// usage, help, and version text. Both are os.Stdout by default.
@@ -63,14 +71,16 @@ func NewEnvironOS() *Environ {
 			}
 		},
 		MkdirAll: os.MkdirAll,
-		OpenFile: os.OpenFile,
 		Rename:   os.Rename,
 		RunCommand: func(cmd *exec.Cmd) error {
 			return cmd.Run()
 		},
-		Stdin:       os.Stdin,
-		Stderr:      os.Stderr,
-		WriteFile:   os.WriteFile,
+		Stdin:     os.Stdin,
+		Stderr:    os.Stderr,
+		WriteFile: os.WriteFile,
+		OpenFile: func(name string, flag int, perm os.FileMode) (File, error) {
+			return os.OpenFile(name, flag, perm)
+		},
 		Stdout:      os.Stdout,
 		UsageStdout: os.Stdout,
 	}
