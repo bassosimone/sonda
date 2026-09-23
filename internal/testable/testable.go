@@ -6,6 +6,7 @@ package testable
 import (
 	"context"
 	"io"
+	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -21,20 +22,21 @@ type Dialer interface {
 // Environ abstracts away side effects (I/O, exit) so that commands
 // can be tested without real I/O or process termination.
 type Environ struct {
-	Args       []string
-	Dialer     Dialer
-	Environ    func() []string
-	Executable func() (string, error)
-	Exit       func(code int)
-	Getenv     func(key string) string
-	MkdirAll   func(path string, perm os.FileMode) error
-	OpenFile   func(name string, flag int, perm os.FileMode) (*os.File, error)
-	Rename     func(oldpath, newpath string) error
-	RunCommand func(cmd *exec.Cmd) error
-	Stdin      io.Reader
-	Stdout     io.Writer
-	Stderr     io.Writer
-	WriteFile  func(name string, data []byte, perm os.FileMode) error
+	Args             []string
+	Dialer           Dialer
+	Environ          func() []string
+	Executable       func() (string, error)
+	Exit             func(code int)
+	Getenv           func(key string) string
+	LogFatalOnError0 func(err error)
+	MkdirAll         func(path string, perm os.FileMode) error
+	OpenFile         func(name string, flag int, perm os.FileMode) (*os.File, error)
+	Rename           func(oldpath, newpath string) error
+	RunCommand       func(cmd *exec.Cmd) error
+	Stdin            io.Reader
+	Stdout           io.Writer
+	Stderr           io.Writer
+	WriteFile        func(name string, data []byte, perm os.FileMode) error
 }
 
 // NewEnvironOS returns an [*Environ] wired to real OS operations.
@@ -46,9 +48,15 @@ func NewEnvironOS() *Environ {
 		Executable: os.Executable,
 		Exit:       deferexit.Panic,
 		Getenv:     os.Getenv,
-		MkdirAll:   os.MkdirAll,
-		OpenFile:   os.OpenFile,
-		Rename:     os.Rename,
+		LogFatalOnError0: func(err error) {
+			if err != nil {
+				log.Print(err)
+				deferexit.Panic(1)
+			}
+		},
+		MkdirAll: os.MkdirAll,
+		OpenFile: os.OpenFile,
+		Rename:   os.Rename,
 		RunCommand: func(cmd *exec.Cmd) error {
 			return cmd.Run()
 		},

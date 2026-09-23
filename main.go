@@ -37,6 +37,10 @@ func main() {
 	disp.AddCommand("scan", vclip.CommandFunc(scan.Main), "Scan specific network endpoints storing results in the spool.")
 	disp.AddCommand("spool", vclip.CommandFunc(spool.Main), "Manage the measurement spool directory.")
 
-	// Execute the root dispatcher command.
-	disp.Main(context.Background(), env.Args[1:])
+	// Wrap the root dispatcher using `vclip.RootCommand`.
+	root := vclip.NewRootCommand(disp)
+	root.LogFatalOnError0 = env.LogFatalOnError0
+
+	// Execute the dispatcher command wrapper.
+	root.Main(context.Background(), env.Args[1:])
 }
