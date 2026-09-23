@@ -34,7 +34,7 @@ func loadMain(ctx context.Context, args []string) error {
 	fset := vflag.NewFlagSet("sonda metrics load", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
-	fset.Stdout = env.Stdout
+	fset.Stdout = env.UsageStdout
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.DurationVar(&maxAge, 0, "max-age", "Ignore spans older than `DURATION`.")
 	fset.StringVar(&metricsDir, 0, "metrics-dir", "Write daily Parquet files to `DIR` instead of `@DEFAULT_VALUE@`.")

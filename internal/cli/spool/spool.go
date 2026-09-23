@@ -19,7 +19,7 @@ func Main(ctx context.Context, args []string) error {
 	disp := vclip.NewDispatcherCommand("spool", vflag.ExitOnError)
 	disp.Exit = env.Exit
 	disp.Stderr = env.Stderr
-	disp.Stdout = env.Stdout
+	disp.Stdout = env.UsageStdout
 	disp.AddDescription("Manage the measurement spool directory.")
 	disp.AddCommand("extract", vclip.CommandFunc(extractMain), "Extract Parquet from span directories.")
 	disp.AddCommand("gc", vclip.CommandFunc(gcMain), "Remove old span directories.")

@@ -31,7 +31,7 @@ func Main(ctx context.Context, args []string) error {
 	fset := vflag.NewFlagSet("sonda scan", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
-	fset.Stdout = env.Stdout
+	fset.Stdout = env.UsageStdout
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.BoolVar(&fail, 'f', "fail", "Exit with error on first failure.")
 	fset.StringVar(&configFile, 0, "config-file", "Load steps from `FILE` instead of using built-in defaults.")

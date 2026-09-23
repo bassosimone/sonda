@@ -19,7 +19,7 @@ func Main(ctx context.Context, args []string) error {
 	disp := vclip.NewDispatcherCommand("metrics", vflag.ExitOnError)
 	disp.Exit = env.Exit
 	disp.Stderr = env.Stderr
-	disp.Stdout = env.Stdout
+	disp.Stdout = env.UsageStdout
 	disp.AddDescription("Aggregate and query measurement metrics.")
 	disp.AddCommand("load", vclip.CommandFunc(loadMain), "Aggregate span metrics into daily Parquet files.")
 

@@ -39,7 +39,7 @@ func stunMain(ctx context.Context, args []string) error {
 	fset := vflag.NewFlagSet("sonda measure stun", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
-	fset.Stdout = env.Stdout
+	fset.Stdout = env.UsageStdout
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.StringVar(&spanID, 0, "span-id", "Use `ID` instead of a random one. Honors `SONDA_SPAN_ID`.")

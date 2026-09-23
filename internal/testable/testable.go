@@ -35,9 +35,16 @@ type Environ struct {
 	Rename           func(oldpath, newpath string) error
 	RunCommand       func(cmd *exec.Cmd) error
 	Stdin            io.Reader
-	Stdout           io.Writer
 	Stderr           io.Writer
 	WriteFile        func(name string, data []byte, perm os.FileMode) error
+
+	// Stdout carries a command's output and UsageStdout carries its
+	// usage, help, and version text. Both are os.Stdout by default.
+	// Keeping them separate lets a caller hosting commands in-process
+	// redirect the usage text, so that it never lands in the stream
+	// where a program expects structured logs.
+	Stdout      io.Writer
+	UsageStdout io.Writer
 }
 
 // NewEnvironOS returns an [*Environ] wired to real OS operations.
@@ -61,10 +68,11 @@ func NewEnvironOS() *Environ {
 		RunCommand: func(cmd *exec.Cmd) error {
 			return cmd.Run()
 		},
-		Stdin:     os.Stdin,
-		Stdout:    os.Stdout,
-		Stderr:    os.Stderr,
-		WriteFile: os.WriteFile,
+		Stdin:       os.Stdin,
+		Stderr:      os.Stderr,
+		WriteFile:   os.WriteFile,
+		Stdout:      os.Stdout,
+		UsageStdout: os.Stdout,
 	}
 }
 

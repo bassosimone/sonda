@@ -26,7 +26,7 @@ func main() {
 	disp := vclip.NewDispatcherCommand("sonda", vflag.ExitOnError)
 	disp.Exit = env.Exit
 	disp.Stderr = env.Stderr
-	disp.Stdout = env.Stdout
+	disp.Stdout = env.UsageStdout
 
 	// Wire version reporting.
 	disp.AddVersionHandlers(buildcfg.Version)

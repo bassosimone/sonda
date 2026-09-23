@@ -42,7 +42,7 @@ func dnsOverUDPMain(ctx context.Context, args []string) error {
 	fset := vflag.NewFlagSet("sonda measure dns over udp", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
-	fset.Stdout = env.Stdout
+	fset.Stdout = env.UsageStdout
 
 	fset.StringVar(&domain, 0, "domain", "Use `NAME` instead of `@DEFAULT_VALUE@`.")
 	fset.AutoHelp('h', "help", "Show this help message and exit.")

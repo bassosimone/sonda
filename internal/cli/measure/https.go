@@ -50,7 +50,7 @@ func httpsMain(ctx context.Context, args []string) error {
 	fset := vflag.NewFlagSet("sonda measure https", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
-	fset.Stdout = env.Stdout
+	fset.Stdout = env.UsageStdout
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.StringVar(&bodyFile, 0, "body-file", "Save the response body to `FILE`. Empty means discard.")

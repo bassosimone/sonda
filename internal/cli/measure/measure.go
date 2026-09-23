@@ -13,13 +13,14 @@ import (
 
 // Main is the main function of the `sonda measure` subcommand.
 func Main(ctx context.Context, args []string) error {
+	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
 
 	// Create the `sonda measure dns over` dispatcher.
 	overCmd := vclip.NewDispatcherCommand("over", vflag.ExitOnError)
 	overCmd.Exit = env.Exit
 	overCmd.Stderr = env.Stderr
-	overCmd.Stdout = env.Stdout
+	overCmd.Stdout = env.UsageStdout
 
 	overCmd.AddDescription("Select the transport protocol.")
 	overCmd.AddCommand("https", vclip.CommandFunc(dnsOverHTTPSMain), "DNS over HTTPS (DoH).")
@@ -29,7 +30,7 @@ func Main(ctx context.Context, args []string) error {
 	dnsCmd := vclip.NewDispatcherCommand("dns", vflag.ExitOnError)
 	dnsCmd.Exit = env.Exit
 	dnsCmd.Stderr = env.Stderr
-	dnsCmd.Stdout = env.Stdout
+	dnsCmd.Stdout = env.UsageStdout
 
 	dnsCmd.AddDescription("Run DNS measurements.")
 	dnsCmd.AddCommand("over", overCmd, "Select the DNS transport protocol.")
@@ -38,7 +39,7 @@ func Main(ctx context.Context, args []string) error {
 	disp := vclip.NewDispatcherCommand("measure", vflag.ExitOnError)
 	disp.Exit = env.Exit
 	disp.Stderr = env.Stderr
-	disp.Stdout = env.Stdout
+	disp.Stdout = env.UsageStdout
 
 	disp.AddDescription("Run a single low-level network measurement.")
 	disp.AddCommand("dns", dnsCmd, "Run DNS measurements.")

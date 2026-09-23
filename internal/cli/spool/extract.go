@@ -32,7 +32,7 @@ func extractMain(ctx context.Context, args []string) error {
 	fset := vflag.NewFlagSet("sonda spool extract", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
-	fset.Stdout = env.Stdout
+	fset.Stdout = env.UsageStdout
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.DurationVar(&maxAge, 0, "max-age", "Only extract spans newer than `DURATION`.")
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
