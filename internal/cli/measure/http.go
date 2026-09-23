@@ -103,6 +103,7 @@ func httpMain(ctx context.Context, args []string) error {
 
 	// Create the shared pipeline configuration.
 	cfg := nop.NewConfig()
+	// SECURITY: see considerations at the top of servestdio.go.
 	cfg.Dialer = env.Dialer
 	cfg.ErrClassifier = nop.ErrClassifierFunc(errclass.New)
 
@@ -168,6 +169,7 @@ func httpMain(ctx context.Context, args []string) error {
 	defer resp.Body.Close()
 
 	// Determine where to write the body.
+	// SECURITY: see considerations at the top of servestdio.go.
 	closers := &closepool.Pool{}
 	var bodyDst io.Writer = io.Discard
 	if bodyFile != "" {
