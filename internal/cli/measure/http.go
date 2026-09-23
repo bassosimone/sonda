@@ -166,7 +166,7 @@ func httpMain(ctx context.Context, args []string) error {
 	closers := &closepool.Pool{}
 	var bodyDst io.Writer = io.Discard
 	if bodyFile != "" {
-		filep, err := os.OpenFile(bodyFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0640)
+		filep, err := env.OpenFile(bodyFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0640)
 		if err != nil {
 			logger.Error(
 				"sondaFailure",
