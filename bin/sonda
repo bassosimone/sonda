@@ -1,0 +1,7 @@
+#!/bin/bash
+# Dev launcher for the sonda tool.
+set -euo pipefail
+export SONDA_EXEC_PATH="./usr/libexec/sonda"
+export SONDA_SHARE_PATH="./usr/share/sonda"
+export SONDA_SPOOL_PATH="./var/spool/sonda"
+exec "$SONDA_EXEC_PATH/sonda" "$@"
