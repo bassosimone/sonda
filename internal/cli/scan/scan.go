@@ -14,6 +14,9 @@ import (
 	"github.com/bassosimone/vflag"
 )
 
+// ShortDescr is the command short description.
+const ShortDescr = "Scan specific network endpoints storing results in the spool."
+
 // Main is the main function of the `sonda scan` subcommand.
 func Main(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.

@@ -32,10 +32,10 @@ func main() {
 	disp.AddVersionHandlers(buildcfg.Version)
 
 	// Add subcommands.
-	disp.AddCommand("measure", vclip.CommandFunc(measure.Main), "Run a single low-level network measurement.")
-	disp.AddCommand("metrics", vclip.CommandFunc(metrics.Main), "Aggregate and query measurement metrics.")
-	disp.AddCommand("scan", vclip.CommandFunc(scan.Main), "Scan specific network endpoints storing results in the spool.")
-	disp.AddCommand("spool", vclip.CommandFunc(spool.Main), "Manage the measurement spool directory.")
+	disp.AddCommand("measure", vclip.CommandFunc(measure.Main), measure.ShortDescr)
+	disp.AddCommand("metrics", vclip.CommandFunc(metrics.Main), metrics.ShortDescr)
+	disp.AddCommand("scan", vclip.CommandFunc(scan.Main), scan.ShortDescr)
+	disp.AddCommand("spool", vclip.CommandFunc(spool.Main), spool.ShortDescr)
 
 	// Wrap the root dispatcher using `vclip.RootCommand`.
 	root := vclip.NewRootCommand(disp)

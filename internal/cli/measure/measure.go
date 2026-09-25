@@ -11,6 +11,9 @@ import (
 	"github.com/bassosimone/vflag"
 )
 
+// ShortDescr is the command short description.
+const ShortDescr = "Run a single low-level network measurement."
+
 // Main is the main function of the `sonda measure` subcommand.
 func Main(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
@@ -41,7 +44,7 @@ func Main(ctx context.Context, args []string) error {
 	disp.Stderr = env.Stderr
 	disp.Stdout = env.UsageStdout
 
-	disp.AddDescription("Run a single low-level network measurement.")
+	disp.AddDescription(ShortDescr)
 	disp.AddCommand("dns", dnsCmd, "Run DNS measurements.")
 	disp.AddCommand("http", vclip.CommandFunc(httpMain), "Run HTTP measurement.")
 	disp.AddCommand("https", vclip.CommandFunc(httpsMain), "Run HTTPS measurement.")

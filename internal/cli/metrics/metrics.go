@@ -11,6 +11,9 @@ import (
 	"github.com/bassosimone/vflag"
 )
 
+// ShortDescr is the command short description.
+const ShortDescr = "Aggregate and query measurement metrics."
+
 // Main is the main function of the `sonda metrics` subcommand.
 func Main(ctx context.Context, args []string) error {
 	env := testable.Env
@@ -20,7 +23,7 @@ func Main(ctx context.Context, args []string) error {
 	disp.Exit = env.Exit
 	disp.Stderr = env.Stderr
 	disp.Stdout = env.UsageStdout
-	disp.AddDescription("Aggregate and query measurement metrics.")
+	disp.AddDescription(ShortDescr)
 	disp.AddCommand("load", vclip.CommandFunc(loadMain), "Aggregate span metrics into daily Parquet files.")
 
 	disp.Main(ctx, args)
