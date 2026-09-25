@@ -4,14 +4,13 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 
 	"github.com/bassosimone/deferexit"
 	"github.com/bassosimone/sonda/internal/buildcfg"
-	"github.com/bassosimone/sonda/internal/cli/measure"
-	"github.com/bassosimone/sonda/internal/cli/spool"
-	"github.com/bassosimone/sonda/internal/plugins"
+	"github.com/bassosimone/sonda/internal/cli/metrics"
+	"github.com/bassosimone/sonda/internal/cli/scan"
 	"github.com/bassosimone/sonda/internal/reexec"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vclip"
@@ -23,22 +22,20 @@ func main() {
 	defer deferexit.Recover(os.Exit)
 	env := testable.Env
 
-	// Set `SONDA_COMMAND` so that plugins can invoke `sonda` back.
-	ctx := context.Background()
-	exePath, err := env.Executable()
-	if err != nil {
-		fmt.Fprintf(env.Stderr, "sonda: %s\n", err.Error())
-		env.Exit(1)
-	}
-	env = testable.WithEnvOverrides(env, "SONDA_COMMAND="+exePath)
-	ctx = testable.WithEnviron(ctx, env)
-
 	// Arrange for code re-execution to work as intended.
 	env.ReExec = reexec.Subcommand
 	env.AsExitCode = reexec.AsExitCode
+	getenv := env.Getenv
+	env.Executable = func() (string, error) {
+		value := getenv("SONDA_COMMAND")
+		if value == "" {
+			return "", errors.New("SONDA_COMMAND is not defined")
+		}
+		return value, nil
+	}
 
 	// Create and init the root dispatcher command.
-	disp := vclip.NewDispatcherCommand("sonda", vflag.ExitOnError)
+	disp := vclip.NewDispatcherCommand("sonda-qoe", vflag.ExitOnError)
 	disp.Exit = env.Exit
 	disp.Stderr = env.Stderr
 	disp.Stdout = env.UsageStdout
@@ -47,19 +44,13 @@ func main() {
 	disp.AddVersionHandlers(buildcfg.Version)
 
 	// Built-in subcommands.
-	disp.AddCommand("measure", vclip.CommandFunc(measure.Main), measure.ShortDescr)
-	disp.AddCommand("spool", vclip.CommandFunc(spool.Main), spool.ShortDescr)
-
-	// Plugins subcommands (after builtins so they can't register existing names).
-	if err := plugins.Load(env, disp); err != nil {
-		fmt.Fprintf(env.Stderr, "sonda: cannot load plugins: %s\n", err.Error())
-		env.Exit(1)
-	}
+	disp.AddCommand("metrics", vclip.CommandFunc(metrics.Main), metrics.ShortDescr)
+	disp.AddCommand("scan", vclip.CommandFunc(scan.Main), scan.ShortDescr)
 
 	// Wrap the root dispatcher using `vclip.RootCommand`.
 	root := vclip.NewRootCommand(disp)
 	root.LogFatalOnError0 = env.LogFatalOnError0
 
 	// Execute the dispatcher command wrapper.
-	root.Main(ctx, env.Args[1:])
+	root.Main(context.Background(), env.Args[1:])
 }

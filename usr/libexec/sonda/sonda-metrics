@@ -1,0 +1,5 @@
+#!/bin/bash
+# Transitional plugin for `sonda-qoe metrics`.
+set -euo pipefail
+echo "WARNING: sonda-metrics is deprecated: use 'sonda-qoe metrics' instead." 1>&2
+exec "${SONDA_COMMAND:?}" qoe metrics "$@"

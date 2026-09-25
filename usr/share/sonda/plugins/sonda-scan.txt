@@ -1,0 +1,1 @@
+Scan specific network endpoints storing results in the spool (DEPRECATED).

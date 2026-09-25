@@ -1,3 +1,5 @@
 *
 !.gitignore
 !sonda-env
+!sonda-metrics
+!sonda-scan
