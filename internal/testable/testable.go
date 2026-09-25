@@ -5,11 +5,15 @@ package testable
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
+	"maps"
 	"net"
 	"os"
 	"os/exec"
+	"slices"
+	"strings"
 
 	"github.com/bassosimone/deferexit"
 	"github.com/bassosimone/runtimex"
@@ -137,5 +141,36 @@ func ContextEnviron(ctx context.Context) *Environ {
 	if env == nil {
 		env = Env
 	}
+	return env
+}
+
+// WithEnvOverrides returns a copy of `env` overriding the given environment variables.
+func WithEnvOverrides(env *Environ, overrides ...string) *Environ {
+	// 1. collect unique environment variables preferring overrides to originals.
+	overrides = append(slices.Clone(env.Environ()), overrides...)
+	uniq := make(map[string]string)
+	for _, entry := range overrides {
+		key, value, found := strings.Cut(entry, "=")
+		if !found {
+			continue
+		}
+		uniq[key] = value
+	}
+
+	// 2. build a sorted list of environment variables.
+	var sorted []string
+	for _, key := range slices.Sorted(maps.Keys(uniq)) {
+		sorted = append(sorted, fmt.Sprintf("%s=%s", key, uniq[key]))
+	}
+
+	// 3. change environment accessing funcs.
+	env = env.Clone()
+	env.Getenv = func(key string) string {
+		return uniq[key]
+	}
+	env.Environ = func() []string {
+		return sorted
+	}
+
 	return env
 }
