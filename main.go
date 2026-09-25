@@ -12,6 +12,7 @@ import (
 	"github.com/bassosimone/sonda/internal/cli/metrics"
 	"github.com/bassosimone/sonda/internal/cli/scan"
 	"github.com/bassosimone/sonda/internal/cli/spool"
+	"github.com/bassosimone/sonda/internal/reexec"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vclip"
 	"github.com/bassosimone/vflag"
@@ -21,6 +22,10 @@ func main() {
 	// Transform panics into [os.Exit] calls.
 	defer deferexit.Recover(os.Exit)
 	env := testable.Env
+
+	// Arrange for code re-execution to work as intended.
+	env.ReExec = reexec.Subcommand
+	env.AsExitCode = reexec.AsExitCode
 
 	// Create and init the root dispatcher command.
 	disp := vclip.NewDispatcherCommand("sonda", vflag.ExitOnError)

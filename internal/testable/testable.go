@@ -5,6 +5,7 @@ package testable
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -33,6 +34,7 @@ type File = io.ReadWriteCloser
 // can be tested without real I/O or process termination.
 type Environ struct {
 	Args             []string
+	AsExitCode       func(err error) int
 	Dialer           Dialer
 	Environ          func() []string
 	Executable       func() (string, error)
@@ -42,6 +44,7 @@ type Environ struct {
 	MkdirAll         func(path string, perm os.FileMode) error
 	Rename           func(oldpath, newpath string) error
 	RunCommand       func(cmd *exec.Cmd) error
+	SignalProcess    func(proc *os.Process, sig os.Signal) error
 	Stdin            io.Reader
 	Stderr           io.Writer
 	WriteFile        func(name string, data []byte, perm os.FileMode) error
@@ -49,6 +52,12 @@ type Environ struct {
 	// OpenFile is like [os.OpenFile] but abstract in the returned file type, to accommodate
 	// testing and hosting in a library, where the [File] could be memory or a pipe.
 	OpenFile func(name string, flag int, perm os.FileMode) (File, error)
+
+	// ReExec allows to re-execute `sonda` with the given command
+	// line arguments. By default, this function does not allow
+	// re-execution of sonda. The `main.go` should configure this
+	// functionality when/if it wants to enable it.
+	ReExec func(ctx context.Context, args []string) error
 
 	// Stdout carries a command's output and UsageStdout carries its
 	// usage, help, and version text. Both are os.Stdout by default.
@@ -59,10 +68,19 @@ type Environ struct {
 	UsageStdout io.Writer
 }
 
+// ErrNoReExec indicates that re-execution is not enabled.
+var ErrNoReExec = errors.New("sonda: re-execution not enabled")
+
 // NewEnvironOS returns an [*Environ] wired to real OS operations.
 func NewEnvironOS() *Environ {
 	return &Environ{
-		Args:       os.Args,
+		Args: os.Args,
+		AsExitCode: func(err error) int {
+			if err != nil {
+				return 1
+			}
+			return 0
+		},
 		Dialer:     newDialer(),
 		Environ:    os.Environ,
 		Executable: os.Executable,
@@ -79,11 +97,17 @@ func NewEnvironOS() *Environ {
 		RunCommand: func(cmd *exec.Cmd) error {
 			return cmd.Run()
 		},
+		SignalProcess: func(proc *os.Process, sig os.Signal) error {
+			return proc.Signal(sig)
+		},
 		Stdin:     os.Stdin,
 		Stderr:    os.Stderr,
 		WriteFile: os.WriteFile,
 		OpenFile: func(name string, flag int, perm os.FileMode) (File, error) {
 			return os.OpenFile(name, flag, perm)
+		},
+		ReExec: func(ctx context.Context, args []string) error {
+			return ErrNoReExec
 		},
 		Stdout:      os.Stdout,
 		UsageStdout: os.Stdout,
@@ -95,6 +119,7 @@ func NewEnvironOS() *Environ {
 func (e *Environ) Clone() *Environ {
 	return &Environ{
 		Args:             append([]string{}, e.Args...),
+		AsExitCode:       e.AsExitCode,
 		Dialer:           e.Dialer,
 		Environ:          e.Environ,
 		Executable:       e.Executable,
@@ -104,10 +129,12 @@ func (e *Environ) Clone() *Environ {
 		MkdirAll:         e.MkdirAll,
 		Rename:           e.Rename,
 		RunCommand:       e.RunCommand,
+		SignalProcess:    e.SignalProcess,
 		Stdin:            e.Stdin,
 		Stderr:           e.Stderr,
 		WriteFile:        e.WriteFile,
 		OpenFile:         e.OpenFile,
+		ReExec:           e.ReExec,
 		Stdout:           e.Stdout,
 		UsageStdout:      e.UsageStdout,
 	}
