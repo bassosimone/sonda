@@ -17,7 +17,7 @@ import (
 	"github.com/pion/stun/v3"
 )
 
-// stunMain is the main function of the `sonda measure stun` subcommand.
+// stunMain is the main function of the `sonda-measure stun` subcommand.
 func stunMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
@@ -36,7 +36,7 @@ func stunMain(ctx context.Context, args []string) error {
 	}
 
 	// Parse command line flags.
-	fset := vflag.NewFlagSet("sonda measure stun", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-measure stun", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
@@ -68,7 +68,7 @@ func stunMain(ctx context.Context, args []string) error {
 	}()
 
 	// Log the command line arguments for reproducibility.
-	fullArgs := append([]string{"sonda", "measure", "stun"}, args...)
+	fullArgs := append([]string{"sonda-measure", "stun"}, args...)
 	logger.Info("sondaCommandLineArgs", slog.Any("cliArgs", fullArgs))
 
 	// Parse target as an endpoint.

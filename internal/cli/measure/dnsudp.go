@@ -18,7 +18,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-// dnsOverUDPMain is the main function of the `sonda measure dns over udp` subcommand.
+// dnsOverUDPMain is the main function of the `sonda-measure dns over udp` subcommand.
 func dnsOverUDPMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
@@ -39,7 +39,7 @@ func dnsOverUDPMain(ctx context.Context, args []string) error {
 	}
 
 	// Parse command line flags
-	fset := vflag.NewFlagSet("sonda measure dns over udp", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-measure dns over udp", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
@@ -73,7 +73,7 @@ func dnsOverUDPMain(ctx context.Context, args []string) error {
 	}()
 
 	// Log the command line arguments for reproducibility.
-	fullArgs := append([]string{"sonda", "measure", "dns", "over", "udp"}, args...)
+	fullArgs := append([]string{"sonda-measure", "dns", "over", "udp"}, args...)
 	logger.Info("sondaCommandLineArgs", slog.Any("cliArgs", fullArgs))
 
 	// Parse the query type string.

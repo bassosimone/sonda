@@ -5,9 +5,14 @@ package paths
 
 import "path/filepath"
 
+// SpanDirRelative returns the span dir relative to the current directory.
+func SpanDirRelative(spanID string) string {
+	return filepath.Join(spanID[:4], spanID[4:5], spanID[5:6], spanID)
+}
+
 // SpanDir returns the spool directory path for a given span ID.
 func SpanDir(spoolDir, spanID string) string {
-	return filepath.Join(spoolDir, spanID[:4], spanID[4:5], spanID[5:6], spanID)
+	return filepath.Join(spoolDir, SpanDirRelative(spanID))
 }
 
 // SpanArgvJSON returns the path to argv.json inside a span directory.
@@ -30,9 +35,15 @@ func SpanExitCode(spanDir string) string {
 	return filepath.Join(spanDir, "exitcode.txt")
 }
 
+// SpanDirTmpRelative returns the temporary span directory path (before atomic rename)
+// relative to the current working directory.
+func SpanDirTmpRelative(spanID string) string {
+	return SpanDirRelative(spanID) + ".tmp"
+}
+
 // SpanDirTmp returns the temporary span directory path (before atomic rename).
 func SpanDirTmp(spoolDir, spanID string) string {
-	return SpanDir(spoolDir, spanID) + ".tmp"
+	return filepath.Join(spoolDir, SpanDirTmpRelative(spanID))
 }
 
 // SpanBodyBin returns the path to body.bin inside a span directory.

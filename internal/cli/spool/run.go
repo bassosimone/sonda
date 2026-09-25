@@ -5,6 +5,7 @@ package spool
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"math"
 	"os"
@@ -20,31 +21,38 @@ import (
 	"github.com/bassosimone/vflag"
 )
 
-// runMain is the main function of the `sonda spool run` subcommand.
+// runMain is the main function of the `sonda-spool run` subcommand.
 func runMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
-	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
+	logger := slog.New(slog.NewJSONHandler(env.Stdout, nil))
 
 	// Set command defaults.
 	var (
 		spanID   = nop.NewSpanID()
-		spoolDir = "."
+		spoolDir = env.Getenv("SONDA_SPOOL_DIR")
 		timeout  = 5 * time.Minute
 	)
 
 	// Parse command line flags
-	fset := vflag.NewFlagSet("sonda spool run", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-spool run", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.StringVar(&spanID, 0, "span-id", "Use `ID` instead of generating a random one.")
-	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
+	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `$SONDA_SPOOL_DIR`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")
 	fset.SetMinMaxPositionalArgs(1, math.MaxInt)
 	fset.DisablePermute = true               // make the `--` optional
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
+
+	// Refuse to guess the spool directory.
+	if spoolDir == "" {
+		err := errors.New("neither --spool-dir nor SONDA_SPOOL_DIR is set")
+		fset.PrintUsageError(env.Stderr, err)
+		env.Exit(2)
+	}
 
 	// Remaining args after "--" are the command to execute.
 	cmdArgs := fset.Args()
@@ -65,6 +73,13 @@ func runMain(ctx context.Context, args []string) error {
 		logger.Error("failed to create spool directory", slog.Any("err", err))
 		env.Exit(1)
 	}
+
+	logger.Info(
+		"spoolRunMkdirTmp",
+		slog.String("spoolDir", spoolDir),
+		slog.String("spanId", spanID),
+		slog.String("spanDirTmp", paths.SpanDirTmpRelative(spanID)),
+	)
 
 	// Record the command that will be executed.
 	argvData, err := json.Marshal(cmdArgs)
@@ -133,6 +148,14 @@ func runMain(ctx context.Context, args []string) error {
 		logger.Error("failed to finalize span directory", slog.Any("err", err))
 		env.Exit(1)
 	}
+
+	logger.Info(
+		"spoolRunRenameDir",
+		slog.String("spoolDir", spoolDir),
+		slog.String("spanId", spanID),
+		slog.String("spanDirTmp", paths.SpanDirTmpRelative(spanID)),
+		slog.String("spanDir", paths.SpanDirRelative(spanID)),
+	)
 
 	return nil
 }

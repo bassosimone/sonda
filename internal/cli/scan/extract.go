@@ -10,7 +10,7 @@ import (
 	"github.com/bassosimone/sonda/internal/testable"
 )
 
-// extractRunner runs `sonda spool extract` as a subprocess.
+// extractRunner runs `sonda metrics extract` as a subprocess.
 type extractRunner struct {
 	Env      *testable.Environ
 	Logger   *slog.Logger

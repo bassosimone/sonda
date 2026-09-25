@@ -3,5 +3,5 @@
 set -euo pipefail
 export SONDA_EXEC_PATH="$(readlink -f ./usr/libexec/sonda)"
 export SONDA_SHARE_PATH="$(readlink -f ./usr/share/sonda)"
-export SONDA_SPOOL_PATH="$(readlink -f ./var/spool/sonda)"
+export SONDA_SPOOL_DIR="$(readlink -f ./var/spool/sonda)"
 exec "$SONDA_EXEC_PATH/sonda" "$@"

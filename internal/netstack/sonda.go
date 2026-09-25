@@ -57,7 +57,7 @@ func (s *SondaMeasurer) Run(ctx context.Context, op SondaOperation) (string, err
 	return paths.SpanDir(s.SpoolDir, spanID), nil
 }
 
-// SondaMeasureSTUN is the operation for `sonda measure stun`.
+// SondaMeasureSTUN is the operation for `sonda-measure stun`.
 type SondaMeasureSTUN struct {
 	// Target is the STUN server address and port.
 	//
@@ -85,7 +85,7 @@ func (op *SondaMeasureSTUN) Args() []string {
 	return args
 }
 
-// SondaMeasureHTTP is the operation for `sonda measure http`.
+// SondaMeasureHTTP is the operation for `sonda-measure http`.
 type SondaMeasureHTTP struct {
 	// BodyFile is the path to save the response body.
 	//
@@ -158,7 +158,7 @@ func (op *SondaMeasureHTTP) Args() []string {
 	return args
 }
 
-// SondaMeasureHTTPS is the operation for `sonda measure https`.
+// SondaMeasureHTTPS is the operation for `sonda-measure https`.
 type SondaMeasureHTTPS struct {
 	// BodyFile is the path to save the response body.
 	//
@@ -240,7 +240,7 @@ func (op *SondaMeasureHTTPS) Args() []string {
 	return args
 }
 
-// SondaMeasureDNSOverUDP is the operation for `sonda measure dns over udp`.
+// SondaMeasureDNSOverUDP is the operation for `sonda-measure dns over udp`.
 type SondaMeasureDNSOverUDP struct {
 	// Domain is the domain name to resolve.
 	//
@@ -286,7 +286,7 @@ func (op *SondaMeasureDNSOverUDP) Args() []string {
 	return args
 }
 
-// SondaMeasureDNSOverHTTPS is the operation for `sonda measure dns over https`.
+// SondaMeasureDNSOverHTTPS is the operation for `sonda-measure dns over https`.
 type SondaMeasureDNSOverHTTPS struct {
 	// Domain is the domain name to resolve.
 	//

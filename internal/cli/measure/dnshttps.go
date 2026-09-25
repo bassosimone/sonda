@@ -20,7 +20,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-// dnsOverHTTPSMain is the main function of the `sonda measure dns over https` subcommand.
+// dnsOverHTTPSMain is the main function of the `sonda-measure dns over https` subcommand.
 func dnsOverHTTPSMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
@@ -44,7 +44,7 @@ func dnsOverHTTPSMain(ctx context.Context, args []string) error {
 	}
 
 	// Parse command line flags
-	fset := vflag.NewFlagSet("sonda measure dns over https", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-measure dns over https", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
@@ -81,7 +81,7 @@ func dnsOverHTTPSMain(ctx context.Context, args []string) error {
 	}()
 
 	// Log the command line arguments for reproducibility.
-	fullArgs := append([]string{"sonda", "measure", "dns", "over", "https"}, args...)
+	fullArgs := append([]string{"sonda-measure", "dns", "over", "https"}, args...)
 	logger.Info("sondaCommandLineArgs", slog.Any("cliArgs", fullArgs))
 
 	// Parse the query type string.

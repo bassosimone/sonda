@@ -22,7 +22,7 @@ import (
 	"github.com/bassosimone/vflag"
 )
 
-// httpsMain is the main function of the `sonda measure https` subcommand.
+// httpsMain is the main function of the `sonda-measure https` subcommand.
 func httpsMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
@@ -47,7 +47,7 @@ func httpsMain(ctx context.Context, args []string) error {
 	}
 
 	// Parse command line flags.
-	fset := vflag.NewFlagSet("sonda measure https", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-measure https", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
@@ -85,7 +85,7 @@ func httpsMain(ctx context.Context, args []string) error {
 	}()
 
 	// Log the command line arguments for reproducibility.
-	fullArgs := append([]string{"sonda", "measure", "https"}, args...)
+	fullArgs := append([]string{"sonda-measure", "https"}, args...)
 	logger.Info("sondaCommandLineArgs", slog.Any("cliArgs", fullArgs))
 
 	// Parse target as an endpoint.

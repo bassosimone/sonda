@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package measure implements the `sonda measure` subcommand.
+// Package measure implements the `sonda-measure` subcommand.
 package measure
 
 import (
@@ -14,12 +14,12 @@ import (
 // ShortDescr is the command short description.
 const ShortDescr = "Run a single low-level network measurement."
 
-// Main is the main function of the `sonda measure` subcommand.
+// Main is the main function of the `sonda-measure` subcommand.
 func Main(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
 
-	// Create the `sonda measure dns over` dispatcher.
+	// Create the `sonda-measure dns over` dispatcher.
 	overCmd := vclip.NewDispatcherCommand("over", vflag.ExitOnError)
 	overCmd.Exit = env.Exit
 	overCmd.Stderr = env.Stderr
@@ -29,7 +29,7 @@ func Main(ctx context.Context, args []string) error {
 	overCmd.AddCommand("https", vclip.CommandFunc(dnsOverHTTPSMain), "DNS over HTTPS (DoH).")
 	overCmd.AddCommand("udp", vclip.CommandFunc(dnsOverUDPMain), "DNS over UDP.")
 
-	// Create the `sonda measure dns` dispatcher.
+	// Create the `sonda-measure dns` dispatcher.
 	dnsCmd := vclip.NewDispatcherCommand("dns", vflag.ExitOnError)
 	dnsCmd.Exit = env.Exit
 	dnsCmd.Stderr = env.Stderr
@@ -38,8 +38,8 @@ func Main(ctx context.Context, args []string) error {
 	dnsCmd.AddDescription("Run DNS measurements.")
 	dnsCmd.AddCommand("over", overCmd, "Select the DNS transport protocol.")
 
-	// Create the `sonda measure` dispatcher.
-	disp := vclip.NewDispatcherCommand("measure", vflag.ExitOnError)
+	// Create the `sonda-measure` dispatcher.
+	disp := vclip.NewDispatcherCommand("sonda-measure", vflag.ExitOnError)
 	disp.Exit = env.Exit
 	disp.Stderr = env.Stderr
 	disp.Stdout = env.UsageStdout

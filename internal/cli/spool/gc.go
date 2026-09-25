@@ -4,6 +4,7 @@ package spool
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -16,7 +17,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// gcMain is the main function of the `sonda spool gc` subcommand.
+// gcMain is the main function of the `sonda-spool gc` subcommand.
 func gcMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
@@ -24,18 +25,25 @@ func gcMain(ctx context.Context, args []string) error {
 	// Set command defaults.
 	var (
 		maxAge   = 6 * time.Hour
-		spoolDir = "."
+		spoolDir = env.Getenv("SONDA_SPOOL_DIR")
 	)
 
 	// Parse command line flags.
-	fset := vflag.NewFlagSet("sonda spool gc", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-spool gc", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.DurationVar(&maxAge, 0, "max-age", "Remove spans older than `DURATION`.")
-	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
+	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `$SONDA_SPOOL_DIR`.")
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
+
+	// Refuse to guess the spool directory.
+	if spoolDir == "" {
+		err := errors.New("neither --spool-dir nor SONDA_SPOOL_DIR is set")
+		fset.PrintUsageError(env.Stderr, err)
+		env.Exit(2)
+	}
 
 	// Compute the cutoff time.
 	cutoff := time.Now().Add(-maxAge)
