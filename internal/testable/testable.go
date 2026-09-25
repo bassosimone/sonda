@@ -86,6 +86,29 @@ func NewEnvironOS() *Environ {
 	}
 }
 
+// Clone returns a copy of [*Environ] that is safe to mutate into its obviously
+// mutable elements: slices. The other fields are returned verbatim.
+func (e *Environ) Clone() *Environ {
+	return &Environ{
+		Args:             append([]string{}, e.Args...),
+		Dialer:           e.Dialer,
+		Environ:          e.Environ,
+		Executable:       e.Executable,
+		Exit:             e.Exit,
+		Getenv:           e.Getenv,
+		LogFatalOnError0: e.LogFatalOnError0,
+		MkdirAll:         e.MkdirAll,
+		Rename:           e.Rename,
+		RunCommand:       e.RunCommand,
+		Stdin:            e.Stdin,
+		Stderr:           e.Stderr,
+		WriteFile:        e.WriteFile,
+		OpenFile:         e.OpenFile,
+		Stdout:           e.Stdout,
+		UsageStdout:      e.UsageStdout,
+	}
+}
+
 func newDialer() *net.Dialer {
 	d := &net.Dialer{}
 	d.SetMultipathTCP(false)
