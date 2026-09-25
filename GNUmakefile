@@ -1,5 +1,7 @@
 .PHONY: all
-all: sonda sonda-qoe
+all: \
+	sonda \
+	sonda-qoe
 
 GOFLAGS ?= -v -ldflags '-s -w' -tags netgo
 
