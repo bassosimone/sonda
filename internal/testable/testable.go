@@ -13,6 +13,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -33,6 +34,7 @@ type File = io.ReadWriteCloser
 // Environ abstracts away side effects (I/O, exit) so that commands
 // can be tested without real I/O or process termination.
 type Environ struct {
+	Abs              func(path string) (string, error)
 	Args             []string
 	AsExitCode       func(err error) int
 	Dialer           Dialer
@@ -42,6 +44,8 @@ type Environ struct {
 	Getenv           func(key string) string
 	LogFatalOnError0 func(err error)
 	MkdirAll         func(path string, perm os.FileMode) error
+	ReadDir          func(path string) ([]os.DirEntry, error)
+	ReadFile         func(path string) ([]byte, error)
 	Rename           func(oldpath, newpath string) error
 	RunCommand       func(cmd *exec.Cmd) error
 	SignalProcess    func(proc *os.Process, sig os.Signal) error
@@ -74,6 +78,7 @@ var ErrNoReExec = errors.New("sonda: re-execution not enabled")
 // NewEnvironOS returns an [*Environ] wired to real OS operations.
 func NewEnvironOS() *Environ {
 	return &Environ{
+		Abs:  filepath.Abs,
 		Args: os.Args,
 		AsExitCode: func(err error) int {
 			if err != nil {
@@ -93,6 +98,8 @@ func NewEnvironOS() *Environ {
 			}
 		},
 		MkdirAll: os.MkdirAll,
+		ReadDir:  os.ReadDir,
+		ReadFile: os.ReadFile,
 		Rename:   os.Rename,
 		RunCommand: func(cmd *exec.Cmd) error {
 			return cmd.Run()
@@ -118,6 +125,7 @@ func NewEnvironOS() *Environ {
 // mutable elements: slices. The other fields are returned verbatim.
 func (e *Environ) Clone() *Environ {
 	return &Environ{
+		Abs:              e.Abs,
 		Args:             append([]string{}, e.Args...),
 		AsExitCode:       e.AsExitCode,
 		Dialer:           e.Dialer,
@@ -127,6 +135,8 @@ func (e *Environ) Clone() *Environ {
 		Getenv:           e.Getenv,
 		LogFatalOnError0: e.LogFatalOnError0,
 		MkdirAll:         e.MkdirAll,
+		ReadFile:         e.ReadFile,
+		ReadDir:          e.ReadDir,
 		Rename:           e.Rename,
 		RunCommand:       e.RunCommand,
 		SignalProcess:    e.SignalProcess,

@@ -19,6 +19,9 @@ import (
 // When the context is cancelled, we first send SIGINT and later SIGKILL after
 // a five seconds grace time. Execution goes through the `sonda` launcher, which
 // uses `signal.NotifyContext` via `vclip.RootCommand`.
+//
+// By overriding `env.Executable` you can also use this functionality to
+// execute a specific `sonda` plugin rather than `sonda` itself.
 func Subcommand(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
