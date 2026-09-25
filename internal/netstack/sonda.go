@@ -4,7 +4,6 @@ package netstack
 
 import (
 	"context"
-	"os/exec"
 	"time"
 
 	"github.com/bassosimone/nop"
@@ -26,11 +25,6 @@ type SondaMeasurer struct {
 	// Set by [NewSondaMeasurer].
 	Env *testable.Environ
 
-	// Executable is the path to the sonda binary.
-	//
-	// Optional; default: the result of [testable.Environ.Executable].
-	Executable string
-
 	// SpoolDir is the spool directory path.
 	//
 	// Set by [NewSondaMeasurer].
@@ -45,29 +39,17 @@ func NewSondaMeasurer(env *testable.Environ, spoolDir string) *SondaMeasurer {
 // Run executes an operation through `sonda spool run` and returns
 // the span directory containing the measurement output.
 func (s *SondaMeasurer) Run(ctx context.Context, op SondaOperation) (string, error) {
-	// Honor the executable override when present.
-	exe := s.Executable
-	if exe == "" {
-		var err error
-		exe, err = s.Env.Executable()
-		if err != nil {
-			return "", err
-		}
-	}
-
 	// Create the command to run with externally defined spanID so that
 	// later on we can read the `stdout.txt`.
 	spanID := nop.NewSpanID()
 	args := []string{"spool", "run", "--span-id", spanID, "--spool-dir", s.SpoolDir, "--"}
-	args = append(args, exe)
 	args = append(args, op.Args()...)
 	for _, tag := range TagsFromContext(ctx) {
 		args = append(args, "--tag", tag)
 	}
-	cmd := exec.CommandContext(ctx, exe, args...)
 
 	// Execute the command.
-	if err := s.Env.RunCommand(cmd); err != nil {
+	if err := s.Env.ReExec(ctx, args); err != nil {
 		return "", err
 	}
 

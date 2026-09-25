@@ -26,7 +26,7 @@ func Main(ctx context.Context, args []string) error {
 	disp.AddDescription(ShortDescr)
 	disp.AddCommand("extract", vclip.CommandFunc(extractMain), "Extract Parquet from span directories.")
 	disp.AddCommand("gc", vclip.CommandFunc(gcMain), "Remove old span directories.")
-	disp.AddCommand("run", vclip.CommandFunc(runMain), "Execute a command and collect its output.")
+	disp.AddCommand("run", vclip.CommandFunc(runMain), "Execute a sonda subcommand and collect its output.")
 
 	disp.Main(ctx, args)
 	return nil

@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"math"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -57,8 +56,8 @@ func runMain(ctx context.Context, args []string) error {
 
 	// Expand @SONDA_SPAN_DIR@ in the command arguments so that inner
 	// commands can reference the span directory for auxiliary files.
-	for i, arg := range cmdArgs {
-		cmdArgs[i] = strings.ReplaceAll(arg, "@SONDA_SPAN_DIR@", tmpDir)
+	for idx, arg := range cmdArgs {
+		cmdArgs[idx] = strings.ReplaceAll(arg, "@SONDA_SPAN_DIR@", tmpDir)
 	}
 
 	// Create the temporary spool directory.
@@ -100,30 +99,20 @@ func runMain(ctx context.Context, args []string) error {
 	}
 	closers.Add(stderrFile)
 
-	// Build the command with timeout context.
+	// Build the environment with timeout context.
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, cmdArgs[0], cmdArgs[1:]...)
-	cmd.Env = append(env.Environ(), "SONDA_SPAN_ID="+spanID)
-	cmd.Stdin = nil
-	cmd.Stdout = stdoutFile
-	cmd.Stderr = stderrFile
-
-	// On context cancellation, send SIGINT first; escalate to
-	// SIGKILL after the wait delay.
-	cmd.Cancel = func() error {
-		return cmd.Process.Signal(os.Interrupt)
-	}
-	cmd.WaitDelay = 5 * time.Second
+	env = testable.WithEnvOverrides(env, "SONDA_SPAN_ID="+spanID) // clones env
+	env.Stdin = strings.NewReader("")
+	env.Stdout = stdoutFile
+	env.Stderr = stderrFile
+	ctx = testable.WithEnviron(ctx, env)
 
 	// Run the command and record the exit code.
 	exitCode := 0
-	if err := env.RunCommand(cmd); err != nil {
-		exitCode = 1
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			exitCode = exitErr.ExitCode()
-		}
+	if err := env.ReExec(ctx, cmdArgs); err != nil {
+		exitCode = env.AsExitCode(err)
 	}
 
 	// Make sure we successfully closed both stdout.txt and stderr.txt.

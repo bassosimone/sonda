@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os/exec"
 
 	"github.com/bassosimone/sonda/internal/testable"
 )
@@ -21,14 +20,8 @@ type loadRunner struct {
 
 // RunStep implements StepRunner.
 func (r *loadRunner) RunStep(ctx context.Context, with map[string]string) error {
-	exe, err := r.Env.Executable()
-	if err != nil {
-		return fmt.Errorf("load: finding executable: %w", err)
-	}
-
 	args := []string{"metrics", "load", "--spool-dir", r.SpoolDir, "--metrics-dir", r.MetricsDir}
-	cmd := exec.CommandContext(ctx, exe, args...)
-	if err := r.Env.RunCommand(cmd); err != nil {
+	if err := r.Env.ReExec(ctx, args); err != nil {
 		return fmt.Errorf("load: %w", err)
 	}
 	return nil

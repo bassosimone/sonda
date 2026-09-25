@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os/exec"
 
 	"github.com/bassosimone/sonda/internal/testable"
 )
@@ -25,14 +24,8 @@ func (r *gcRunner) RunStep(ctx context.Context, with map[string]string) error {
 		maxAge = "6h"
 	}
 
-	exe, err := r.Env.Executable()
-	if err != nil {
-		return fmt.Errorf("gc: finding executable: %w", err)
-	}
-
 	args := []string{"spool", "gc", "--spool-dir", r.SpoolDir, "--max-age", maxAge}
-	cmd := exec.CommandContext(ctx, exe, args...)
-	if err := r.Env.RunCommand(cmd); err != nil {
+	if err := r.Env.ReExec(ctx, args); err != nil {
 		return fmt.Errorf("gc: %w", err)
 	}
 	return nil
