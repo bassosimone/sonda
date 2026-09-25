@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package subcommand contains code shared by subcommands.
+// Package subcommand contains code to implement a subcommand.
 package subcommand
 
 import (
@@ -12,19 +12,10 @@ import (
 	"github.com/bassosimone/sonda/internal/reexec"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vclip"
-	"github.com/bassosimone/vflag"
 )
 
-// Main implements the main function of a generic subcommand.
-//
-// Arguments:
-//
-// 1. `name` is the full name of the subcommand (e.g. `sonda-foo`).
-//
-// 2. `init` initializes the dispatcher.
-//
-// 3. `docs` provides the command documentation.
-func Main(name string, init func(disp *vclip.DispatcherCommand), docs ...string) {
+// Main is the main subcommand function.
+func Main(main func(ctx context.Context, args []string) error) {
 	// Transform panics into [os.Exit] calls.
 	defer deferexit.Recover(os.Exit)
 	env := testable.Env
@@ -41,22 +32,10 @@ func Main(name string, init func(disp *vclip.DispatcherCommand), docs ...string)
 		return value, nil
 	}
 
-	// Create and init the root dispatcher command.
-	disp := vclip.NewDispatcherCommand(name, vflag.ExitOnError)
-	disp.Exit = env.Exit
-	disp.Stderr = env.Stderr
-	disp.Stdout = env.UsageStdout
-
-	// Add the command docs.
-	disp.AddDescription(docs...)
-
-	// Built-in subcommands.
-	init(disp)
-
-	// Wrap the root dispatcher using `vclip.RootCommand`.
-	root := vclip.NewRootCommand(disp)
+	// Wrap the measure command w/ `vclip.RootCommand`.
+	root := vclip.NewRootCommand(vclip.CommandFunc(main))
 	root.LogFatalOnError0 = env.LogFatalOnError0
 
-	// Execute the dispatcher command wrapper.
+	// Execute the measure command wrapper.
 	root.Main(context.Background(), env.Args[1:])
 }

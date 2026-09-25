@@ -9,8 +9,6 @@ import (
 
 	"github.com/bassosimone/deferexit"
 	"github.com/bassosimone/sonda/internal/buildcfg"
-	"github.com/bassosimone/sonda/internal/cli/measure"
-	"github.com/bassosimone/sonda/internal/cli/spool"
 	"github.com/bassosimone/sonda/internal/plugins"
 	"github.com/bassosimone/sonda/internal/reexec"
 	"github.com/bassosimone/sonda/internal/testable"
@@ -43,14 +41,10 @@ func main() {
 	disp.Stderr = env.Stderr
 	disp.Stdout = env.UsageStdout
 
-	// Wire version reporting.
+	// Wire version reporting before plugins so they can't override it.
 	disp.AddVersionHandlers(buildcfg.Version)
 
-	// Built-in subcommands.
-	disp.AddCommand("measure", vclip.CommandFunc(measure.Main), measure.ShortDescr)
-	disp.AddCommand("spool", vclip.CommandFunc(spool.Main), spool.ShortDescr)
-
-	// Plugins subcommands (after builtins so they can't register existing names).
+	// Wire plugins subcommands.
 	if err := plugins.Load(env, disp); err != nil {
 		fmt.Fprintf(env.Stderr, "sonda: cannot load plugins: %s\n", err.Error())
 		env.Exit(1)

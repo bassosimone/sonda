@@ -1,6 +1,0 @@
-#!/bin/bash
-# Transitional plugin for `sonda-qoe scan`.
-set -euo pipefail
-echo "WARNING: sonda-scan is deprecated: use 'sonda-qoe scan' instead." 1>&2
-set -x
-exec "${SONDA_COMMAND:?}" qoe scan "$@"

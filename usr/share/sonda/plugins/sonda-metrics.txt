@@ -1,1 +1,1 @@
-Aggregate and query measurement metrics (DEPRECATED).
+Aggregate and query measurement metrics.
