@@ -20,7 +20,7 @@ const ShortDescr = "Scan specific network endpoints storing results in the spool
 // Main is the main function of the `sonda scan` subcommand.
 func Main(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
-	env := testable.Env
+	env := testable.ContextEnviron(ctx)
 
 	// Set command defaults.
 	var (

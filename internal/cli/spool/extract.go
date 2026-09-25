@@ -22,7 +22,7 @@ import (
 
 // extractMain is the main function of the `sonda spool extract` subcommand.
 func extractMain(ctx context.Context, args []string) error {
-	env := testable.Env
+	env := testable.ContextEnviron(ctx)
 
 	var (
 		maxAge   = 6 * time.Hour

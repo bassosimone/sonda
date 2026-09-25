@@ -16,7 +16,7 @@ const ShortDescr = "Manage the measurement spool directory."
 
 // Main is the main function of the `sonda spool` subcommand.
 func Main(ctx context.Context, args []string) error {
-	env := testable.Env
+	env := testable.ContextEnviron(ctx)
 
 	// Create the `sonda spool` dispatcher.
 	disp := vclip.NewDispatcherCommand("spool", vflag.ExitOnError)

@@ -19,7 +19,7 @@ import (
 // gcMain is the main function of the `sonda spool gc` subcommand.
 func gcMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
-	env := testable.Env
+	env := testable.ContextEnviron(ctx)
 
 	// Set command defaults.
 	var (

@@ -16,7 +16,7 @@ const ShortDescr = "Aggregate and query measurement metrics."
 
 // Main is the main function of the `sonda metrics` subcommand.
 func Main(ctx context.Context, args []string) error {
-	env := testable.Env
+	env := testable.ContextEnviron(ctx)
 
 	// Create the `sonda metrics` dispatcher.
 	disp := vclip.NewDispatcherCommand("metrics", vflag.ExitOnError)

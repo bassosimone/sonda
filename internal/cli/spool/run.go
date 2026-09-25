@@ -24,7 +24,7 @@ import (
 // runMain is the main function of the `sonda spool run` subcommand.
 func runMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
-	env := testable.Env
+	env := testable.ContextEnviron(ctx)
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
 	// Set command defaults.

@@ -23,7 +23,7 @@ import (
 
 // loadMain is the main function of the `sonda metrics load` subcommand.
 func loadMain(ctx context.Context, args []string) error {
-	env := testable.Env
+	env := testable.ContextEnviron(ctx)
 
 	var (
 		maxAge     = 24 * time.Hour
