@@ -24,7 +24,7 @@ func (r *extractRunner) RunStep(ctx context.Context, with map[string]string) err
 		maxAge = "1h"
 	}
 
-	args := []string{"spool", "extract", "--spool-dir", r.SpoolDir, "--max-age", maxAge}
+	args := []string{"metrics", "extract", "--spool-dir", r.SpoolDir, "--max-age", maxAge}
 	if err := r.Env.ReExec(ctx, args); err != nil {
 		return fmt.Errorf("extract: %w", err)
 	}

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package spool
+package metrics
 
 import (
 	"bytes"
@@ -20,7 +20,7 @@ import (
 	parquet "github.com/parquet-go/parquet-go"
 )
 
-// extractMain is the main function of the `sonda spool extract` subcommand.
+// extractMain is the main function of the `sonda metrics extract` subcommand.
 func extractMain(ctx context.Context, args []string) error {
 	env := testable.ContextEnviron(ctx)
 
@@ -29,7 +29,7 @@ func extractMain(ctx context.Context, args []string) error {
 		spoolDir = "."
 	)
 
-	fset := vflag.NewFlagSet("sonda spool extract", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda metrics extract", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
