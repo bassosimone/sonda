@@ -9,8 +9,8 @@ require (
 	github.com/bassosimone/errclass v0.0.0-20260920130548-7c6065cbf578
 	github.com/bassosimone/nop v0.0.0-20260920140226-89b218104885
 	github.com/bassosimone/runtimex v0.0.0-20260920130843-b72080259a60
-	github.com/bassosimone/vclip v0.0.0-20260920140331-32845f1c2f1a
-	github.com/bassosimone/vflag v0.0.0-20260920135752-105f5b45ed82
+	github.com/bassosimone/vclip v0.0.0-20260925143522-ace4df29919e
+	github.com/bassosimone/vflag v0.0.0-20260923101421-08f22745a120
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/uuid v1.6.0
 	github.com/miekg/dns v1.1.73

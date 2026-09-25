@@ -52,10 +52,10 @@ github.com/bassosimone/textwrap v0.0.0-20260920134026-7a0b23602d17 h1:LCaUCYzfTe
 github.com/bassosimone/textwrap v0.0.0-20260920134026-7a0b23602d17/go.mod h1:Abw4PaN0ny+I6/HT5tZV9NwTOz2qqT9MzWWom8g6veo=
 github.com/bassosimone/tlsstub v0.0.0-20260920135123-d06c7fcbe2bc h1:4HXRR+yBlfOjlzY1bEsNEyWszDolGVK/dBWNXHI4qBg=
 github.com/bassosimone/tlsstub v0.0.0-20260920135123-d06c7fcbe2bc/go.mod h1:xwxc0CgBPR2AKGsUD5BJlM8BlYl2aCSJ0wF0nnruR9c=
-github.com/bassosimone/vclip v0.0.0-20260920140331-32845f1c2f1a h1:h2lovAAvZrGcDUvpw4EfL529uNbl3Edg+BECdV005fg=
-github.com/bassosimone/vclip v0.0.0-20260920140331-32845f1c2f1a/go.mod h1:Z/tL0t5Xh2Mt8qJrwJCvn6ZkjQUBhIEfjkekjKj7Ub4=
-github.com/bassosimone/vflag v0.0.0-20260920135752-105f5b45ed82 h1:3Q7Y+of4TS3POTZuQ4JlBcYOq+HAXl5pnBbMlbUdZ10=
-github.com/bassosimone/vflag v0.0.0-20260920135752-105f5b45ed82/go.mod h1:2VpkMV6B+FemAGIPDv/FWUJPIcwdEIbg4/rqU+uBdts=
+github.com/bassosimone/vclip v0.0.0-20260925143522-ace4df29919e h1:z9AOuTj3NTewHEuS9g4SZE0/niu6XFRQKq3d6JPMEGk=
+github.com/bassosimone/vclip v0.0.0-20260925143522-ace4df29919e/go.mod h1:Z/tL0t5Xh2Mt8qJrwJCvn6ZkjQUBhIEfjkekjKj7Ub4=
+github.com/bassosimone/vflag v0.0.0-20260923101421-08f22745a120 h1:shioPMKclwFsMCQ+mXOVuiCPdlgrPnlECLVTJVhgrkI=
+github.com/bassosimone/vflag v0.0.0-20260923101421-08f22745a120/go.mod h1:2VpkMV6B+FemAGIPDv/FWUJPIcwdEIbg4/rqU+uBdts=
 github.com/goccy/go-yaml v1.19.2 h1:PmFC1S6h8ljIz6gMRBopkjP1TVT7xuwrButHID66PoM=
 github.com/goccy/go-yaml v1.19.2/go.mod h1:XBurs7gK8ATbW4ZPGKgcbrY1Br56PdM69F7LkFRi1kA=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
