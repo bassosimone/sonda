@@ -54,6 +54,8 @@ github.com/bassosimone/tlsstub v0.0.0-20260920135123-d06c7fcbe2bc h1:4HXRR+yBlfO
 github.com/bassosimone/tlsstub v0.0.0-20260920135123-d06c7fcbe2bc/go.mod h1:xwxc0CgBPR2AKGsUD5BJlM8BlYl2aCSJ0wF0nnruR9c=
 github.com/bassosimone/vclip v0.0.0-20260925143522-ace4df29919e h1:z9AOuTj3NTewHEuS9g4SZE0/niu6XFRQKq3d6JPMEGk=
 github.com/bassosimone/vclip v0.0.0-20260925143522-ace4df29919e/go.mod h1:Z/tL0t5Xh2Mt8qJrwJCvn6ZkjQUBhIEfjkekjKj7Ub4=
+github.com/bassosimone/vclip v0.0.0-20260925191241-1b1636f3b461 h1:o7n8BmUYf4tesvTmQxK4SvDgL4MqAYmJ0W3jNlVNePU=
+github.com/bassosimone/vclip v0.0.0-20260925191241-1b1636f3b461/go.mod h1:Z/tL0t5Xh2Mt8qJrwJCvn6ZkjQUBhIEfjkekjKj7Ub4=
 github.com/bassosimone/vflag v0.0.0-20260923101421-08f22745a120 h1:shioPMKclwFsMCQ+mXOVuiCPdlgrPnlECLVTJVhgrkI=
 github.com/bassosimone/vflag v0.0.0-20260923101421-08f22745a120/go.mod h1:2VpkMV6B+FemAGIPDv/FWUJPIcwdEIbg4/rqU+uBdts=
 github.com/goccy/go-yaml v1.19.2 h1:PmFC1S6h8ljIz6gMRBopkjP1TVT7xuwrButHID66PoM=
