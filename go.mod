@@ -3,14 +3,14 @@ module github.com/bassosimone/sonda
 go 1.26.4
 
 require (
-	github.com/bassosimone/closepool v0.0.0-20260920130209-ecd5a8f12e9b
-	github.com/bassosimone/deferexit v0.0.0-20260920130353-344b1a39a3c4
-	github.com/bassosimone/dnscodec v0.0.0-20260920134140-e91c2ba33014
-	github.com/bassosimone/errclass v0.0.0-20260920130548-7c6065cbf578
-	github.com/bassosimone/nop v0.0.0-20260920140226-89b218104885
-	github.com/bassosimone/runtimex v0.0.0-20260920130843-b72080259a60
-	github.com/bassosimone/vclip v0.0.0-20260920140331-32845f1c2f1a
-	github.com/bassosimone/vflag v0.0.0-20260920135752-105f5b45ed82
+	github.com/bassosimone/closepool v0.0.0-20260928111144-9eef701bea99
+	github.com/bassosimone/deferexit v0.0.0-20260928111243-1ceec2208869
+	github.com/bassosimone/dnscodec v0.0.0-20260928111729-777d57044539
+	github.com/bassosimone/errclass v0.0.0-20260928111330-ca73f36d2c92
+	github.com/bassosimone/nop v0.0.0-20260928114558-014414f67632
+	github.com/bassosimone/runtimex v0.0.0-20260928111457-f2fe934d5065
+	github.com/bassosimone/vclip v0.0.0-20260928114705-86887ca1c7df
+	github.com/bassosimone/vflag v0.0.0-20260928113542-10198c4d0a30
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/uuid v1.6.0
 	github.com/miekg/dns v1.1.73
@@ -19,27 +19,27 @@ require (
 )
 
 require (
-	github.com/andybalholm/brotli v1.2.4 // indirect
-	github.com/bassosimone/dnsoverhttps v0.0.0-20260920135418-3d304980c0a4 // indirect
-	github.com/bassosimone/dnsoverstream v0.0.0-20260920135504-fac4d723fdbc // indirect
-	github.com/bassosimone/flagparser v0.0.0-20260920134238-622c743feb8a // indirect
-	github.com/bassosimone/flagscanner v0.0.0-20260920130738-11546ab7262e // indirect
-	github.com/bassosimone/iox v0.0.0-20260920134829-97daf4c1a668 // indirect
-	github.com/bassosimone/minest v0.0.0-20260920135554-8479929affc1 // indirect
-	github.com/bassosimone/must v0.0.0-20260920134909-0e0911cde875 // indirect
-	github.com/bassosimone/safeconn v0.0.0-20260920135006-cffeabe7db91 // indirect
-	github.com/bassosimone/sud v0.0.0-20260920130940-9f9736245d9d // indirect
-	github.com/bassosimone/textwrap v0.0.0-20260920134026-7a0b23602d17 // indirect
-	github.com/klauspost/compress v1.20.0 // indirect
+	github.com/andybalholm/brotli v1.2.5 // indirect
+	github.com/bassosimone/dnsoverhttps v0.0.0-20260928113301-bc7943ece3e5 // indirect
+	github.com/bassosimone/dnsoverstream v0.0.0-20260928113353-e5a245131280 // indirect
+	github.com/bassosimone/flagparser v0.0.0-20260928111833-44e028b025f9 // indirect
+	github.com/bassosimone/flagscanner v0.0.0-20260928111414-ec0ac9195577 // indirect
+	github.com/bassosimone/iox v0.0.0-20260928112414-6699b8367e72 // indirect
+	github.com/bassosimone/minest v0.0.0-20260928113439-6dc61c09965e // indirect
+	github.com/bassosimone/must v0.0.0-20260928112453-2a38e7bb20e8 // indirect
+	github.com/bassosimone/safeconn v0.0.0-20260928112542-9eef1e681eca // indirect
+	github.com/bassosimone/sud v0.0.0-20260928111541-4be641f562ce // indirect
+	github.com/bassosimone/textwrap v0.0.0-20260928111620-10df61158669 // indirect
+	github.com/klauspost/compress v1.20.1 // indirect
 	github.com/parquet-go/bitpack v1.1.0 // indirect
 	github.com/parquet-go/jsonlite v1.5.5 // indirect
-	github.com/pierrec/lz4/v4 v4.1.30 // indirect
-	github.com/pion/dtls/v3 v3.1.9 // indirect
+	github.com/pierrec/lz4/v4 v4.1.31 // indirect
+	github.com/pion/dtls/v3 v3.1.10 // indirect
 	github.com/pion/logging v0.2.4 // indirect
 	github.com/pion/transport/v4 v4.1.1 // indirect
-	github.com/pion/transport/v5 v5.0.1 // indirect
-	github.com/quic-go/quic-go v0.62.0 // indirect
-	github.com/twpayne/go-geom v1.6.1 // indirect
+	github.com/pion/transport/v5 v5.1.1 // indirect
+	github.com/quic-go/quic-go v0.63.0 // indirect
+	github.com/twpayne/go-geom v1.7.0 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/net v0.59.0 // indirect
