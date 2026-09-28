@@ -157,7 +157,7 @@ parsing mechanism is now typed.
 |          `sondaCommandStart`  |    SpanStart |                                       `t` |
 |           `sondaCommandDone`  |     SpanDone |                                `t0`, `t`  |
 |       `sondaCommandLineArgs`  | Notification |                                 `cliArgs` |
-|              `sondaFailure`   | Notification |                        `operation`, `err` |
+|              `sondaFailure`   | Notification |            `operation`, `err`, `exitCode` |
 | `sondaHttpResponseBodyStats`  | Notification |                    `httpResponseBodySize` |
 |           `sondaDnsRecordsA`  | Notification |                          `dnsRecordsList` |
 |        `sondaDnsRecordsAAAA`  | Notification |                          `dnsRecordsList` |
