@@ -8,7 +8,7 @@ spool for later analysis.
 
 ## Install
 
-You need Go >= 1.26.
+You need the `stable` Go version (see https://go.dev/dl/).
 
 ### From source
 
