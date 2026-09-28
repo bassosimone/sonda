@@ -49,6 +49,7 @@ type Event struct {
 	// Used by: sondaFailure
 
 	Operation string `json:"operation,omitempty"`
+	ExitCode  int    `json:"exitCode,omitempty"`
 
 	// --- nop pipeline: I/O fields ---
 	// Used by: readStart/Done, writeStart/Done
