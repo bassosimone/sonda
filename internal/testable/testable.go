@@ -26,6 +26,11 @@ type Dialer interface {
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)
 }
 
+// ListenConfig abstracts network listening.
+type ListenConfig interface {
+	Listen(ctx context.Context, network, address string) (net.Listener, error)
+}
+
 // File is an abstract [*os.File] as returned by [os.OpenFile].
 //
 // The type is wide enough to accommodate both readers and writers.
@@ -42,10 +47,12 @@ type Environ struct {
 	Executable       func() (string, error)
 	Exit             func(code int)
 	Getenv           func(key string) string
+	ListenConfig     ListenConfig
 	LogFatalOnError0 func(err error)
 	MkdirAll         func(path string, perm os.FileMode) error
 	ReadDir          func(path string) ([]os.DirEntry, error)
 	ReadFile         func(path string) ([]byte, error)
+	RemoveAll        func(path string) error
 	Rename           func(oldpath, newpath string) error
 	RunCommand       func(cmd *exec.Cmd) error
 	SignalProcess    func(proc *os.Process, sig os.Signal) error
@@ -86,21 +93,23 @@ func NewEnvironOS() *Environ {
 			}
 			return 0
 		},
-		Dialer:     newDialer(),
-		Environ:    os.Environ,
-		Executable: os.Executable,
-		Exit:       deferexit.Panic,
-		Getenv:     os.Getenv,
+		Dialer:       newDialer(),
+		Environ:      os.Environ,
+		Executable:   os.Executable,
+		Exit:         deferexit.Panic,
+		Getenv:       os.Getenv,
+		ListenConfig: newListenConfig(),
 		LogFatalOnError0: func(err error) {
 			if err != nil {
 				log.Print(err)
 				deferexit.Panic(1)
 			}
 		},
-		MkdirAll: os.MkdirAll,
-		ReadDir:  os.ReadDir,
-		ReadFile: os.ReadFile,
-		Rename:   os.Rename,
+		MkdirAll:  os.MkdirAll,
+		ReadDir:   os.ReadDir,
+		ReadFile:  os.ReadFile,
+		RemoveAll: os.RemoveAll,
+		Rename:    os.Rename,
 		RunCommand: func(cmd *exec.Cmd) error {
 			return cmd.Run()
 		},
@@ -133,10 +142,12 @@ func (e *Environ) Clone() *Environ {
 		Executable:       e.Executable,
 		Exit:             e.Exit,
 		Getenv:           e.Getenv,
+		ListenConfig:     e.ListenConfig,
 		LogFatalOnError0: e.LogFatalOnError0,
 		MkdirAll:         e.MkdirAll,
 		ReadFile:         e.ReadFile,
 		ReadDir:          e.ReadDir,
+		RemoveAll:        e.RemoveAll,
 		Rename:           e.Rename,
 		RunCommand:       e.RunCommand,
 		SignalProcess:    e.SignalProcess,
@@ -154,6 +165,10 @@ func newDialer() *net.Dialer {
 	d := &net.Dialer{}
 	d.SetMultipathTCP(false)
 	return d
+}
+
+func newListenConfig() *net.ListenConfig {
+	return &net.ListenConfig{}
 }
 
 // Env is the global [*Environ].

@@ -1,6 +1,10 @@
+/coverage.out
 *.deb
 __pycache__/
-/coverage.out
 /sonda
 /sonda.exe
+/sonda-nob
+/sonda-nob.exe
+/sonda-noc
+/sonda-noc.exe
 /.venv/
