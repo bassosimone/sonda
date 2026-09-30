@@ -11,14 +11,14 @@ import (
 
 	"github.com/bassosimone/deferexit"
 	"github.com/bassosimone/runtimex"
-	"github.com/bassosimone/sonda/internal/plugins/noc"
+	"github.com/bassosimone/sonda/internal/plugins/nob"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vclip"
 	"github.com/bassosimone/vflag"
 )
 
-// Forward declaration from the importable [noc] package.
-const maxRequestBodySize = noc.MaxBodySize
+// Forward declaration from the importable [nob] package.
+const maxRequestBodySize = nob.MaxBodySize
 
 func main() {
 	// Transform panics into [os.Exit] calls.

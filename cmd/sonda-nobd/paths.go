@@ -5,16 +5,16 @@ package main
 import (
 	"path/filepath"
 
-	"github.com/bassosimone/sonda/internal/plugins/noc"
+	"github.com/bassosimone/sonda/internal/plugins/nob"
 )
 
-// Forward declarations from the importable [noc] package.
+// Forward declarations from the importable [nob] package.
 const (
-	bodyBinName     = noc.BodyBinName
-	exitcodeTxtName = noc.ExitcodeTxtName
-	requestJsonName = noc.RequestJsonName
-	stderrTxtName   = noc.StderrTxtName
-	stdoutJsonName  = noc.StdoutJsonName
+	bodyBinName     = nob.BodyBinName
+	exitcodeTxtName = nob.ExitcodeTxtName
+	requestJsonName = nob.RequestJsonName
+	stderrTxtName   = nob.StderrTxtName
+	stdoutJsonName  = nob.StdoutJsonName
 )
 
 // pathsSpanDir returns the spool directory path for a given span ID.

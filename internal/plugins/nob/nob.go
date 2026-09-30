@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later.
 
-// Package noc implements the network observation client plugin.
-package noc
+// Package nob contains common code for the network observation backend plugin.
+package nob
 
 import "time"
 

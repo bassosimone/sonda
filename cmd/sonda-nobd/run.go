@@ -20,13 +20,13 @@ import (
 	"github.com/bassosimone/errclass"
 	"github.com/bassosimone/nop"
 	"github.com/bassosimone/runtimex"
-	"github.com/bassosimone/sonda/internal/plugins/noc"
+	"github.com/bassosimone/sonda/internal/plugins/nob"
 )
 
-// Forward declarations from the importable [noc] package.
+// Forward declarations from the importable [nob] package.
 type (
-	runRequestBody  = noc.RunRequestBody
-	runResponseBody = noc.RunResponseBody
+	runRequestBody  = nob.RunRequestBody
+	runResponseBody = nob.RunResponseBody
 )
 
 // Run handles `POST /api/v1/run`.

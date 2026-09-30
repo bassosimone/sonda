@@ -15,7 +15,7 @@ import (
 
 	"github.com/bassosimone/deferexit"
 	"github.com/bassosimone/runtimex"
-	"github.com/bassosimone/sonda/internal/plugins/noc"
+	"github.com/bassosimone/sonda/internal/plugins/nob"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/sud"
 	"github.com/bassosimone/vclip"
@@ -67,7 +67,7 @@ func gcMain(ctx context.Context, args []string) error {
 	// Set command defaults.
 	var (
 		// TODO(bassosimone): the server should own the defaults.
-		gcReq = noc.GCRequestBody{
+		gcReq = nob.GCRequestBody{
 			MaxAge: 6 * time.Hour, // --max-age <duration>
 		}
 		socketPath = defaultSocketPath // --socket <path>
@@ -121,12 +121,12 @@ func gcMain(ctx context.Context, args []string) error {
 	}
 
 	// Read and parse the response body.
-	respData, err := io.ReadAll(io.LimitReader(resp.Body, noc.MaxBodySize))
+	respData, err := io.ReadAll(io.LimitReader(resp.Body, nob.MaxBodySize))
 	if err != nil {
 		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", err.Error())
 		env.Exit(1)
 	}
-	var gcResp noc.GCResponseBody
+	var gcResp nob.GCResponseBody
 	if err := json.Unmarshal(respData, &gcResp); err != nil {
 		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", err.Error())
 		env.Exit(1)
@@ -144,7 +144,7 @@ func measureMain(ctx context.Context, args []string) error {
 	//
 	// TODO(bassosimone): the server should own the defaults.
 	var (
-		runReq = noc.RunRequestBody{
+		runReq = nob.RunRequestBody{
 			ALPN:        []string{"h2", "http/1.1"}, // --alpn <proto> ...
 			AddrPort:    "8.8.8.8:443",              // --addr-port <addr:port>
 			HTTPHeaders: []string{},                 // --http-header "key: value" ...
@@ -266,12 +266,12 @@ func measureMain(ctx context.Context, args []string) error {
 	}
 
 	// Read and parse the response body.
-	respData, err := io.ReadAll(io.LimitReader(resp.Body, noc.MaxBodySize))
+	respData, err := io.ReadAll(io.LimitReader(resp.Body, nob.MaxBodySize))
 	if err != nil {
 		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", err.Error())
 		env.Exit(1)
 	}
-	var runResp noc.RunResponseBody
+	var runResp nob.RunResponseBody
 	if err := json.Unmarshal(respData, &runResp); err != nil {
 		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", err.Error())
 		env.Exit(1)

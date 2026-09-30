@@ -14,14 +14,14 @@ import (
 	"time"
 
 	"github.com/bassosimone/runtimex"
-	"github.com/bassosimone/sonda/internal/plugins/noc"
+	"github.com/bassosimone/sonda/internal/plugins/nob"
 	"github.com/google/uuid"
 )
 
-// Forward declarations from the importable [noc] package.
+// Forward declarations from the importable [nob] package.
 type (
-	gcRequestBody  = noc.GCRequestBody
-	gcResponseBody = noc.GCResponseBody
+	gcRequestBody  = nob.GCRequestBody
+	gcResponseBody = nob.GCResponseBody
 )
 
 // GC handles `POST /api/v1/gc`.
