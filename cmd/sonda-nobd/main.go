@@ -50,7 +50,7 @@ func realMain(ctx context.Context, args []string) error {
 	// add proper documentation around this for code reviews by agents.
 
 	// Parse command line flags.
-	fset := vflag.NewFlagSet("sonda-nob", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-nobd", vflag.ExitOnError)
 
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr

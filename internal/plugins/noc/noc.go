@@ -72,13 +72,13 @@ type RunResponseBody struct {
 // DefaultSocketPath is the default Unix socket path user.
 const DefaultSocketPath = "/var/run/sonda/nob.sock"
 
-// Main is the main function of the `sonda-noc` plugin.
+// Main is the main function of the `sonda-nobctl` plugin.
 func Main(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
 
-	// Create the `sonda-noc` dispatcher.
-	disp := vclip.NewDispatcherCommand("sonda-noc", vflag.ExitOnError)
+	// Create the `sonda-nobctl` dispatcher.
+	disp := vclip.NewDispatcherCommand("sonda-nobctl", vflag.ExitOnError)
 	disp.Exit = env.Exit
 	disp.Stderr = env.Stderr
 	disp.Stdout = env.UsageStdout
@@ -93,7 +93,7 @@ func Main(ctx context.Context, args []string) error {
 	return nil
 }
 
-// gcMain is the main function of the `sonda-noc gc` subcommand.
+// gcMain is the main function of the `sonda-nobctl gc` subcommand.
 func gcMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
@@ -108,7 +108,7 @@ func gcMain(ctx context.Context, args []string) error {
 	)
 
 	// Parse command line flags.
-	fset := vflag.NewFlagSet("sonda-noc gc", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-nobctl gc", vflag.ExitOnError)
 
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
@@ -134,7 +134,7 @@ func gcMain(ctx context.Context, args []string) error {
 	// Connect to the unit socket.
 	conn, err := env.Dialer.DialContext(ctx, "unix", socketPath)
 	if err != nil {
-		fmt.Fprintf(env.Stderr, "sonda-noc: %s\n", err.Error())
+		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", err.Error())
 		env.Exit(1)
 	}
 
@@ -145,31 +145,31 @@ func gcMain(ctx context.Context, args []string) error {
 	// Do the round trip.
 	resp, err := txp.RoundTrip(req)
 	if err != nil {
-		fmt.Fprintf(env.Stderr, "sonda-noc: %s\n", err.Error())
+		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", err.Error())
 		env.Exit(1)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		fmt.Fprintf(env.Stderr, "sonda-noc: %s\n", resp.Status)
+		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", resp.Status)
 		env.Exit(1)
 	}
 
 	// Read and parse the response body.
 	respData, err := io.ReadAll(io.LimitReader(resp.Body, MaxBodySize))
 	if err != nil {
-		fmt.Fprintf(env.Stderr, "sonda-noc: %s\n", err.Error())
+		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", err.Error())
 		env.Exit(1)
 	}
 	var gcResp GCResponseBody
 	if err := json.Unmarshal(respData, &gcResp); err != nil {
-		fmt.Fprintf(env.Stderr, "sonda-noc: %s\n", err.Error())
+		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", err.Error())
 		env.Exit(1)
 	}
 
 	return nil
 }
 
-// measureMain is the main function of the `sonda-noc measure` subcommand.
+// measureMain is the main function of the `sonda-nobctl measure` subcommand.
 func measureMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
@@ -196,7 +196,7 @@ func measureMain(ctx context.Context, args []string) error {
 	)
 
 	// Parse command line flags.
-	fset := vflag.NewFlagSet("sonda-noc measure", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-nobctl measure", vflag.ExitOnError)
 
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
@@ -279,7 +279,7 @@ func measureMain(ctx context.Context, args []string) error {
 	// Connect to the unit socket.
 	conn, err := env.Dialer.DialContext(ctx, "unix", socketPath)
 	if err != nil {
-		fmt.Fprintf(env.Stderr, "sonda-noc: %s\n", err.Error())
+		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", err.Error())
 		env.Exit(1)
 	}
 
@@ -290,24 +290,24 @@ func measureMain(ctx context.Context, args []string) error {
 	// Do the round trip.
 	resp, err := txp.RoundTrip(req)
 	if err != nil {
-		fmt.Fprintf(env.Stderr, "sonda-noc: %s\n", err.Error())
+		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", err.Error())
 		env.Exit(1)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		fmt.Fprintf(env.Stderr, "sonda-noc: %s\n", resp.Status)
+		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", resp.Status)
 		env.Exit(1)
 	}
 
 	// Read and parse the response body.
 	respData, err := io.ReadAll(io.LimitReader(resp.Body, MaxBodySize))
 	if err != nil {
-		fmt.Fprintf(env.Stderr, "sonda-noc: %s\n", err.Error())
+		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", err.Error())
 		env.Exit(1)
 	}
 	var runResp RunResponseBody
 	if err := json.Unmarshal(respData, &runResp); err != nil {
-		fmt.Fprintf(env.Stderr, "sonda-noc: %s\n", err.Error())
+		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", err.Error())
 		env.Exit(1)
 	}
 
@@ -316,7 +316,7 @@ func measureMain(ctx context.Context, args []string) error {
 	return nil
 }
 
-// showMain is the main function of the `sonda-noc show` subcommand.
+// showMain is the main function of the `sonda-nobctl show` subcommand.
 func showMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
@@ -329,7 +329,7 @@ func showMain(ctx context.Context, args []string) error {
 	)
 
 	// Parse command line flags.
-	fset := vflag.NewFlagSet("sonda-noc show", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-nobctl show", vflag.ExitOnError)
 
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
@@ -345,7 +345,7 @@ func showMain(ctx context.Context, args []string) error {
 	fset.StringVar(&spanID, 0, "span-id",
 		"Unique `SPAN_ID` that identifies the measurement.",
 		"This flag is required.",
-		"Use the value returned by `sonda-noc run`.")
+		"Use the value returned by `sonda-nobctl run`.")
 
 	fset.StringVar(&socketPath, 0, "socket",
 		"Use `PATH` as the sonda-nob Unix socket path.",
@@ -354,7 +354,7 @@ func showMain(ctx context.Context, args []string) error {
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
 	if spanID == "" {
-		fmt.Fprintf(env.Stderr, "sonda-noc: the `--span-id` flag is required.\n")
+		fmt.Fprintf(env.Stderr, "sonda-nobctl: the `--span-id` flag is required.\n")
 		env.Exit(2)
 	}
 
@@ -370,7 +370,7 @@ func showMain(ctx context.Context, args []string) error {
 	// Connect to the unit socket.
 	conn, err := env.Dialer.DialContext(ctx, "unix", socketPath)
 	if err != nil {
-		fmt.Fprintf(env.Stderr, "sonda-noc: %s\n", err.Error())
+		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", err.Error())
 		env.Exit(1)
 	}
 
@@ -381,18 +381,18 @@ func showMain(ctx context.Context, args []string) error {
 	// Do the round trip.
 	resp, err := txp.RoundTrip(req)
 	if err != nil {
-		fmt.Fprintf(env.Stderr, "sonda-noc: %s\n", err.Error())
+		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", err.Error())
 		env.Exit(1)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		fmt.Fprintf(env.Stderr, "sonda-noc: %s\n", resp.Status)
+		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", resp.Status)
 		env.Exit(1)
 	}
 
 	// Read and copy the response body.
 	if _, err := io.Copy(env.Stdout, resp.Body); err != nil {
-		fmt.Fprintf(env.Stderr, "sonda-noc: %s\n", err.Error())
+		fmt.Fprintf(env.Stderr, "sonda-nobctl: %s\n", err.Error())
 		env.Exit(1)
 	}
 	return nil

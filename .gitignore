@@ -3,8 +3,8 @@
 __pycache__/
 /sonda
 /sonda.exe
-/sonda-nob
-/sonda-nob.exe
-/sonda-noc
-/sonda-noc.exe
+/sonda-nobd
+/sonda-nobd.exe
+/sonda-nobctl
+/sonda-nobctl.exe
 /.venv/
