@@ -100,6 +100,7 @@ func gcMain(ctx context.Context, args []string) error {
 
 	// Set command defaults.
 	var (
+		// TODO(bassosimone): the server should own the defaults.
 		gcReq = GCRequestBody{
 			MaxAge: 6 * time.Hour, // --max-age <duration>
 		}
@@ -174,6 +175,8 @@ func measureMain(ctx context.Context, args []string) error {
 	env := testable.ContextEnviron(ctx)
 
 	// Set command defaults.
+	//
+	// TODO(bassosimone): the server should own the defaults.
 	var (
 		runReq = RunRequestBody{
 			ALPN:        []string{"h2", "http/1.1"}, // --alpn <proto> ...

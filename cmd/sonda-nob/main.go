@@ -43,6 +43,12 @@ func realMain(ctx context.Context, args []string) error {
 		socketPath = "nob.sock" // --socket <path>
 	)
 
+	// TODO(bassosimone): consider socket activation here and otherwise deal with
+	// the socket permissions and with unlinking it when done.
+
+	// TODO(bassosimone): the socket is a new privilege boundary and we need to
+	// add proper documentation around this for code reviews by agents.
+
 	// Parse command line flags.
 	fset := vflag.NewFlagSet("sonda-nob", vflag.ExitOnError)
 
@@ -71,6 +77,12 @@ func realMain(ctx context.Context, args []string) error {
 	}
 	defer listener.Close()
 	logger.Info("listening", slog.String("socketPath", socketPath))
+
+	// TODO(bassosimone): consider limiting concurrency using a semaphore
+	// here so that we can return `429` when needed.
+
+	// TODO(bassosimone): document that a client disconnecting mid
+	// measurement causes the measurement to be aborted.
 
 	// Create and initialize the HTTP mux.
 	handler := &handler{

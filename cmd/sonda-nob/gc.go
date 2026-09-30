@@ -32,6 +32,8 @@ func (h *handler) GC(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Parse request body.
+	//
+	// TODO(bassosimone): use `DisallowUnknownFields` here.
 	rawReqb, err := io.ReadAll(io.LimitReader(r.Body, maxRequestBodySize))
 	if err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
