@@ -8,7 +8,7 @@ require (
 	github.com/bassosimone/dnscodec v0.0.0-20260928111729-777d57044539
 	github.com/bassosimone/errclass v0.0.0-20260928111330-ca73f36d2c92
 	github.com/bassosimone/nop v0.0.0-20260928114558-014414f67632
-	github.com/bassosimone/ptnop v0.0.0-20260928115836-fd21a1ed05c0
+	github.com/bassosimone/ptnop v0.0.0-20261001100307-23358ea039cb
 	github.com/bassosimone/runtimex v0.0.0-20260928111457-f2fe934d5065
 	github.com/bassosimone/sud v0.0.0-20260928111541-4be641f562ce
 	github.com/bassosimone/vclip v0.0.0-20260928114705-86887ca1c7df

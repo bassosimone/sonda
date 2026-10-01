@@ -18,10 +18,12 @@ import (
 	"strings"
 
 	"github.com/bassosimone/closepool"
+	"github.com/bassosimone/dnscodec"
 	"github.com/bassosimone/ptnop"
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/plugins/nob"
 	"github.com/google/uuid"
+	"github.com/miekg/dns"
 )
 
 // Forward declarations from the importable [nob] package.
@@ -273,6 +275,34 @@ func runPipelineHTTP(
 	return 0
 }
 
+func runPipelineDNS(
+	ctx context.Context,
+	addrPort netip.AddrPort,
+	dialer ptnop.Func[netip.AddrPort, ptnop.DNSConn],
+	logger *slog.Logger,
+	query *dnscodec.Query,
+) int {
+	// 1. Dial the DNS connection.
+	dnsConn := dialer.Call(ctx, addrPort)
+	defer dnsConn.Close()
+
+	// 2. Perform the DNS exchange.
+	resp, err := dnsConn.Exchange(ctx, query)
+	if err != nil {
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "exchange"),
+			slog.Any("err", err),
+			slog.Int("exitCode", 1),
+		)
+		return 1
+	}
+
+	// TODO(bassosimone): use the response
+	_ = resp
+	return 0
+}
+
 // runPipeline runs a measurement pipeline.
 func (h *handler) runPipeline(ctx context.Context, rla *runLocalArgs, reqb *runRequestBody) int {
 	// 1. Create the structured logger for emitting the JSON events.
@@ -295,20 +325,11 @@ func (h *handler) runPipeline(ctx context.Context, rla *runLocalArgs, reqb *runR
 		)
 		return 2
 	}
-	if reqb.Protocol != "tcp" && reqb.Protocol != "udp" {
-		logger.Error(
-			"sondaFailure",
-			slog.String("operation", "parseAddrPort"),
-			slog.String("err", fmt.Sprintf("unsupported protocol name: %q", reqb.Protocol)),
-			slog.Int("exitCode", 2),
-		)
-		return 2
-	}
 
 	// 4. Make sure the TLS configuration is valid.
 	tlsConfig := &runMaybe[*tls.Config]{}
 	switch reqb.Pipeline {
-	case "https", "tls":
+	case "dns-over-https", "dns-over-tls", "https", "tls":
 		tconf, err := runNewTLSConfig(reqb)
 		if err != nil {
 			logger.Error(
@@ -328,7 +349,7 @@ func (h *handler) runPipeline(ctx context.Context, rla *runLocalArgs, reqb *runR
 	// 5. Make sure the HTTP configuration is valid.
 	httpReq := &runMaybe[*http.Request]{}
 	switch reqb.Pipeline {
-	case "http", "https":
+	case "dns-over-https", "http", "https":
 		hreq, err := runNewHTTPRequest(ctx, reqb)
 		if err != nil {
 			logger.Error(
@@ -345,22 +366,109 @@ func (h *handler) runPipeline(ctx context.Context, rla *runLocalArgs, reqb *runR
 		// nothing
 	}
 
-	// 6. Create the shared pipeline configuration.
+	// 6. Make sure the DNS configuration is valid.
+	query := &runMaybe[*dnscodec.Query]{}
+	switch reqb.Pipeline {
+	case "dns-over-udp", "dns-over-tcp", "dns-over-tls", "dns-over-https":
+		qtype := dns.StringToType[reqb.DNSQueryType]
+		if qtype == 0 {
+			logger.Error(
+				"sondaFailure",
+				slog.String("operation", "newDnsRequest"),
+				slog.String("err", fmt.Sprintf("invalid dns query type: %s", reqb.DNSQueryType)),
+				slog.Int("exitCode", 2),
+			)
+			return 2
+		}
+		dq := dnscodec.NewQuery(reqb.DNSQueryName, qtype)
+		if _, err := dq.NewMsg(); err != nil {
+			logger.Error(
+				"sondaFailure",
+				slog.String("operation", "newDnsRequest"),
+				slog.Any("err", err),
+				slog.Int("exitCode", 2),
+			)
+			return 2
+		}
+		query.Set(dq)
+
+	default:
+		// nothing
+	}
+
+	// 7. Create the shared pipeline configuration.
 	cfg := ptnop.NewConfig()
 	cfg.SLogger = logger
 	cfg.Dialer = h.env.Dialer
 
-	// TODO(bassosimone): add here all the possible pipelines
-
-	// 7. Do something different depending on the pipeline.
+	// 8. Do something different depending on the pipeline.
 	switch reqb.Pipeline {
+	case "dns-over-https":
+		return runPipelineDNS(
+			ctx,
+			addrPort,
+			ptnop.Compose6(
+				ptnop.NewConnectFunc(cfg, "tcp"),
+				ptnop.NewObserveConnFunc(cfg),
+				ptnop.NewCancelWatchFunc(),
+				ptnop.NewTLSHandshakeFunc(cfg, tlsConfig.Unwrap()),
+				ptnop.NewHTTPConnFunc(cfg),
+				ptnop.NewDNSOverHTTPSConnFunc(cfg, httpReq.Unwrap().URL.String()),
+			),
+			logger,
+			query.Unwrap(),
+		)
+
+	case "dns-over-tcp":
+		return runPipelineDNS(
+			ctx,
+			addrPort,
+			ptnop.Compose4(
+				ptnop.NewConnectFunc(cfg, "tcp"),
+				ptnop.NewObserveConnFunc(cfg),
+				ptnop.NewCancelWatchFunc(),
+				ptnop.NewDNSOverTCPConnFunc(cfg),
+			),
+			logger,
+			query.Unwrap(),
+		)
+
+	case "dns-over-tls":
+		return runPipelineDNS(
+			ctx,
+			addrPort,
+			ptnop.Compose5(
+				ptnop.NewConnectFunc(cfg, "tcp"),
+				ptnop.NewObserveConnFunc(cfg),
+				ptnop.NewCancelWatchFunc(),
+				ptnop.NewTLSHandshakeFunc(cfg, tlsConfig.Unwrap()),
+				ptnop.NewDNSOverTLSConnFunc(cfg),
+			),
+			logger,
+			query.Unwrap(),
+		)
+
+	case "dns-over-udp":
+		return runPipelineDNS(
+			ctx,
+			addrPort,
+			ptnop.Compose4(
+				ptnop.NewConnectFunc(cfg, "udp"),
+				ptnop.NewObserveConnFunc(cfg),
+				ptnop.NewCancelWatchFunc(),
+				ptnop.NewDNSOverUDPConnFunc(cfg),
+			),
+			logger,
+			query.Unwrap(),
+		)
+
 	case "http":
 		return runPipelineHTTP(
 			ctx,
 			addrPort,
 			rla.body,
 			ptnop.Compose4(
-				ptnop.NewConnectFunc(cfg, reqb.Protocol),
+				ptnop.NewConnectFunc(cfg, "tcp"),
 				ptnop.NewObserveConnFunc(cfg),
 				ptnop.NewCancelWatchFunc(),
 				ptnop.NewHTTPConnFunc(cfg),
@@ -375,7 +483,7 @@ func (h *handler) runPipeline(ctx context.Context, rla *runLocalArgs, reqb *runR
 			addrPort,
 			rla.body,
 			ptnop.Compose5(
-				ptnop.NewConnectFunc(cfg, reqb.Protocol),
+				ptnop.NewConnectFunc(cfg, "tcp"),
 				ptnop.NewObserveConnFunc(cfg),
 				ptnop.NewCancelWatchFunc(),
 				ptnop.NewTLSHandshakeFunc(cfg, tlsConfig.Unwrap()),
@@ -387,7 +495,7 @@ func (h *handler) runPipeline(ctx context.Context, rla *runLocalArgs, reqb *runR
 
 	case "tls":
 		pipeline := ptnop.Compose4(
-			ptnop.NewConnectFunc(cfg, reqb.Protocol),
+			ptnop.NewConnectFunc(cfg, "tcp"),
 			ptnop.NewObserveConnFunc(cfg),
 			ptnop.NewCancelWatchFunc(),
 			ptnop.NewTLSHandshakeFunc(cfg, tlsConfig.Unwrap()),
@@ -407,7 +515,7 @@ func (h *handler) runPipeline(ctx context.Context, rla *runLocalArgs, reqb *runR
 
 	case "tcp":
 		pipeline := ptnop.Compose3(
-			ptnop.NewConnectFunc(cfg, reqb.Protocol),
+			ptnop.NewConnectFunc(cfg, "tcp"),
 			ptnop.NewObserveConnFunc(cfg),
 			ptnop.NewCancelWatchFunc(),
 		)

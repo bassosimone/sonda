@@ -35,18 +35,19 @@ type GCResponseBody struct{}
 
 // RunRequestBody is the request body for `POST /api/v1/run`.
 type RunRequestBody struct {
-	ALPN        []string      `json:"alpn"`
-	AddrPort    string        `json:"addrPort"`
-	HTTPHeaders []string      `json:"httpHeaders"`
-	HTTPHost    string        `json:"httpHost"`
-	HTTPMethod  string        `json:"httpMethod"`
-	HTTPScheme  string        `json:"httpScheme"`
-	Pipeline    string        `json:"pipeline"`
-	Protocol    string        `json:"protocol"`
-	SNI         string        `json:"sni"`
-	Tags        []string      `json:"tags"`
-	Timeout     time.Duration `json:"timeout"`
-	URLPath     string        `json:"urlPath"`
+	ALPN         []string      `json:"alpn"`
+	AddrPort     string        `json:"addrPort"`
+	DNSQueryName string        `json:"dnsQueryName"`
+	DNSQueryType string        `json:"dnsQueryType"`
+	HTTPHeaders  []string      `json:"httpHeaders"`
+	HTTPHost     string        `json:"httpHost"`
+	HTTPMethod   string        `json:"httpMethod"`
+	HTTPScheme   string        `json:"httpScheme"`
+	Pipeline     string        `json:"pipeline"`
+	SNI          string        `json:"sni"`
+	Tags         []string      `json:"tags"`
+	Timeout      time.Duration `json:"timeout"`
+	URLPath      string        `json:"urlPath"`
 }
 
 // RunResponseBody is the response body returned by `POST /api/v1/run`.

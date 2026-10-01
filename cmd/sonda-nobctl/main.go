@@ -145,18 +145,19 @@ func runMain(ctx context.Context, args []string) error {
 	// whatever flag the user has provided.
 	var (
 		runReq = nob.RunRequestBody{
-			ALPN:        []string{},       // --alpn <proto> ...
-			AddrPort:    "",               // --addr-port <addr:port>
-			HTTPHeaders: []string{},       // --http-header "key: value" ...
-			HTTPHost:    "",               // --http-host <host>
-			HTTPMethod:  "",               // --http-method <method>
-			HTTPScheme:  "",               // --http-scheme <scheme>
-			Pipeline:    "s",              // --pipeline <name>
-			Protocol:    "",               // --protocol <proto>
-			SNI:         "",               // --sni <host>
-			Tags:        []string{},       // --tag <tag> ...
-			Timeout:     30 * time.Second, // --timeout <duration>
-			URLPath:     "",               // --url-path <path>
+			ALPN:         []string{},       // --alpn <proto> ...
+			AddrPort:     "",               // --addr-port <addr:port>
+			DNSQueryName: "",               // --dns-query-name <name>
+			DNSQueryType: "",               // --dns-query-type <name>
+			HTTPHeaders:  []string{},       // --http-header "key: value" ...
+			HTTPHost:     "",               // --http-host <host>
+			HTTPMethod:   "",               // --http-method <method>
+			HTTPScheme:   "",               // --http-scheme <scheme>
+			Pipeline:     "s",              // --pipeline <name>
+			SNI:          "",               // --sni <host>
+			Tags:         []string{},       // --tag <tag> ...
+			Timeout:      30 * time.Second, // --timeout <duration>
+			URLPath:      "",               // --url-path <path>
 		}
 		socketPath = defaultSocketPath // --socket <path>
 	)
@@ -177,6 +178,14 @@ func runMain(ctx context.Context, args []string) error {
 		"Connect to the transport endpoint at `ADDRPORT`.",
 		"Example: `8.8.8.8:443`, `[::1]:443`.")
 
+	fset.StringVar(&runReq.DNSQueryName, 0, "dns-query-name",
+		"Use the given DNS query `NAME`.",
+		"Example: `www.example.com`.")
+
+	fset.StringVar(&runReq.DNSQueryType, 0, "dns-query-type",
+		"Use the given DNS query `TYPE`.",
+		"One of: A, AAAA, HTTPS, MX, NS, PTR.")
+
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 
 	fset.StringSliceVar(&runReq.HTTPHeaders, 0, "http-header",
@@ -195,10 +204,7 @@ func runMain(ctx context.Context, args []string) error {
 
 	fset.StringVar(&runReq.Pipeline, 0, "pipeline",
 		"Use `PIPELINE` as the measurement pipeline.",
-		"One of: http, https, tcp, tls.")
-
-	fset.StringVar(&runReq.Protocol, 0, "protocol",
-		"Use `PROTO` as the transport protocol.")
+		"One of: dns-over-https, dns-over-tcp, dns-over-tcp, dns-over-tls, http, https, tcp, tls.")
 
 	fset.StringVar(&socketPath, 0, "socket",
 		"Use `PATH` as the sonda-nob Unix socket path.",
