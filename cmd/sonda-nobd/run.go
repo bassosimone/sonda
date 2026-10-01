@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -161,18 +162,49 @@ type runLocalArgs struct {
 	stderr io.Writer
 }
 
-// runMeasure runs a measurement.
-func (h *handler) runMeasure(ctx context.Context, rla *runLocalArgs, reqb *runRequestBody) int {
-	// Emit structured logs to the stdout tied together by the span ID.
-	logger := slog.New(slog.NewJSONHandler(rla.stdout, &slog.HandlerOptions{
+func runNewSlogLogger(stdout io.Writer, spanID string, tags []string) *slog.Logger {
+	logger := slog.New(slog.NewJSONHandler(stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}))
-	logger = logger.With("spanID", rla.spanID)
-	for _, tag := range reqb.Tags {
+
+	logger = logger.With("spanID", spanID)
+
+	for _, tag := range tags {
 		if key, value, ok := strings.Cut(tag, "="); ok {
 			logger = logger.With(key, value)
 		}
 	}
+
+	return logger
+}
+
+func runNewHTTPRequest(ctx context.Context, reqb *runRequestBody) (*http.Request, error) {
+	httpURL := (&url.URL{
+		Scheme: reqb.HTTPScheme,
+		Host:   reqb.HTTPHost,
+		Path:   reqb.URLPath,
+	}).String()
+
+	httpReq, err := http.NewRequestWithContext(ctx, reqb.HTTPMethod, httpURL, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, h := range reqb.HTTPHeaders {
+		key, value, ok := strings.Cut(h, ":")
+		if !ok {
+			return nil, fmt.Errorf("missing colon in header: %s", h)
+		}
+		httpReq.Header.Add(strings.TrimSpace(key), strings.TrimSpace(value))
+	}
+
+	return httpReq, nil
+}
+
+// runMeasure runs a measurement.
+func (h *handler) runMeasure(ctx context.Context, rla *runLocalArgs, reqb *runRequestBody) int {
+	// Emit structured logs to the stdout tied together by the span ID.
+	logger := runNewSlogLogger(rla.stdout, rla.spanID, reqb.Tags)
 
 	// Parse the target addrPort.
 	addrPort, err := netip.ParseAddrPort(reqb.AddrPort)
@@ -190,12 +222,7 @@ func (h *handler) runMeasure(ctx context.Context, rla *runLocalArgs, reqb *runRe
 	tlsConfig := &tls.Config{ServerName: reqb.SNI, NextProtos: reqb.ALPN}
 
 	// Build the HTTP request.
-	httpURL := (&url.URL{
-		Scheme: reqb.HTTPScheme,
-		Host:   reqb.HTTPHost,
-		Path:   reqb.URLPath,
-	}).String()
-	httpReq, err := http.NewRequestWithContext(ctx, reqb.HTTPMethod, httpURL, http.NoBody)
+	httpReq, err := runNewHTTPRequest(ctx, reqb)
 	if err != nil {
 		logger.Error(
 			"sondaFailure",
@@ -204,20 +231,6 @@ func (h *handler) runMeasure(ctx context.Context, rla *runLocalArgs, reqb *runRe
 			slog.Int("exitCode", 2),
 		)
 		return 2
-	}
-	for _, h := range reqb.HTTPHeaders {
-		key, value, ok := strings.Cut(h, ":")
-		if !ok {
-			logger.Error(
-				"sondaFailure",
-				slog.String("operation", "parseHeaders"),
-				slog.String("header", h),
-				slog.String("err", "missing colon"),
-				slog.Int("exitCode", 2),
-			)
-			return 2
-		}
-		httpReq.Header.Add(strings.TrimSpace(key), strings.TrimSpace(value))
 	}
 
 	// Create the shared pipeline configuration.
