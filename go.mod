@@ -1,6 +1,6 @@
 module github.com/bassosimone/sonda
 
-go 1.26.4
+go 1.27.1
 
 require (
 	github.com/bassosimone/closepool v0.0.0-20260928111144-9eef701bea99
@@ -8,7 +8,9 @@ require (
 	github.com/bassosimone/dnscodec v0.0.0-20260928111729-777d57044539
 	github.com/bassosimone/errclass v0.0.0-20260928111330-ca73f36d2c92
 	github.com/bassosimone/nop v0.0.0-20260928114558-014414f67632
+	github.com/bassosimone/ptnop v0.0.0-20260928115836-fd21a1ed05c0
 	github.com/bassosimone/runtimex v0.0.0-20260928111457-f2fe934d5065
+	github.com/bassosimone/sud v0.0.0-20260928111541-4be641f562ce
 	github.com/bassosimone/vclip v0.0.0-20260928114705-86887ca1c7df
 	github.com/bassosimone/vflag v0.0.0-20260928113542-10198c4d0a30
 	github.com/goccy/go-yaml v1.19.2
@@ -28,7 +30,6 @@ require (
 	github.com/bassosimone/minest v0.0.0-20260928113439-6dc61c09965e // indirect
 	github.com/bassosimone/must v0.0.0-20260928112453-2a38e7bb20e8 // indirect
 	github.com/bassosimone/safeconn v0.0.0-20260928112542-9eef1e681eca // indirect
-	github.com/bassosimone/sud v0.0.0-20260928111541-4be641f562ce // indirect
 	github.com/bassosimone/textwrap v0.0.0-20260928111620-10df61158669 // indirect
 	github.com/klauspost/compress v1.20.1 // indirect
 	github.com/parquet-go/bitpack v1.1.0 // indirect

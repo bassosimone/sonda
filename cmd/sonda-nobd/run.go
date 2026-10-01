@@ -18,10 +18,10 @@ import (
 	"time"
 
 	"github.com/bassosimone/closepool"
-	"github.com/bassosimone/errclass"
-	"github.com/bassosimone/nop"
+	"github.com/bassosimone/ptnop"
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/plugins/nob"
+	"github.com/google/uuid"
 )
 
 // Forward declarations from the importable [nob] package.
@@ -71,7 +71,7 @@ func (h *handler) Run(w http.ResponseWriter, r *http.Request) {
 // runMain runs a specific measurement and returns its span ID.
 func (h *handler) runMain(ctx context.Context, reqb *runRequestBody) (string, error) {
 	// Mint a new span ID.
-	var spanID = nop.NewSpanID()
+	var spanID = uuid.Must(uuid.NewV7()).String()
 
 	// Build the spool directory path.
 	spanDir := pathsSpanDir(h.dir, spanID)
@@ -124,7 +124,7 @@ func (h *handler) runMain(ctx context.Context, reqb *runRequestBody) (string, er
 		stdout: stdoutFile,
 		stderr: stderrFile,
 	}
-	exitCode := h.runMeasure(ctx, rla, reqb)
+	exitCode := h.runPipeline(ctx, rla, reqb)
 
 	// Make sure we can successfully close all opened files.
 	if err := closers.Close(); err != nil {
@@ -201,8 +201,8 @@ func runNewHTTPRequest(ctx context.Context, reqb *runRequestBody) (*http.Request
 	return httpReq, nil
 }
 
-// runMeasure runs a measurement.
-func (h *handler) runMeasure(ctx context.Context, rla *runLocalArgs, reqb *runRequestBody) int {
+// runPipeline runs a measurement pipeline.
+func (h *handler) runPipeline(ctx context.Context, rla *runLocalArgs, reqb *runRequestBody) int {
 	// Emit structured logs to the stdout tied together by the span ID.
 	logger := runNewSlogLogger(rla.stdout, rla.spanID, reqb.Tags)
 
@@ -234,17 +234,16 @@ func (h *handler) runMeasure(ctx context.Context, rla *runLocalArgs, reqb *runRe
 	}
 
 	// Create the shared pipeline configuration.
-	cfg := nop.NewConfig()
+	cfg := ptnop.NewConfig()
+	cfg.SLogger = logger
 	cfg.Dialer = h.env.Dialer
-	cfg.ErrClassifier = nop.ErrClassifierFunc(errclass.New)
 
 	// Create all the possible stages.
-	connectStage := nop.NewConnectFunc(cfg, reqb.Protocol, logger)
-	observeConnStage := nop.NewObserveConnFunc(cfg, logger)
-	autoCancelStage := nop.NewCancelWatchFunc()
-	tlsHandshakeStage := nop.NewTLSHandshakeFunc(cfg, tlsConfig, logger)
-	httpConnStageCleartext := nop.NewHTTPConnFuncPlain(cfg, logger)
-	httpConnStageTLS := nop.NewHTTPConnFuncTLS(cfg, logger)
+	connectStage := ptnop.NewConnectFunc(cfg, reqb.Protocol)
+	observeConnStage := ptnop.NewObserveConnFunc(cfg)
+	autoCancelStage := ptnop.NewCancelWatchFunc()
+	tlsHandshakeStage := ptnop.NewTLSHandshakeFunc(cfg, tlsConfig)
+	httpConnStage := ptnop.NewHTTPConnFunc(cfg)
 
 	// Configure the pipeline timeout.
 	ctx, cancel := context.WithTimeout(ctx, reqb.Timeout)
@@ -256,25 +255,16 @@ func (h *handler) runMeasure(ctx context.Context, rla *runLocalArgs, reqb *runRe
 	var bodyReader io.ReadCloser = io.NopCloser(strings.NewReader(""))
 	switch reqb.Pipeline {
 	case "https":
-		dialPipe := nop.Compose5(
+		dialPipe := ptnop.Compose5(
 			connectStage,
 			observeConnStage,
 			autoCancelStage,
 			tlsHandshakeStage,
-			httpConnStageTLS,
+			httpConnStage,
 		)
 
 		// Dial the HTTPS connection.
-		httpConn, err := dialPipe.Call(ctx, addrPort)
-		if err != nil {
-			logger.Error(
-				"sondaFailure",
-				slog.String("operation", "dial"),
-				slog.Any("err", err),
-				slog.Int("exitCode", 1),
-			)
-			return 1
-		}
+		httpConn := dialPipe.Call(ctx, addrPort)
 		defer httpConn.Close()
 
 		// Perform the HTTP round trip.
@@ -292,24 +282,15 @@ func (h *handler) runMeasure(ctx context.Context, rla *runLocalArgs, reqb *runRe
 		bodyReader = resp.Body
 
 	case "http":
-		dialPipe := nop.Compose4(
+		dialPipe := ptnop.Compose4(
 			connectStage,
 			observeConnStage,
 			autoCancelStage,
-			httpConnStageCleartext,
+			httpConnStage,
 		)
 
 		// Dial the HTTP connection.
-		httpConn, err := dialPipe.Call(ctx, addrPort)
-		if err != nil {
-			logger.Error(
-				"sondaFailure",
-				slog.String("operation", "dial"),
-				slog.Any("err", err),
-				slog.Int("exitCode", 1),
-			)
-			return 1
-		}
+		httpConn := dialPipe.Call(ctx, addrPort)
 		defer httpConn.Close()
 
 		// Perform the HTTP round trip.
