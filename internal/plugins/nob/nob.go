@@ -53,3 +53,6 @@ type RunRequestBody struct {
 type RunResponseBody struct {
 	SpanID string `json:"spanID"`
 }
+
+// DefaultSocketPath is the default Unix socket path to use.
+const DefaultSocketPath = "/var/run/sonda/nob/nob.sock"

@@ -36,7 +36,7 @@ func main() {
 }
 
 // defaultSocketPath is the default Unix socket path user.
-const defaultSocketPath = "/var/run/sonda/nob.sock"
+const defaultSocketPath = nob.DefaultSocketPath
 
 // realMain is the actual main function of the `sonda-nobctl` plugin.
 func realMain(ctx context.Context, args []string) error {
