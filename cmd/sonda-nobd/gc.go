@@ -26,26 +26,22 @@ type (
 
 // GC handles `POST /api/v1/gc`.
 func (h *handler) GC(w http.ResponseWriter, r *http.Request) {
-	// 1. set reasonable defaults
-	reqb := gcRequestBody{
-		MaxAge: 6 * time.Hour,
-	}
-
-	// 2. Parse request body.
+	// 1. Parse request body.
 	decoder := json.NewDecoder(io.LimitReader(r.Body, maxRequestBodySize))
 	decoder.DisallowUnknownFields()
+	var reqb gcRequestBody
 	if err := decoder.Decode(&reqb); err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	// 3. GC.
+	// 2. GC.
 	if err := h.gcMain(r.Context(), reqb.MaxAge); err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	// 4. Send response.
+	// 3. Send response.
 	var respb gcResponseBody
 	w.Write(append(runtimex.PanicOnError1(json.Marshal(respb)), '\n'))
 }

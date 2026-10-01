@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -15,7 +16,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/bassosimone/closepool"
 	"github.com/bassosimone/ptnop"
@@ -32,38 +32,23 @@ type (
 
 // Run handles `POST /api/v1/run`.
 func (h *handler) Run(w http.ResponseWriter, r *http.Request) {
-	// 1. Assign reasonable defaults.
-	reqb := runRequestBody{
-		ALPN:        []string{},
-		AddrPort:    "8.8.8.8:443",
-		HTTPHeaders: []string{},
-		HTTPHost:    "dns.google",
-		HTTPMethod:  "GET",
-		HTTPScheme:  "https",
-		Pipeline:    "https",
-		Protocol:    "tcp",
-		SNI:         "dns.google",
-		Tags:        []string{},
-		Timeout:     30 * time.Second,
-		URLPath:     "/",
-	}
-
-	// 2. Parse request body.
+	// 1. Parse request body.
 	decoder := json.NewDecoder(io.LimitReader(r.Body, maxRequestBodySize))
 	decoder.DisallowUnknownFields()
+	var reqb runRequestBody
 	if err := decoder.Decode(&reqb); err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	// 3. Run.
+	// 2. Run.
 	spanID, err := h.runMain(r.Context(), &reqb)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	// 4. Send response.
+	// 3. Send response.
 	rrb := runResponseBody{SpanID: spanID}
 	w.Write(append(runtimex.PanicOnError1(json.Marshal(rrb)), '\n'))
 }
@@ -163,33 +148,65 @@ type runLocalArgs struct {
 }
 
 func runNewSlogLogger(stdout io.Writer, spanID string, tags []string) *slog.Logger {
+	// 1. Create JSON logger omitting the `time` field.
 	logger := slog.New(slog.NewJSONHandler(stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
+		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
+			if attr.Key == slog.TimeKey && len(groups) <= 0 {
+				return slog.Attr{}
+			}
+			return attr
+		},
 	}))
 
-	logger = logger.With("spanID", spanID)
-
+	// 2. Bind the logger to the tags.
 	for _, tag := range tags {
 		if key, value, ok := strings.Cut(tag, "="); ok {
 			logger = logger.With(key, value)
 		}
 	}
 
-	return logger
+	// 3. Bind the logger to the minted span ID.
+	return logger.With("spanID", spanID)
+}
+
+func runNewTLSConfig(reqb *runRequestBody) (*tls.Config, error) {
+	if reqb.SNI == "" {
+		return nil, errors.New("the SNI field must not be empty")
+	}
+	tlsConfig := &tls.Config{
+		ServerName: reqb.SNI,
+		NextProtos: reqb.ALPN,
+	}
+	return tlsConfig, nil
 }
 
 func runNewHTTPRequest(ctx context.Context, reqb *runRequestBody) (*http.Request, error) {
+	// 1. Make sure the input is valid.
+	if reqb.HTTPScheme == "" {
+		return nil, errors.New("http scheme is empty")
+	}
+	if reqb.HTTPHost == "" {
+		return nil, errors.New("http host is empty")
+	}
+	if reqb.URLPath == "" {
+		return nil, errors.New("url path is empty")
+	}
+
+	// 2. Synthesize the URL.
 	httpURL := (&url.URL{
 		Scheme: reqb.HTTPScheme,
 		Host:   reqb.HTTPHost,
 		Path:   reqb.URLPath,
 	}).String()
 
+	// 3. Create the request.
 	httpReq, err := http.NewRequestWithContext(ctx, reqb.HTTPMethod, httpURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
 
+	// 4. Assign optional headers.
 	for _, h := range reqb.HTTPHeaders {
 		key, value, ok := strings.Cut(h, ":")
 		if !ok {
@@ -197,16 +214,77 @@ func runNewHTTPRequest(ctx context.Context, reqb *runRequestBody) (*http.Request
 		}
 		httpReq.Header.Add(strings.TrimSpace(key), strings.TrimSpace(value))
 	}
-
 	return httpReq, nil
+}
+
+// runMaybe potentially contains a value.
+type runMaybe[T any] struct {
+	ok bool
+	v  T
+}
+
+// Set sets the wrapped value.
+func (rm *runMaybe[T]) Set(v T) {
+	rm.ok = true
+	rm.v = v
+}
+
+// Unwrap returns the wrapped value or panics if not set.
+func (rm *runMaybe[T]) Unwrap() T {
+	runtimex.Assert(rm.ok)
+	return rm.v
+}
+
+func runPipelineHTTP(
+	ctx context.Context,
+	addrPort netip.AddrPort,
+	bodyFp io.Writer,
+	dialer ptnop.Func[netip.AddrPort, *ptnop.HTTPConn],
+	logger *slog.Logger,
+	req *http.Request,
+) int {
+	// 1. Dial the HTTP connection.
+	httpConn := dialer.Call(ctx, addrPort)
+	defer httpConn.Close()
+
+	// 2. Perform the HTTP round trip.
+	resp, err := httpConn.RoundTrip(req)
+	if err != nil {
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "roundTrip"),
+			slog.Any("err", err),
+			slog.Int("exitCode", 1),
+		)
+		return 1
+	}
+	defer resp.Body.Close()
+
+	// 3. Drain the response body.
+	if _, err := io.Copy(bodyFp, resp.Body); err != nil {
+		logger.Error(
+			"sondaFailure",
+			slog.String("operation", "readBody"),
+			slog.Any("err", err),
+			slog.Int("exitCode", 1),
+		)
+		return 1
+	}
+	return 0
 }
 
 // runPipeline runs a measurement pipeline.
 func (h *handler) runPipeline(ctx context.Context, rla *runLocalArgs, reqb *runRequestBody) int {
-	// Emit structured logs to the stdout tied together by the span ID.
+	// 1. Create the structured logger for emitting the JSON events.
 	logger := runNewSlogLogger(rla.stdout, rla.spanID, reqb.Tags)
 
-	// Parse the target addrPort.
+	// 2. Configure the pipeline timeout.
+	//
+	// Note: must preceed creating an HTTP request so we bound it to the deadline.
+	ctx, cancel := context.WithTimeout(ctx, reqb.Timeout)
+	defer cancel()
+
+	// 3. Make sure the target endpoint is valid.
 	addrPort, err := netip.ParseAddrPort(reqb.AddrPort)
 	if err != nil {
 		logger.Error(
@@ -217,106 +295,142 @@ func (h *handler) runPipeline(ctx context.Context, rla *runLocalArgs, reqb *runR
 		)
 		return 2
 	}
-
-	// Create TLS configuration.
-	tlsConfig := &tls.Config{ServerName: reqb.SNI, NextProtos: reqb.ALPN}
-
-	// Build the HTTP request.
-	httpReq, err := runNewHTTPRequest(ctx, reqb)
-	if err != nil {
+	if reqb.Protocol != "tcp" && reqb.Protocol != "udp" {
 		logger.Error(
 			"sondaFailure",
-			slog.String("operation", "newHttpRequest"),
-			slog.Any("err", err),
+			slog.String("operation", "parseAddrPort"),
+			slog.String("err", fmt.Sprintf("unsupported protocol name: %q", reqb.Protocol)),
 			slog.Int("exitCode", 2),
 		)
 		return 2
 	}
 
-	// Create the shared pipeline configuration.
+	// 4. Make sure the TLS configuration is valid.
+	tlsConfig := &runMaybe[*tls.Config]{}
+	switch reqb.Pipeline {
+	case "https", "tls":
+		tconf, err := runNewTLSConfig(reqb)
+		if err != nil {
+			logger.Error(
+				"sondaFailure",
+				slog.String("operation", "newTlsConfig"),
+				slog.Any("err", err),
+				slog.Int("exitCode", 2),
+			)
+			return 2
+		}
+		tlsConfig.Set(tconf)
+
+	default:
+		// nothing
+	}
+
+	// 5. Make sure the HTTP configuration is valid.
+	httpReq := &runMaybe[*http.Request]{}
+	switch reqb.Pipeline {
+	case "http", "https":
+		hreq, err := runNewHTTPRequest(ctx, reqb)
+		if err != nil {
+			logger.Error(
+				"sondaFailure",
+				slog.String("operation", "newHttpRequest"),
+				slog.Any("err", err),
+				slog.Int("exitCode", 2),
+			)
+			return 2
+		}
+		httpReq.Set(hreq)
+
+	default:
+		// nothing
+	}
+
+	// 6. Create the shared pipeline configuration.
 	cfg := ptnop.NewConfig()
 	cfg.SLogger = logger
 	cfg.Dialer = h.env.Dialer
 
-	// Create all the possible stages.
-	connectStage := ptnop.NewConnectFunc(cfg, reqb.Protocol)
-	observeConnStage := ptnop.NewObserveConnFunc(cfg)
-	autoCancelStage := ptnop.NewCancelWatchFunc()
-	tlsHandshakeStage := ptnop.NewTLSHandshakeFunc(cfg, tlsConfig)
-	httpConnStage := ptnop.NewHTTPConnFunc(cfg)
-
-	// Configure the pipeline timeout.
-	ctx, cancel := context.WithTimeout(ctx, reqb.Timeout)
-	defer cancel()
-
 	// TODO(bassosimone): add here all the possible pipelines
 
-	// Determine what to do depending on the `--pipeline <name>` flag.
-	var bodyReader io.ReadCloser = io.NopCloser(strings.NewReader(""))
+	// 7. Do something different depending on the pipeline.
 	switch reqb.Pipeline {
-	case "https":
-		dialPipe := ptnop.Compose5(
-			connectStage,
-			observeConnStage,
-			autoCancelStage,
-			tlsHandshakeStage,
-			httpConnStage,
-		)
-
-		// Dial the HTTPS connection.
-		httpConn := dialPipe.Call(ctx, addrPort)
-		defer httpConn.Close()
-
-		// Perform the HTTP round trip.
-		resp, err := httpConn.RoundTrip(httpReq)
-		if err != nil {
-			logger.Error(
-				"sondaFailure",
-				slog.String("operation", "roundTrip"),
-				slog.Any("err", err),
-				slog.Int("exitCode", 1),
-			)
-			return 1
-		}
-		defer resp.Body.Close()
-		bodyReader = resp.Body
-
 	case "http":
-		dialPipe := ptnop.Compose4(
-			connectStage,
-			observeConnStage,
-			autoCancelStage,
-			httpConnStage,
+		return runPipelineHTTP(
+			ctx,
+			addrPort,
+			rla.body,
+			ptnop.Compose4(
+				ptnop.NewConnectFunc(cfg, reqb.Protocol),
+				ptnop.NewObserveConnFunc(cfg),
+				ptnop.NewCancelWatchFunc(),
+				ptnop.NewHTTPConnFunc(cfg),
+			),
+			logger,
+			httpReq.Unwrap(),
 		)
 
-		// Dial the HTTP connection.
-		httpConn := dialPipe.Call(ctx, addrPort)
-		defer httpConn.Close()
+	case "https":
+		return runPipelineHTTP(
+			ctx,
+			addrPort,
+			rla.body,
+			ptnop.Compose5(
+				ptnop.NewConnectFunc(cfg, reqb.Protocol),
+				ptnop.NewObserveConnFunc(cfg),
+				ptnop.NewCancelWatchFunc(),
+				ptnop.NewTLSHandshakeFunc(cfg, tlsConfig.Unwrap()),
+				ptnop.NewHTTPConnFunc(cfg),
+			),
+			logger,
+			httpReq.Unwrap(),
+		)
 
-		// Perform the HTTP round trip.
-		resp, err := httpConn.RoundTrip(httpReq)
-		if err != nil {
+	case "tls":
+		pipeline := ptnop.Compose4(
+			ptnop.NewConnectFunc(cfg, reqb.Protocol),
+			ptnop.NewObserveConnFunc(cfg),
+			ptnop.NewCancelWatchFunc(),
+			ptnop.NewTLSHandshakeFunc(cfg, tlsConfig.Unwrap()),
+		)
+		result := pipeline.Call(ctx, addrPort)
+		if result.Err != nil {
 			logger.Error(
 				"sondaFailure",
-				slog.String("operation", "roundTrip"),
+				slog.String("operation", "tlsPipeline"),
 				slog.Any("err", err),
 				slog.Int("exitCode", 1),
 			)
 			return 1
 		}
-		defer resp.Body.Close()
-		bodyReader = resp.Body
-	}
+		result.V.Close()
+		return 0
 
-	// Drain the body to trigger body stream logging.
-	if _, err := io.Copy(rla.body, bodyReader); err != nil {
+	case "tcp":
+		pipeline := ptnop.Compose3(
+			ptnop.NewConnectFunc(cfg, reqb.Protocol),
+			ptnop.NewObserveConnFunc(cfg),
+			ptnop.NewCancelWatchFunc(),
+		)
+		result := pipeline.Call(ctx, addrPort)
+		if result.Err != nil {
+			logger.Error(
+				"sondaFailure",
+				slog.String("operation", "tlsPipeline"),
+				slog.Any("err", err),
+				slog.Int("exitCode", 1),
+			)
+			return 1
+		}
+		result.V.Close()
+		return 0
+
+	default:
 		logger.Error(
 			"sondaFailure",
-			slog.String("operation", "readBody"),
-			slog.Any("err", err),
-			slog.Int("exitCode", 1),
+			slog.String("operation", "selectPipeline"),
+			slog.String("err", fmt.Sprintf("unknown pipeline name: %q", reqb.Pipeline)),
+			slog.Int("exitCode", 2),
 		)
-		return 1
+		return 2
 	}
-	return 0
 }
