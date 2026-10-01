@@ -48,14 +48,9 @@ func (h *handler) Run(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Parse request body.
-	//
-	// TODO(bassosimone): use `DisallowUnknownFields` here.
-	rawReqb, err := io.ReadAll(io.LimitReader(r.Body, maxRequestBodySize))
-	if err != nil {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		return
-	}
-	if err := json.Unmarshal(rawReqb, &reqb); err != nil {
+	decoder := json.NewDecoder(io.LimitReader(r.Body, maxRequestBodySize))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&reqb); err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
