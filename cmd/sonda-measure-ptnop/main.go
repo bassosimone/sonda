@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"net/http"
 	"net/netip"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -283,7 +285,7 @@ func realMain(ctx context.Context, args []string) error {
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
 	// 3. Create the structured logger.
-	logger := newLogger(env.Stdout, opts.tags)
+	logger := newLogger(env, opts.tags)
 
 	// 4. Configure the pipeline timeout.
 	//
@@ -313,8 +315,9 @@ func realMain(ctx context.Context, args []string) error {
 // newLogger creates the JSON logger bound to tags.
 //
 // We omit the top-level time field: library events carry their own times.
-func newLogger(stdout io.Writer, tags []string) *slog.Logger {
-	logger := slog.New(slog.NewJSONHandler(stdout, &slog.HandlerOptions{
+func newLogger(env *testable.Environ, tags []string) *slog.Logger {
+	// Configure the JSON handler.
+	logger := slog.New(slog.NewJSONHandler(env.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
 			if attr.Key == slog.TimeKey && len(groups) <= 0 {
@@ -324,12 +327,25 @@ func newLogger(stdout io.Writer, tags []string) *slog.Logger {
 		},
 	}))
 
+	// Collect unique key/values in the tags and honor `SONDA_SPAN_ID`.
+	//
+	// The CLI flags take precedence over the environment.
+	//
+	// Subsequent flags take precedence over previous flags.
+	uniq := make(map[string]string)
+	if value := env.Getenv("SONDA_SPAN_ID"); value != "" {
+		uniq["spanID"] = value
+	}
 	for _, tag := range tags {
 		if key, value, ok := strings.Cut(tag, "="); ok {
-			logger = logger.With(key, value)
+			uniq[key] = value
 		}
 	}
 
+	// Build logger with the unique (sorted) keys.
+	for _, key := range slices.Sorted(maps.Keys(uniq)) {
+		logger = logger.With(key, uniq[key])
+	}
 	return logger
 }
 
