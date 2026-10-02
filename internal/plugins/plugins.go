@@ -7,7 +7,7 @@
 //
 //	$SONDA_EXEC_PATH/$name
 //
-// Where `$name` is a string matching `^sonda-[a-z]+$`.
+// Where `$name` is a string matching `^sonda-[a-z][a-z-]*$`.
 //
 // If `SONDA_EXEC_PATH` is empty we do not search for plugins.
 //
@@ -48,7 +48,7 @@ import (
 	"github.com/bassosimone/vclip"
 )
 
-const pluginNamePattern = `^sonda-[a-z]+$`
+const pluginNamePattern = `^sonda-[a-z][a-z-]*$`
 
 var pluginNameRegexp = regexp.MustCompile(pluginNamePattern)
 
