@@ -85,6 +85,8 @@ type Event struct {
 	ServerProtocol string `json:"serverProtocol,omitempty"`
 	DNSRawQuery    []byte `json:"dnsRawQuery,omitempty"`
 	DNSRawResponse []byte `json:"dnsRawResponse,omitempty"`
+	DNSQueryName   string `json:"dnsQueryName,omitempty"`
+	DNSQueryType   string `json:"dnsQueryType,omitempty"`
 
 	// --- sonda command layer: lifecycle ---
 	// Used by: sondaCommandLineArgs
