@@ -156,6 +156,8 @@ func realMain(ctx context.Context, args []string) error {
 		"        Requires: `--addr-port <addrport>`",
 		"        Requires: `--sni <host>`",
 		"        Suggests: `--alpn <alpn> ...`",
+		"    stun",
+		"        Requires: `--addr-port <addrport>`",
 		"Exit Code",
 		"    0 (success)",
 		"    1 (measurement error)",
@@ -222,6 +224,10 @@ func realMain(ctx context.Context, args []string) error {
 			"          --addr-port 1.1.1.1:443 \\\n"+
 			"          --sni 1.1.1.1 \\\n"+
 			"          --alpn h2 --alpn http/1.1",
+		"stun",
+		"    sonda-measure-ptnop \\\n"+
+			"          --pipeline stun \\\n"+
+			"          --addr-port 74.125.250.129:19302",
 	)
 
 	fset.StringSliceVar(&opts.alpn, 0, "alpn",

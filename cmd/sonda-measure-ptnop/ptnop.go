@@ -4,12 +4,15 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/netip"
 
 	"github.com/bassosimone/ptnop"
 	"github.com/bassosimone/runtimex"
+	"github.com/pion/stun/v3"
 )
 
 func ptnopRunPipeline(ctx context.Context, input *pipelineInput) int {
@@ -102,6 +105,13 @@ func ptnopRunPipeline(ctx context.Context, input *pipelineInput) int {
 		result.V.Close()
 		return 0
 
+	case "stun":
+		return ptnopRunSTUN(ctx, input, ptnop.Compose3(
+			ptnop.NewConnectFunc(cfg, "udp"),
+			ptnop.NewObserveConnFunc(cfg),
+			ptnop.NewCancelWatchFunc(),
+		))
+
 	default:
 		return logUsageError(input.logger, "selectPipeline", errUnknownPipeline(input.name))
 	}
@@ -154,5 +164,58 @@ func ptnopRunDNS(ctx context.Context, input *pipelineInput,
 	if addrs, err := resp.RecordsAAAA(); err == nil {
 		input.logger.Info("sondaDnsRecordsAAAA", slog.Any("dnsRecordsList", addrs))
 	}
+	return 0
+}
+
+// ptnopRunSTUN dials and performs the STUN binding transaction.
+func ptnopRunSTUN(ctx context.Context, input *pipelineInput,
+	dialFunc ptnop.Func[netip.AddrPort, ptnop.Result[net.Conn]]) int {
+	// 1. Dial the UDP connection.
+	res := dialFunc.Call(ctx, input.addrPort)
+	if err := res.Err; err != nil {
+		return logFailure(input.logger, "dialStun", err, 1)
+	}
+	conn := res.V
+	defer conn.Close()
+
+	// 2. Build STUN binding request using pion/stun as codec.
+	req := stun.MustBuild(stun.TransactionID, stun.BindingRequest)
+
+	// 3. Write the binding request.
+	if _, err := conn.Write(req.Raw); err != nil {
+		return logFailure(input.logger, "writeStunBindingRequest", err, 1)
+	}
+
+	// 4. Read the binding response.
+	buf := make([]byte, 1024)
+	bytesRead, err := conn.Read(buf)
+	if err != nil {
+		return logFailure(input.logger, "readStunBindingResponse", err, 1)
+	}
+
+	// 5. Decode the response using pion/stun as codec.
+	resp := new(stun.Message)
+	resp.Raw = buf[:bytesRead]
+	if err := resp.Decode(); err != nil {
+		return logFailure(input.logger, "decodeStunBindingResponse", err, 1)
+	}
+	if reqTID, respTID := req.TransactionID, resp.TransactionID; reqTID != respTID {
+		err := fmt.Errorf("stun: transaction ID mismatch: expected %q, got %q", reqTID, respTID)
+		return logFailure(input.logger, "decodeStunBindingResponse", err, 1)
+	}
+	if rt := resp.Type; rt != stun.BindingSuccess {
+		err := fmt.Errorf("stun: expected stun.BindingSuccess, got %v", rt)
+		return logFailure(input.logger, "decodeStunBindingResponse", err, 1)
+	}
+
+	// 6. Extract and log the reflexive address.
+	var xorAddr stun.XORMappedAddress
+	if err := xorAddr.GetFrom(resp); err != nil {
+		return logFailure(input.logger, "decodeStunBindingResponse", err, 1)
+	}
+	input.logger.Info("stunBindingResult",
+		slog.String("stunReflexiveAddr", xorAddr.IP.String()),
+		slog.Int("stunReflexivePort", xorAddr.Port),
+	)
 	return 0
 }
