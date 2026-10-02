@@ -1,6 +1,8 @@
+/coverage.out
 *.deb
 __pycache__/
-/coverage.out
 /sonda
 /sonda.exe
+/sonda-measure-ptnop
+/sonda-measure-ptnop.exe
 /.venv/

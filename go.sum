@@ -40,6 +40,8 @@ github.com/bassosimone/nop v0.0.0-20260928114558-014414f67632 h1:GBiXOfLQxLuq6Q1
 github.com/bassosimone/nop v0.0.0-20260928114558-014414f67632/go.mod h1:JbREX/5YQHf1HzcGo9WSQymVVTSnIQzTAv7rA2f6XVg=
 github.com/bassosimone/pkitest v0.0.0-20260928112139-c2ca7e68520a h1:4GH9qDsexyElM8jPHVVWoYj1NJJJ/hR1LDqFk15ziNo=
 github.com/bassosimone/pkitest v0.0.0-20260928112139-c2ca7e68520a/go.mod h1:8yycIHyEq14IvdJOEhj4/GK1+hM+VTF0rhtmkCCi7FA=
+github.com/bassosimone/ptnop v0.0.0-20261002162111-7db55aa63267 h1:TZMQo6D36x8/tLvCoQShJKPH8HLkK0bLSlMWd0cJ+NE=
+github.com/bassosimone/ptnop v0.0.0-20261002162111-7db55aa63267/go.mod h1:9p8CzlmGH/PJZEY1/4iamdCODDz6RuHbwxRC9hLwRm0=
 github.com/bassosimone/runtimex v0.0.0-20260928111457-f2fe934d5065 h1:kTLEe+4NAR6bH3XZHNxegfwUKKDArQHoJCQhrFQNZOU=
 github.com/bassosimone/runtimex v0.0.0-20260928111457-f2fe934d5065/go.mod h1:2aW76skIZNS7ljOpIqU3eARVLmtb0AG/Gab4aegSkTA=
 github.com/bassosimone/safeconn v0.0.0-20260928112542-9eef1e681eca h1:RwPT/kd004Jj+tKPLWJEQTFct8hAJZVn3JvvFUaiDVw=
