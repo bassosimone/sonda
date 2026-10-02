@@ -17,20 +17,25 @@ arch="$(go env GOARCH)"
 
 set -x
 
-# Build the binary.
+# Build the binaries.
 #
 # -buildmode=pie yields a PIE so the kernel can randomize the load
 # address (ASLR); sonda runs unattended as a network client, so opt
 # into hardening.
 install -d "$stage/usr/bin"
+install -m755 ./dist/unix/bin/sonda "$stage/usr/bin/sonda"
+
+install -d "$stage/usr/libexec/sonda"
 ldflags_buildcfg="github.com/bassosimone/sonda/internal/buildcfg"
-go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" -o "$stage/usr/bin/sonda" .
-chmod 755 "$stage/usr/bin/sonda"
+
+go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
+	-o "$stage/usr/libexec/sonda/sonda" .
+chmod 755 "$stage/usr/libexec/sonda/sonda"
 
 # Compute the libc6 version the binary actually requires: the highest
 # GLIBC_x.y symbol version it references. This mirrors what
 # dpkg-shlibdeps derives for real Debian packages.
-libc_ver="$(objdump -T "$stage/usr/bin/sonda" \
+libc_ver="$(objdump -T "$stage/usr/libexec/sonda/sonda" \
     | grep -oE 'GLIBC_[0-9.]+' | sed 's/^GLIBC_//' | sort -uV | tail -1)"
 
 # Install manpage.
@@ -56,6 +61,9 @@ install -m 644 dist/debian/copyright "$stage/usr/share/doc/sonda/"
 # Install lintian overrides.
 install -d "$stage/usr/share/lintian/overrides"
 install -m 644 dist/debian/lintian-overrides "$stage/usr/share/lintian/overrides/sonda"
+
+# Install the `/usr/share/sonda` dir.
+install -d "$stage/usr/share/sonda"
 
 # Install control file with substitutions.
 #

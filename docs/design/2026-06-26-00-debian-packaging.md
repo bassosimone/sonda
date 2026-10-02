@@ -27,8 +27,20 @@ Packaging artifacts live under `dist/`, not `scripts/`:
   runs `lintian` on the result (errors fail the build).
   Contains no heredocs; all metadata lives in `dist/`.
 
-The binary installs to `/usr/bin/sonda`, not `/usr/sbin/`,
+The executable installs to `/usr/bin/sonda`, not `/usr/sbin/`,
 because it is not an administration tool.
+
+The executable is a shell script. The binary is installed
+at `/usr/libexec/sonda/sonda` side by side with the plugins.
+
+The shell script exists to set the following environment
+variables if they are not already set:
+
+1. `SONDA_EXEC_PATH` to `/usr/libexec/sonda` so that
+   plugins may be installed and found
+
+2. `SONDA_SHARE_PATH` to `/usr/share/sonda` so that
+   plugins may describe themselves
 
 ## Scheduling
 
