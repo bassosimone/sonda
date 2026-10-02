@@ -137,6 +137,9 @@ func extractParseSpan(spanDir string) ([]structured.Metrics, error) {
 		if !extractDoneEvents[ev.Msg] {
 			continue
 		}
+		if ev.ErrClass == "ESKIP" { // TODO(bassosimone): remove when analysis is ready
+			continue
+		}
 		rows = append(rows, extractEventToMetrics(ev))
 	}
 	return rows, nil
