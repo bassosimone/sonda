@@ -12,12 +12,22 @@ You need the `stable` Go version (see https://go.dev/dl/).
 
 ### From source
 
-```bash
-go install -v github.com/bassosimone/sonda@latest
+For local development, build using `make`. This command compiles
+`sonda` and its plugins in the top-level directory.
+
+The compiled `sonda` binary will report its version as `(devel)`.
+
+To run the compiled `sonda` binary use:
+
+```sh
+SONDA_EXEC_PATH=. ./sonda
 ```
 
-For local development, `go build .` is fine; the resulting
-binary will report its version as `(devel)`.
+Running without `SONDA_EXEC_PATH` will not always work: `sonda` needs
+this environment variable to locate its plugins.
+
+Installing via `go install github.com/bassosimone/sonda@latest` yields
+a binary for which commands requiring plugins won't work.
 
 ### As a Debian package
 

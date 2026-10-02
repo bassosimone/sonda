@@ -9,12 +9,25 @@ network properties, storing structured results in a local spool for later analys
 
 ## Build and Test Commands
 
+To build:
+
 ```bash
-go build .
-go test ./...
+make
 ```
 
-There is no Makefile or CI configuration. Packaging is handled by `scripts/makedeb.bash`.
+To test:
+
+```bash
+go test -race ./...
+```
+
+To run from the development tree:
+
+```bash
+SONDA_EXEC_PATH=. ./sonda
+```
+
+Packaging is handled by `scripts/makedeb.bash`.
 
 ## Architecture
 
@@ -22,6 +35,9 @@ The root `main.go` wires a `vclip` dispatcher; each subcommand lives in its own 
 under `internal/cli/`. Subcommands receive `context.Context` and `args []string`.
 
 Side effects (filesystem, exec, stdio, `os.Exit`) are abstracted through `internal/testable/`.
+
+Specific subcommands are implemented as plugins. Plugins are located using the
+`SONDA_EXEC_PATH` environment variable.
 
 ## Conventions
 
