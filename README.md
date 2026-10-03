@@ -90,6 +90,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 - [github.com/bassosimone/dnscodec](https://pkg.go.dev/github.com/bassosimone/dnscodec)
 - [github.com/bassosimone/errclass](https://pkg.go.dev/github.com/bassosimone/errclass)
 - [github.com/bassosimone/nop](https://pkg.go.dev/github.com/bassosimone/nop)
+- [github.com/bassosimone/ptnop](https://pkg.go.dev/github.com/bassosimone/ptnop)
 - [github.com/bassosimone/runtimex](https://pkg.go.dev/github.com/bassosimone/runtimex)
 - [github.com/bassosimone/vclip](https://pkg.go.dev/github.com/bassosimone/vclip)
 - [github.com/bassosimone/vflag](https://pkg.go.dev/github.com/bassosimone/vflag)
