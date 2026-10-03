@@ -47,7 +47,7 @@ Following ptnop's documentation, events fall into three categories:
 ### Field names (JSON keys)
 
 - JavaScript casing: lowercase first letter for acronyms.
-  `httpUrl`, `httpResponseBodySize`, `tlsServerName`. This
+  `httpRequestUrl`, `httpResponseBodySize`, `tlsServerName`. This
   matches common JSON conventions.
 
 - Qualified names: field names must be unambiguous without the
@@ -169,11 +169,11 @@ parsing mechanism is now typed.
 All span events carry `t`, `t0`, `localAddr`, `remoteAddr`,
 `protocol`. All `*Done` events carry `err` and `errClass`.
 
-|                                    Event | Category |                                        Key fields |
-|------------------------------------------|----------|---------------------------------------------------|
-|                   `connectStart`/`Done`  |   Span   |                          `remoteAddr`, `protocol` |
-|              `tlsHandshakeStart`/`Done`  |   Span   |                 `tlsServerName`, `tlsCipherSuite` |
-|             `httpRoundTripStart`/`Done`  |   Span   | `httpMethod`, `httpUrl`, `httpResponseStatusCode` |
-| `readStart`/`Done`, `writeStart`/`Done`  |   Span   |                    `ioBufferSize`, `ioBytesCount` |
-|               `dnsExchangeStart`/`Done`  |   Span   |                                  `serverProtocol` |
-|               `dnsQuery`, `dnsResponse`  |   Wire   |                  `dnsRawQuery`, `dnsRawResponse`  |
+|                                    Event | Category |                                                       Key fields |
+|------------------------------------------|----------|------------------------------------------------------------------|
+|                    `connectStart`/`Done` |   Span   |                                         `remoteAddr`, `protocol` |
+|               `tlsHandshakeStart`/`Done` |   Span   |                                `tlsServerName`, `tlsCipherSuite` |
+|              `httpRoundTripStart`/`Done` |   Span   |  `httpRequestMethod`, `httpRequestUrl`, `httpResponseStatusCode` |
+|  `readStart`/`Done`, `writeStart`/`Done` |   Span   |                                   `ioBufferSize`, `ioBytesCount` |
+|                `dnsExchangeStart`/`Done` |   Span   |                                              `dnsServerProtocol` |
+|                `dnsQuery`, `dnsResponse` |   Wire   |                                  `dnsRawQuery`, `dnsRawResponse` |

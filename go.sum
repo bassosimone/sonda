@@ -38,8 +38,8 @@ github.com/bassosimone/netstub v0.0.0-20260928112048-621fd84591bd h1:vAoIMc8ElFV
 github.com/bassosimone/netstub v0.0.0-20260928112048-621fd84591bd/go.mod h1:6b7sfD5MznDaY0CxJXQ52OhuqG+yWDvjoN7A9+wKLLs=
 github.com/bassosimone/pkitest v0.0.0-20260928112139-c2ca7e68520a h1:4GH9qDsexyElM8jPHVVWoYj1NJJJ/hR1LDqFk15ziNo=
 github.com/bassosimone/pkitest v0.0.0-20260928112139-c2ca7e68520a/go.mod h1:8yycIHyEq14IvdJOEhj4/GK1+hM+VTF0rhtmkCCi7FA=
-github.com/bassosimone/ptnop v0.0.0-20261002225153-d365127f443a h1:aKHz72g6NWe2YZGFDThqSAAurio8H3I/kzgiD8fdITw=
-github.com/bassosimone/ptnop v0.0.0-20261002225153-d365127f443a/go.mod h1:9p8CzlmGH/PJZEY1/4iamdCODDz6RuHbwxRC9hLwRm0=
+github.com/bassosimone/ptnop v0.0.0-20261003115834-467885d02847 h1:t0aG9KwX03DpZyg5J//NxW9SRdvKpp4/TV7Ty9avK/U=
+github.com/bassosimone/ptnop v0.0.0-20261003115834-467885d02847/go.mod h1:9p8CzlmGH/PJZEY1/4iamdCODDz6RuHbwxRC9hLwRm0=
 github.com/bassosimone/runtimex v0.0.0-20260928111457-f2fe934d5065 h1:kTLEe+4NAR6bH3XZHNxegfwUKKDArQHoJCQhrFQNZOU=
 github.com/bassosimone/runtimex v0.0.0-20260928111457-f2fe934d5065/go.mod h1:2aW76skIZNS7ljOpIqU3eARVLmtb0AG/Gab4aegSkTA=
 github.com/bassosimone/safeconn v0.0.0-20260928112542-9eef1e681eca h1:RwPT/kd004Jj+tKPLWJEQTFct8hAJZVn3JvvFUaiDVw=

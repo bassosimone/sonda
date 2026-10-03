@@ -73,20 +73,20 @@ type Event struct {
 	// --- nop pipeline: HTTP fields ---
 	// Used by: httpRoundTripStart/Done
 
-	HTTPMethod             string      `json:"httpMethod,omitempty"`
-	HTTPUrl                string      `json:"httpUrl,omitempty"`
 	HTTPRequestHeaders     http.Header `json:"httpRequestHeaders,omitempty"`
+	HTTPRequestMethod      string      `json:"httpRequestMethod,omitempty"`
+	HTTPRequestUrl         string      `json:"httpRequestUrl,omitempty"`
 	HTTPResponseHeaders    http.Header `json:"httpResponseHeaders,omitempty"`
 	HTTPResponseStatusCode int         `json:"httpResponseStatusCode,omitempty"`
 
 	// --- nop pipeline: DNS fields ---
 	// Used by: dnsExchangeStart/Done, dnsQuery, dnsResponse
 
-	ServerProtocol string `json:"serverProtocol,omitempty"`
-	DNSRawQuery    []byte `json:"dnsRawQuery,omitempty"`
-	DNSRawResponse []byte `json:"dnsRawResponse,omitempty"`
-	DNSQueryName   string `json:"dnsQueryName,omitempty"`
-	DNSQueryType   string `json:"dnsQueryType,omitempty"`
+	DNSQueryName      string `json:"dnsQueryName,omitempty"`
+	DNSQueryType      string `json:"dnsQueryType,omitempty"`
+	DNSRawQuery       []byte `json:"dnsRawQuery,omitempty"`
+	DNSRawResponse    []byte `json:"dnsRawResponse,omitempty"`
+	DNSServerProtocol string `json:"dnsServerProtocol,omitempty"`
 
 	// --- sonda command layer: STUN ---
 	// Used by: stunBindingResult

@@ -159,8 +159,8 @@ func extractEventToMetrics(ev *ptnopdata.Event) ptnopdata.Metrics {
 	if ev.ErrClass != "" {
 		m.ErrClass = &ev.ErrClass
 	}
-	if ev.ServerProtocol != "" {
-		m.ServerProtocol = &ev.ServerProtocol
+	if ev.DNSServerProtocol != "" {
+		m.ServerProtocol = &ev.DNSServerProtocol
 	}
 	if ev.HTTPResponseStatusCode != 0 {
 		code := int64(ev.HTTPResponseStatusCode)

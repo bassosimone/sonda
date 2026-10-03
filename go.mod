@@ -7,7 +7,7 @@ require (
 	github.com/bassosimone/deferexit v0.0.0-20260928111243-1ceec2208869
 	github.com/bassosimone/dnscodec v0.0.0-20260928111729-777d57044539
 	github.com/bassosimone/iox v0.0.0-20260928112414-6699b8367e72
-	github.com/bassosimone/ptnop v0.0.0-20261002225153-d365127f443a
+	github.com/bassosimone/ptnop v0.0.0-20261003115834-467885d02847
 	github.com/bassosimone/runtimex v0.0.0-20260928111457-f2fe934d5065
 	github.com/bassosimone/vclip v0.0.0-20260928114705-86887ca1c7df
 	github.com/bassosimone/vflag v0.0.0-20260928113542-10198c4d0a30
