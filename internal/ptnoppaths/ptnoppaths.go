@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package paths contains spool directory path construction.
-package paths
+// Package ptnoppaths contains the ptnop spool directory path construction.
+package ptnoppaths
 
 import "path/filepath"
 

@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/bassosimone/runtimex"
-	"github.com/bassosimone/sonda/internal/paths"
 	"github.com/bassosimone/sonda/internal/ptnopdata"
+	"github.com/bassosimone/sonda/internal/ptnoppaths"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 	"github.com/google/uuid"
@@ -90,7 +90,7 @@ func extractMaybeProcessSpan(logger *slog.Logger, parent, name string, cutoff ti
 	spanDir := filepath.Join(parent, name)
 
 	// Do not process the entry if it's already processed.
-	if _, err := os.Stat(paths.SpanMetricsParquet(spanDir)); err == nil {
+	if _, err := os.Stat(ptnoppaths.SpanMetricsParquet(spanDir)); err == nil {
 		return
 	}
 
@@ -120,7 +120,7 @@ var extractDoneEvents = map[string]bool{
 }
 
 func extractParseSpan(spanDir string) ([]ptnopdata.Metrics, error) {
-	data, err := os.ReadFile(paths.SpanStdout(spanDir))
+	data, err := os.ReadFile(ptnoppaths.SpanStdout(spanDir))
 	if err != nil {
 		return nil, err
 	}
@@ -176,8 +176,8 @@ func extractEventToMetrics(ev *ptnopdata.Event) ptnopdata.Metrics {
 }
 
 func extractWriteParquet(spanDir string, rows []ptnopdata.Metrics) (err error) {
-	tmpPath := paths.SpanMetricsParquetTmp(spanDir)
-	finalPath := paths.SpanMetricsParquet(spanDir)
+	tmpPath := ptnoppaths.SpanMetricsParquetTmp(spanDir)
+	finalPath := ptnoppaths.SpanMetricsParquet(spanDir)
 
 	filep, err := os.Create(tmpPath)
 	if err != nil {

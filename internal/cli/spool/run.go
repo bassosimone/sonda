@@ -15,7 +15,7 @@ import (
 	"github.com/bassosimone/closepool"
 	"github.com/bassosimone/nop"
 	"github.com/bassosimone/runtimex"
-	"github.com/bassosimone/sonda/internal/paths"
+	"github.com/bassosimone/sonda/internal/ptnoppaths"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 )
@@ -51,8 +51,8 @@ func runMain(ctx context.Context, args []string) error {
 	runtimex.Assert(len(cmdArgs) > 0)
 
 	// Build the spool directory path.
-	spanDir := paths.SpanDir(spoolDir, spanID)
-	tmpDir := paths.SpanDirTmp(spoolDir, spanID)
+	spanDir := ptnoppaths.SpanDir(spoolDir, spanID)
+	tmpDir := ptnoppaths.SpanDirTmp(spoolDir, spanID)
 
 	// Expand @SONDA_SPAN_DIR@ in the command arguments so that inner
 	// commands can reference the span directory for auxiliary files.
@@ -73,7 +73,7 @@ func runMain(ctx context.Context, args []string) error {
 		env.Exit(1)
 	}
 	argvData = append(argvData, '\n')
-	if err := env.WriteFile(paths.SpanArgvJSON(tmpDir), argvData, 0640); err != nil {
+	if err := env.WriteFile(ptnoppaths.SpanArgvJSON(tmpDir), argvData, 0640); err != nil {
 		logger.Error("failed to write argv.json", slog.Any("err", err))
 		env.Exit(1)
 	}
@@ -83,7 +83,7 @@ func runMain(ctx context.Context, args []string) error {
 	defer closers.Close() // idempotent
 
 	openFlags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-	stdoutPath := paths.SpanStdout(tmpDir)
+	stdoutPath := ptnoppaths.SpanStdout(tmpDir)
 	stdoutFile, err := env.OpenFile(stdoutPath, openFlags, 0640)
 	if err != nil {
 		logger.Error("failed to open stdout", slog.Any("err", err))
@@ -91,7 +91,7 @@ func runMain(ctx context.Context, args []string) error {
 	}
 	closers.Add(stdoutFile)
 
-	stderrPath := paths.SpanStderr(tmpDir)
+	stderrPath := ptnoppaths.SpanStderr(tmpDir)
 	stderrFile, err := env.OpenFile(stderrPath, openFlags, 0640)
 	if err != nil {
 		logger.Error("failed to open stderr", slog.Any("err", err))
@@ -123,7 +123,7 @@ func runMain(ctx context.Context, args []string) error {
 
 	// Write the exit code to the spool directory.
 	exitCodeData := []byte(strconv.Itoa(exitCode) + "\n")
-	if err := env.WriteFile(paths.SpanExitCode(tmpDir), exitCodeData, 0640); err != nil {
+	if err := env.WriteFile(ptnoppaths.SpanExitCode(tmpDir), exitCodeData, 0640); err != nil {
 		logger.Error("failed to write exit code", slog.Any("err", err))
 		env.Exit(1)
 	}

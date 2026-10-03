@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/bassosimone/runtimex"
-	"github.com/bassosimone/sonda/internal/paths"
 	"github.com/bassosimone/sonda/internal/ptnopdata"
+	"github.com/bassosimone/sonda/internal/ptnoppaths"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 	"github.com/google/uuid"
@@ -94,14 +94,14 @@ func loadMaybeProcessSpan(logger *slog.Logger, parent, metricsDir, name string, 
 	spanDir := filepath.Join(parent, name)
 
 	// Do not process the entry if metrics have not been extracted yet.
-	metricsPath := paths.SpanMetricsParquet(spanDir)
+	metricsPath := ptnoppaths.SpanMetricsParquet(spanDir)
 	if _, err := os.Stat(metricsPath); err != nil {
 		return
 	}
 
 	// Atomically claim this span using O_CREATE|O_EXCL so that
 	// concurrent loaders cannot process the same span twice.
-	sentinelPath := paths.SpanMetricsLoaded(spanDir)
+	sentinelPath := ptnoppaths.SpanMetricsLoaded(spanDir)
 	sentinel, err := os.OpenFile(sentinelPath, os.O_CREATE|os.O_EXCL, 0640)
 	if err != nil {
 		return

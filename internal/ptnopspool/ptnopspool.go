@@ -13,8 +13,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bassosimone/sonda/internal/paths"
 	"github.com/bassosimone/sonda/internal/ptnopdata"
+	"github.com/bassosimone/sonda/internal/ptnoppaths"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/google/uuid"
 )
@@ -154,8 +154,8 @@ func (d *RootDir) Run(ctx context.Context, opts *Options) (*SpanDir, error) {
 	// and `1` (failure). By doing this, we cover `127` (subcommand execution
 	// failed), and `2` (usage error including unknown subcommand), as
 	// well as all the other unexpected exit codes.
-	spanDir := paths.SpanDir(d.Path, spanID)
-	data, err := d.Env.ReadFile(paths.SpanExitCode(spanDir))
+	spanDir := ptnoppaths.SpanDir(d.Path, spanID)
+	data, err := d.Env.ReadFile(ptnoppaths.SpanExitCode(spanDir))
 	if err != nil {
 		return nil, ExecError{err}
 	}
@@ -209,7 +209,7 @@ func (d *SpanDir) ResolvedAddrsAAAA() ([]string, error) {
 }
 
 func (d *SpanDir) resolvedAddrs(msgName string) ([]string, error) {
-	filep, err := d.Env.OpenFile(paths.SpanStdout(d.Path), os.O_RDONLY, 0)
+	filep, err := d.Env.OpenFile(ptnoppaths.SpanStdout(d.Path), os.O_RDONLY, 0)
 	if err != nil {
 		return nil, ReadError{err}
 	}
@@ -247,7 +247,7 @@ func (d *SpanDir) resolvedAddrs(msgName string) ([]string, error) {
 //
 //  2. [ReadError] if we cannot open, scan, or parse the structured logs file
 func (d *SpanDir) ReflexiveAddr() (string, error) {
-	filep, err := d.Env.OpenFile(paths.SpanStdout(d.Path), os.O_RDONLY, 0)
+	filep, err := d.Env.OpenFile(ptnoppaths.SpanStdout(d.Path), os.O_RDONLY, 0)
 	if err != nil {
 		return "", ReadError{err}
 	}
