@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -16,13 +17,7 @@ import (
 	"github.com/bassosimone/sonda/internal/ptnopdata"
 	"github.com/bassosimone/sonda/internal/ptnoppaths"
 	"github.com/bassosimone/sonda/internal/testable"
-	"github.com/google/uuid"
 )
-
-// NewSpanID returns a new spanID.
-func NewSpanID() string {
-	return uuid.Must(uuid.NewV7()).String()
-}
 
 // maxLineSize is large enough to contain a DoH response (max size 64 KiB) encoded in
 // base64 (87 KiB) or pathologically large response headers.
@@ -105,15 +100,13 @@ func NewRootDir(env *testable.Environ, spoolDir string) *RootDir {
 // This command fails with [ExecError] for any child status code different from `0` (success)
 // and `1` (measurement failure), thus covering, among other things, missing plugins.
 func (d *RootDir) Run(ctx context.Context, opts *Options) (*SpanDir, error) {
-	// Create the command to run with externally defined spanID so that
-	// later on we can read the `stdout.txt`.
+	// Create the command to run. `spool run` generates the span ID and
+	// tells us the span directory by writing JSON to its stdout.
 	//
 	// Passing all possible command line options, including empty lines, is
 	// fine because the plugin handles this gracefully.
-	spanID := NewSpanID()
 	args := []string{
 		"spool", "run",
-		"--span-id", spanID,
 		"--spool-dir", d.Path,
 		"--",
 		"measure-ptnop",
@@ -145,16 +138,35 @@ func (d *RootDir) Run(ctx context.Context, opts *Options) (*SpanDir, error) {
 		args = append(args, opts.Timeout.String())
 	}
 
-	// Execute the command.
-	if err := d.Env.ReExec(ctx, args); err != nil {
+	// Execute the command capturing its stdout.
+	//
+	// The child's stderr is not captured: `spool run` only writes
+	// there when it fails to manage the span directory.
+	var stdout bytes.Buffer
+	env := d.Env.Clone()
+	env.Stdout = &stdout
+	if err := env.ReExec(testable.WithEnviron(ctx, env), args); err != nil {
 		return nil, ExecError{err}
 	}
+
+	// Parse the JSON written by `spool run` to learn the span directory.
+	var result struct {
+		SpanID  string `json:"spanId"`
+		SpanDir string `json:"spanDir"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		return nil, ExecError{err}
+	}
+	if result.SpanID == "" || result.SpanDir == "" {
+		err := fmt.Errorf("spool run: missing spanId or spanDir in %q", stdout.String())
+		return nil, ExecError{err}
+	}
+	spanDir := result.SpanDir
 
 	// Read the exitcode and handle exit codes different from `0` (success)
 	// and `1` (failure). By doing this, we cover `127` (subcommand execution
 	// failed), and `2` (usage error including unknown subcommand), as
 	// well as all the other unexpected exit codes.
-	spanDir := ptnoppaths.SpanDir(d.Path, spanID)
 	data, err := d.Env.ReadFile(ptnoppaths.SpanExitCode(spanDir))
 	if err != nil {
 		return nil, ExecError{err}

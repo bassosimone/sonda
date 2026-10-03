@@ -15,10 +15,30 @@ import (
 	"github.com/bassosimone/closepool"
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/ptnoppaths"
-	"github.com/bassosimone/sonda/internal/ptnopspool"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
+	"github.com/google/uuid"
 )
+
+// newSpanID returns a new span ID, which is a UUIDv7 in canonical form.
+//
+// We generate the span ID here rather than accepting it from the caller
+// so that we never need to validate it: `gc` and the ETL plugins only
+// consider UUIDv7 entries, and a malformed ID could escape `--spool-dir`.
+func newSpanID() string {
+	return uuid.Must(uuid.NewV7()).String()
+}
+
+// runResult is the JSON object that `sonda-spool run` writes to its
+// stdout after the span directory has been atomically renamed.
+type runResult struct {
+	// SpanID is the generated span ID.
+	SpanID string `json:"spanId"`
+
+	// SpanDir is the final span directory path, derived from `--spool-dir`
+	// and thus relative when `--spool-dir` is relative.
+	SpanDir string `json:"spanDir"`
+}
 
 // runMain is the main function of the `sonda-spool run` subcommand.
 func runMain(ctx context.Context, args []string) error {
@@ -28,7 +48,6 @@ func runMain(ctx context.Context, args []string) error {
 
 	// Set command defaults.
 	var (
-		spanID   = ptnopspool.NewSpanID()
 		spoolDir = "."
 		timeout  = 5 * time.Minute
 	)
@@ -39,7 +58,6 @@ func runMain(ctx context.Context, args []string) error {
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
-	fset.StringVar(&spanID, 0, "span-id", "Use `ID` instead of generating a random one.")
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")
 	fset.SetMinMaxPositionalArgs(1, math.MaxInt)
@@ -50,7 +68,12 @@ func runMain(ctx context.Context, args []string) error {
 	cmdArgs := fset.Args()
 	runtimex.Assert(len(cmdArgs) > 0)
 
-	// Build the spool directory path.
+	// Save our stdout before overriding it for the child, since we use
+	// it at the end to tell the caller where we wrote the span.
+	stdout := env.Stdout
+
+	// Generate the span ID and build the spool directory path.
+	spanID := newSpanID()
 	spanDir := ptnoppaths.SpanDir(spoolDir, spanID)
 	tmpDir := ptnoppaths.SpanDirTmp(spoolDir, spanID)
 
@@ -131,6 +154,16 @@ func runMain(ctx context.Context, args []string) error {
 	// Atomically rename the temporary directory to the final path.
 	if err := env.Rename(tmpDir, spanDir); err != nil {
 		logger.Error("failed to finalize span directory", slog.Any("err", err))
+		env.Exit(1)
+	}
+
+	// Tell the caller where we wrote the span.
+	//
+	// Marshalling cannot fail: runResult only contains strings.
+	resultData := runtimex.PanicOnError1(json.Marshal(&runResult{SpanID: spanID, SpanDir: spanDir}))
+	resultData = append(resultData, '\n')
+	if _, err := stdout.Write(resultData); err != nil {
+		logger.Error("failed to write result", slog.Any("err", err))
 		env.Exit(1)
 	}
 
