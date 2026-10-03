@@ -9,7 +9,6 @@ import (
 
 	"github.com/bassosimone/deferexit"
 	"github.com/bassosimone/sonda/internal/buildcfg"
-	"github.com/bassosimone/sonda/internal/cli/scan"
 	"github.com/bassosimone/sonda/internal/plugins"
 	"github.com/bassosimone/sonda/internal/reexec"
 	"github.com/bassosimone/sonda/internal/testable"
@@ -44,9 +43,6 @@ func main() {
 
 	// Wire version reporting.
 	disp.AddVersionHandlers(buildcfg.Version)
-
-	// Built-in subcommands.
-	disp.AddCommand("scan", vclip.CommandFunc(scan.Main), scan.ShortDescr)
 
 	// Plugins subcommands (after builtins so they can't register existing names).
 	if err := plugins.Load(env, disp); err != nil {

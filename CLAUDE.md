@@ -31,13 +31,12 @@ Packaging is handled by `scripts/makedeb.bash`.
 
 ## Architecture
 
-The root `main.go` wires a `vclip` dispatcher; each subcommand lives in its own package
-under `internal/cli/`. Subcommands receive `context.Context` and `args []string`.
+The root `main.go` wires a `vclip` dispatcher. Subcommands are plugins: each lives
+in its own `cmd/sonda-<name>` directory and is located at runtime using the
+`SONDA_EXEC_PATH` environment variable. Subcommands receive `context.Context` and
+`args []string`.
 
 Side effects (filesystem, exec, stdio, `os.Exit`) are abstracted through `internal/testable/`.
-
-Specific subcommands are implemented as plugins. Plugins are located using the
-`SONDA_EXEC_PATH` environment variable.
 
 ## Conventions
 

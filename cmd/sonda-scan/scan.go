@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package scan implements the `sonda scan` subcommand.
-package scan
+package main
 
 import (
 	"context"
@@ -15,11 +14,8 @@ import (
 	"github.com/bassosimone/vflag"
 )
 
-// ShortDescr is the command short description.
-const ShortDescr = "Scan network endpoints and generate metrics."
-
-// Main is the main function of the `sonda scan` subcommand.
-func Main(ctx context.Context, args []string) error {
+// scanMain is the main function of the `sonda scan` subcommand.
+func scanMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
 
@@ -32,7 +28,7 @@ func Main(ctx context.Context, args []string) error {
 	)
 
 	// Parse command line flags.
-	fset := vflag.NewFlagSet("sonda scan", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-scan", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout

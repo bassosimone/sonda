@@ -41,6 +41,10 @@ go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 chmod 755 "$stage/usr/libexec/sonda/sonda-measure-ptnop"
 
 go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
+	-o "$stage/usr/libexec/sonda/sonda-scan" ./cmd/sonda-scan
+chmod 755 "$stage/usr/libexec/sonda/sonda-scan"
+
+go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 	-o "$stage/usr/libexec/sonda/sonda-spool" ./cmd/sonda-spool
 chmod 755 "$stage/usr/libexec/sonda/sonda-spool"
 

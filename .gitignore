@@ -7,6 +7,8 @@ __pycache__/
 /sonda-etl-ptnop-qoe.exe
 /sonda-measure-ptnop
 /sonda-measure-ptnop.exe
+/sonda-scan
+/sonda-scan.exe
 /sonda-spool
 /sonda-spool.exe
 /.venv/

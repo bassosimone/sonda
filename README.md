@@ -27,7 +27,7 @@ It is a development-only launcher that sets the correct environment
 variables so that `sonda` can find its plugins.
 
 Installing via `go install github.com/bassosimone/sonda@latest` yields
-a binary for which commands requiring plugins won't work.
+a binary without working subcommands, since they are all plugins.
 
 ### As a Debian package
 
