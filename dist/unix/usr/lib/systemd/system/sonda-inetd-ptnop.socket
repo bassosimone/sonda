@@ -7,6 +7,7 @@ SocketUser=_sonda
 SocketGroup=_sonda
 SocketMode=0600
 Accept=yes
+MaxConnections=8
 
 [Install]
 WantedBy=sockets.target
