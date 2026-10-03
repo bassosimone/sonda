@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/bassosimone/runtimex"
-	"github.com/bassosimone/sonda/internal/ptnopspool"
+	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 )
@@ -21,10 +21,11 @@ func scanMain(ctx context.Context, args []string) error {
 
 	// Set command defaults.
 	var (
-		configFile = ""
-		fail       = false
-		metricsDir = "."
-		spoolDir   = "."
+		configFile  = ""
+		fail        = false
+		metricsDir  = "."
+		ptnopSocket = "/run/sonda/inetd-ptnop.sock"
+		spoolDir    = "."
 	)
 
 	// Parse command line flags.
@@ -38,7 +39,9 @@ func scanMain(ctx context.Context, args []string) error {
 	fset.UsagePrinter = upr
 	upr.AddDescription(
 		"Run the steps listed in the `--config-file` YAML file, in order. " +
-			"Measurement steps store their results under `<spool-dir>/ptnop`. " +
+			"Measurement steps send requests to the `sonda-inetd-ptnop` server " +
+			"listening at `--ptnop-socket`, which must store its results under " +
+			"`<spool-dir>/ptnop`. " +
 			"The `extract`, `load`, and `gc` steps process that spool and write " +
 			"daily metrics under `<metrics-dir>/qoe`. A failed step does not stop " +
 			"the scan unless `--fail` is set.")
@@ -48,6 +51,9 @@ func scanMain(ctx context.Context, args []string) error {
 	fset.StringVar(&configFile, 0, "config-file", "Load steps from `FILE` (required).")
 	fset.StringVar(&metricsDir, 0, "metrics-dir",
 		"Top-level `DIR` containing processed metrics.",
+		"Default: `@DEFAULT_VALUE@`.")
+	fset.StringVar(&ptnopSocket, 0, "ptnop-socket",
+		"Unix domain socket `PATH` of the `sonda-inetd-ptnop` server.",
 		"Default: `@DEFAULT_VALUE@`.")
 	fset.StringVar(&spoolDir, 0, "spool-dir",
 		"Top-level `DIR` containing raw measurement results.",
@@ -63,7 +69,6 @@ func scanMain(ctx context.Context, args []string) error {
 	qoeMetricsDir := filepath.Join(metricsDir, "qoe")
 
 	// Construct shared dependencies.
-	ptnopRootDir := ptnopspool.NewRootDir(env, ptnopSpoolDir)
 	state := &sharedState{}
 
 	// TODO(bassosimone): probe IPv6 connectivity here using a UDP connect
@@ -90,12 +95,23 @@ func scanMain(ctx context.Context, args []string) error {
 		env.Exit(2)
 	}
 
+	// Connect to the ptnop server, using a single connection for all the steps.
+	//
+	// We connect after loading the config, so `scan` fails early when the server
+	// is not running, but still prints the usage or config errors without it.
+	ptnopClient, err := ptnoprpc.Dial(ctx, env, ptnopSocket)
+	if err != nil {
+		logger.Error("connecting to the ptnop server", slog.Any("err", err))
+		env.Exit(1)
+	}
+	defer ptnopClient.Close()
+
 	// Build the runner registry.
 	runners := map[string]stepRunner{
-		"stun":           &stunRunner{RootDir: ptnopRootDir, State: state},
-		"dns-over-udp":   &dnsOverUDPRunner{RootDir: ptnopRootDir, State: state},
-		"dns-over-https": &dnsOverHTTPSRunner{RootDir: ptnopRootDir, State: state},
-		"https":          &httpsRunner{RootDir: ptnopRootDir, State: state},
+		"stun":           &stunRunner{Client: ptnopClient, State: state},
+		"dns-over-udp":   &dnsOverUDPRunner{Client: ptnopClient, State: state},
+		"dns-over-https": &dnsOverHTTPSRunner{Client: ptnopClient, State: state},
+		"https":          &httpsRunner{Client: ptnopClient, State: state},
 		"extract":        &extractRunner{Env: env, Logger: logger, SpoolDir: ptnopSpoolDir},
 		"load":           &loadRunner{Env: env, Logger: logger, MetricsDir: qoeMetricsDir, SpoolDir: ptnopSpoolDir},
 		"gc":             &gcRunner{Env: env, Logger: logger, SpoolDir: ptnopSpoolDir},

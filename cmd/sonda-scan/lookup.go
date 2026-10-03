@@ -8,14 +8,14 @@ import (
 	"time"
 
 	"github.com/bassosimone/runtimex"
-	"github.com/bassosimone/sonda/internal/ptnopspool"
+	"github.com/bassosimone/sonda/internal/ptnoprpc"
 )
 
 // lookupHost resolves a domain name using 8.8.8.8:53/udp.
-func lookupHost(ctx context.Context, rootDir *ptnopspool.RootDir,
+func lookupHost(ctx context.Context, client *ptnoprpc.Client,
 	state *sharedState, domain string) ([]string, error) {
-	a, errA := lookupA(ctx, rootDir, state, domain)
-	aaaa, errAAAA := lookupAAAA(ctx, rootDir, state, domain)
+	a, errA := lookupA(ctx, client, state, domain)
+	aaaa, errAAAA := lookupAAAA(ctx, client, state, domain)
 	if errA != nil && errAAAA != nil {
 		return nil, errors.Join(errA, errAAAA)
 	}
@@ -24,8 +24,8 @@ func lookupHost(ctx context.Context, rootDir *ptnopspool.RootDir,
 	return out, nil
 }
 
-func newLookupOptions(state *sharedState, domain, queryType string) *ptnopspool.Options {
-	return &ptnopspool.Options{
+func newLookupRequest(state *sharedState, domain, queryType string) *ptnoprpc.Request {
+	return &ptnoprpc.Request{
 		AddrPort:     "8.8.8.8:53",
 		DNSQueryName: domain,
 		DNSQueryType: queryType,
@@ -36,9 +36,9 @@ func newLookupOptions(state *sharedState, domain, queryType string) *ptnopspool.
 }
 
 // lookupA resolves a domain name to A using 8.8.8.8:53/udp.
-func lookupA(ctx context.Context, rootDir *ptnopspool.RootDir,
+func lookupA(ctx context.Context, client *ptnoprpc.Client,
 	state *sharedState, domain string) ([]string, error) {
-	spanDir, err := rootDir.Run(ctx, newLookupOptions(state, domain, "A"))
+	spanDir, err := client.Run(ctx, newLookupRequest(state, domain, "A"))
 	if err != nil {
 		return nil, err
 	}
@@ -46,9 +46,9 @@ func lookupA(ctx context.Context, rootDir *ptnopspool.RootDir,
 }
 
 // lookupAAAA resolves a domain name to AAAA using 8.8.8.8:53/udp.
-func lookupAAAA(ctx context.Context, rootDir *ptnopspool.RootDir,
+func lookupAAAA(ctx context.Context, client *ptnoprpc.Client,
 	state *sharedState, domain string) ([]string, error) {
-	spanDir, err := rootDir.Run(ctx, newLookupOptions(state, domain, "AAAA"))
+	spanDir, err := client.Run(ctx, newLookupRequest(state, domain, "AAAA"))
 	if err != nil {
 		return nil, err
 	}

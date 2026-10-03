@@ -1,7 +1,8 @@
 [Unit]
 Description=Run sonda scan
-After=network-online.target
+After=network-online.target sonda-inetd-ptnop.socket
 Wants=network-online.target
+Requires=sonda-inetd-ptnop.socket
 
 [Service]
 Type=oneshot

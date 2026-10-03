@@ -8,13 +8,13 @@ import (
 	"net"
 	"time"
 
-	"github.com/bassosimone/sonda/internal/ptnopspool"
+	"github.com/bassosimone/sonda/internal/ptnoprpc"
 )
 
 // httpsRunner runs an HTTPS GET measurement against each resolved address.
 type httpsRunner struct {
-	RootDir *ptnopspool.RootDir
-	State   *sharedState
+	Client *ptnoprpc.Client
+	State  *sharedState
 }
 
 // RunStep implements StepRunner.
@@ -34,17 +34,17 @@ func (r *httpsRunner) RunStep(ctx context.Context, with map[string]string) error
 	}
 
 	// Resolve the host to addresses.
-	addrs, err := lookupHost(ctx, r.RootDir, r.State, host)
+	addrs, err := lookupHost(ctx, r.Client, r.State, host)
 	if err != nil {
 		return fmt.Errorf("https: resolving %s: %w", host, err)
 	}
 
 	// Perform an HTTPS GET against each resolved address.
 	for _, addr := range addrs {
-		opts := &ptnopspool.Options{
+		req := &ptnoprpc.Request{
 			ALPN:         []string{"h2", "http/1.1"},
 			AddrPort:     net.JoinHostPort(addr, port),
-			HTTPBodyFile: "",
+			HTTPBodyFile: false,
 			HTTPHost:     host,
 			HTTPMethod:   "GET",
 			HTTPScheme:   "https",
@@ -54,7 +54,7 @@ func (r *httpsRunner) RunStep(ctx context.Context, with map[string]string) error
 			Timeout:      30 * time.Second,
 			URLPath:      urlPath,
 		}
-		if _, err := r.RootDir.Run(ctx, opts); err != nil {
+		if _, err := r.Client.Run(ctx, req); err != nil {
 			return fmt.Errorf("https: %w", err)
 		}
 	}

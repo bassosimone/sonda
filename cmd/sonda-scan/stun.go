@@ -10,14 +10,15 @@ import (
 	"net/netip"
 	"time"
 
+	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/bassosimone/sonda/internal/ptnopspool"
 )
 
 // stunRunner performs STUN lookups and writes reflexive addresses
 // as tags into the shared state.
 type stunRunner struct {
-	RootDir *ptnopspool.RootDir
-	State   *sharedState
+	Client *ptnoprpc.Client
+	State  *sharedState
 }
 
 // RunStep implements stepRunner.
@@ -33,7 +34,7 @@ func (r *stunRunner) RunStep(ctx context.Context, with map[string]string) error 
 	}
 
 	// Resolve the server hostname to addresses.
-	addrs, err := lookupHost(ctx, r.RootDir, r.State, server)
+	addrs, err := lookupHost(ctx, r.Client, r.State, server)
 	if err != nil {
 		return fmt.Errorf("stun: resolving %s: %w", server, err)
 	}
@@ -41,13 +42,13 @@ func (r *stunRunner) RunStep(ctx context.Context, with map[string]string) error 
 	// Perform STUN lookups against each resolved address.
 	var reflexives []string
 	for _, addr := range addrs {
-		opts := &ptnopspool.Options{
+		req := &ptnoprpc.Request{
 			AddrPort: net.JoinHostPort(addr, port),
 			Pipeline: "stun",
 			Tags:     r.State.Tags(),
 			Timeout:  5 * time.Second,
 		}
-		spanDir, err := r.RootDir.Run(ctx, opts)
+		spanDir, err := r.Client.Run(ctx, req)
 		if err != nil {
 			return fmt.Errorf("stun: %w", err)
 		}

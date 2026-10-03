@@ -8,13 +8,13 @@ import (
 	"net"
 	"time"
 
-	"github.com/bassosimone/sonda/internal/ptnopspool"
+	"github.com/bassosimone/sonda/internal/ptnoprpc"
 )
 
 // dnsOverUDPRunner runs a DNS-over-UDP lookup.
 type dnsOverUDPRunner struct {
-	RootDir *ptnopspool.RootDir
-	State   *sharedState
+	Client *ptnoprpc.Client
+	State  *sharedState
 }
 
 // RunStep implements StepRunner.
@@ -34,14 +34,14 @@ func (r *dnsOverUDPRunner) RunStep(ctx context.Context, with map[string]string) 
 	}
 
 	// Resolve the server hostname to addresses.
-	addrs, err := lookupHost(ctx, r.RootDir, r.State, server)
+	addrs, err := lookupHost(ctx, r.Client, r.State, server)
 	if err != nil {
 		return fmt.Errorf("dns-over-udp: resolving %s: %w", server, err)
 	}
 
 	// Perform a DNS-over-UDP lookup against each resolved address.
 	for _, addr := range addrs {
-		opts := &ptnopspool.Options{
+		req := &ptnoprpc.Request{
 			AddrPort:     net.JoinHostPort(addr, port),
 			DNSQueryName: query,
 			DNSQueryType: "A",
@@ -49,7 +49,7 @@ func (r *dnsOverUDPRunner) RunStep(ctx context.Context, with map[string]string) 
 			Tags:         r.State.Tags(),
 			Timeout:      5 * time.Second,
 		}
-		if _, err := r.RootDir.Run(ctx, opts); err != nil {
+		if _, err := r.Client.Run(ctx, req); err != nil {
 			return fmt.Errorf("dns-over-udp: %w", err)
 		}
 	}
