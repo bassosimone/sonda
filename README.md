@@ -72,7 +72,7 @@ lives in `research/explorer.py`. To run it:
 uv run streamlit run research/explorer.py [/path/to/metrics]
 ```
 
-It defaults to reading from `/var/lib/sonda/metrics`.
+It defaults to reading from `/var/lib/sonda/metrics/qoe`.
 
 ## License
 
