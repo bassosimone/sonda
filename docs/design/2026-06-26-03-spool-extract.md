@@ -3,7 +3,12 @@ author: sbs
 status: active
 ---
 
-# Design: `sonda spool extract`
+# Design: `sonda metrics extract`
+
+*Update (2026-10-03):* this command was originally `sonda spool
+extract`. We moved it under `sonda metrics` because parsing ptnop
+events and choosing the QoE metrics are not spool concerns. The
+command still reads and writes inside span directories.
 
 ## Purpose
 
@@ -83,7 +88,7 @@ than `--max-age`.
 
 ## Integration with `sonda scan`
 
-`sonda scan` invokes `sonda spool extract` as a subprocess
+`sonda scan` invokes `sonda metrics extract` as a subprocess
 before garbage collection, with `--max-age 1h`. This window
 covers the spans created during the current scan cycle.
 Extract runs before GC to ensure metrics are written before

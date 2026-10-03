@@ -24,6 +24,7 @@ func Main(ctx context.Context, args []string) error {
 	disp.Stderr = env.Stderr
 	disp.Stdout = env.UsageStdout
 	disp.AddDescription(ShortDescr)
+	disp.AddCommand("extract", vclip.CommandFunc(extractMain), "Extract Parquet from span directories.")
 	disp.AddCommand("load", vclip.CommandFunc(loadMain), "Aggregate span metrics into daily Parquet files.")
 
 	disp.Main(ctx, args)

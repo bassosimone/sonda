@@ -23,7 +23,7 @@ metricsDir/YYYY/MM/DD/YYYY-MM-DD.parquet
 
 Each daily file contains all rows from all spans whose UUIDv7
 timestamp falls on that UTC day. The schema is identical to the
-per-span `metrics.parquet` produced by `sonda spool extract` —
+per-span `metrics.parquet` produced by `sonda metrics extract` —
 the same `ptnopdata.Metrics` struct, no transformations.
 
 ## Idempotency and concurrency
@@ -77,7 +77,7 @@ file format is just Parquet rows.
 ## Compression
 
 Daily files are written with zstd compression. Per-span files
-from `sonda spool extract` are uncompressed (they are small and
+from `sonda metrics extract` are uncompressed (they are small and
 ephemeral). The reader handles both transparently.
 
 At current data rates, zstd shrinks the daily file from ~570 KB
@@ -96,7 +96,7 @@ dictionary encoding on repeated string columns (`msg`,
 ## Integration with `sonda scan`
 
 `sonda scan` invokes `sonda metrics load` as a subprocess after
-`sonda spool extract` and before `sonda spool gc`. The ordering
+`sonda metrics extract` and before `sonda spool gc`. The ordering
 matters: extract must create `metrics.parquet` before load can
 read it, and load must copy metrics out before GC deletes the
 span.
