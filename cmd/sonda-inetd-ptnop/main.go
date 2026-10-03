@@ -9,6 +9,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
@@ -25,9 +26,13 @@ func mainMain(ctx context.Context, args []string) error {
 	env := testable.ContextEnviron(ctx)
 
 	// Set command defaults.
+	//
+	// The idleTimeout default is a guess: it should leave plenty of margin
+	// to a client sending requests back to back, such as `sonda scan`.
 	var (
-		spoolDir = "."
-		stdio    = false
+		idleTimeout = 60 * time.Second
+		spoolDir    = "."
+		stdio       = false
 	)
 
 	// Parse command line flags.
@@ -55,6 +60,9 @@ func mainMain(ctx context.Context, args []string) error {
 			"is a socket unless `--stdio` is given; use it for manual testing.")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
+	fset.DurationVar(&idleTimeout, 0, "idle-timeout",
+		"Close the connection after waiting `DURATION` for I/O to occur on the "+
+			"client connection. Ignored with `--stdio`.")
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
 	fset.BoolVar(&stdio, 0, "stdio", "Do not assume that the stdin is a socket.")
 
@@ -62,6 +70,12 @@ func mainMain(ctx context.Context, args []string) error {
 
 	// Emit operational logs to the stderr (i.e., the journal).
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
+
+	// Make sure the idle timeout makes sense.
+	if idleTimeout <= 0 {
+		logger.Error("invalid --idle-timeout", slog.Duration("idleTimeout", idleTimeout))
+		env.Exit(1)
+	}
 
 	// Make the spoolDir absolute for robustness.
 	spoolDir, err := env.Abs(spoolDir)
@@ -72,8 +86,10 @@ func mainMain(ctx context.Context, args []string) error {
 
 	// Select the transport.
 	//
-	// By default, the stdin must be a socket. We wrap it as a [net.Conn], which
-	// will later allow us to set deadlines. With `--stdio`, any stdin works.
+	// By default, the stdin must be a socket. We wrap it as a [net.Conn] so that
+	// we can close the connection with idle clients, which would otherwise hold
+	// one of the socket unit's MaxConnections slots forever. With `--stdio`, any
+	// stdin works, but an idle client can block us forever.
 	//
 	// Note: once we wrap the socket, we MUST NOT use the stdout anymore, since
 	// [net.FileConn] makes the open file description non-blocking and, under
@@ -89,7 +105,8 @@ func mainMain(ctx context.Context, args []string) error {
 			env.Exit(1)
 		}
 		defer conn.Close()
-		reader, writer = conn, conn
+		reader = &idleReader{conn: conn, timeout: idleTimeout}
+		writer = &idleWriter{conn: conn, timeout: idleTimeout}
 	}
 
 	// Read and serve incoming requests, one per line, sequentially.
@@ -104,11 +121,11 @@ func mainMain(ctx context.Context, args []string) error {
 		respData = append(respData, '\n')
 		if _, err := writer.Write(respData); err != nil {
 			logger.Warn("writer.Write", slog.Any("err", err))
-			return nil // the client is gone
+			return nil // the client is gone or not reading
 		}
 	}
 
-	// Note: a line longer than maxLineSize ends the connection here.
+	// Note: an idle client or a line longer than maxLineSize ends the connection here.
 	if err := scanner.Err(); err != nil {
 		logger.Warn("scanner.Err", slog.Any("err", err))
 	}
