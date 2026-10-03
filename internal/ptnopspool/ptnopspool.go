@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/bassosimone/sonda/internal/paths"
-	"github.com/bassosimone/sonda/internal/structured"
+	"github.com/bassosimone/sonda/internal/ptnopdata"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/google/uuid"
 )
@@ -219,7 +219,7 @@ func (d *SpanDir) resolvedAddrs(msgName string) ([]string, error) {
 	scanner := bufio.NewScanner(filep)
 	scanner.Buffer(nil, maxLineSize)
 	for scanner.Scan() {
-		ev, err := structured.ParseEvent(scanner.Bytes())
+		ev, err := ptnopdata.ParseEvent(scanner.Bytes())
 		if err != nil {
 			return nil, ReadError{err}
 		}
@@ -256,7 +256,7 @@ func (d *SpanDir) ReflexiveAddr() (string, error) {
 	scanner := bufio.NewScanner(filep)
 	scanner.Buffer(nil, maxLineSize)
 	for scanner.Scan() {
-		ev, err := structured.ParseEvent(scanner.Bytes())
+		ev, err := ptnopdata.ParseEvent(scanner.Bytes())
 		if err != nil {
 			return "", ReadError{err}
 		}

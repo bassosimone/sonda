@@ -14,7 +14,7 @@ import (
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/paths"
-	"github.com/bassosimone/sonda/internal/structured"
+	"github.com/bassosimone/sonda/internal/ptnopdata"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 	"github.com/google/uuid"
@@ -131,7 +131,7 @@ func loadMaybeProcessSpan(logger *slog.Logger, parent, metricsDir, name string, 
 }
 
 // loadReadSpanMetrics reads all rows from a span's metrics.parquet file.
-func loadReadSpanMetrics(path string) ([]structured.Metrics, error) {
+func loadReadSpanMetrics(path string) ([]ptnopdata.Metrics, error) {
 	filep, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -148,9 +148,9 @@ func loadReadSpanMetrics(path string) ([]structured.Metrics, error) {
 		return nil, err
 	}
 
-	reader := parquet.NewGenericReader[structured.Metrics](pf)
+	reader := parquet.NewGenericReader[ptnopdata.Metrics](pf)
 	defer reader.Close()
-	rows := make([]structured.Metrics, reader.NumRows())
+	rows := make([]ptnopdata.Metrics, reader.NumRows())
 
 	count, err := reader.Read(rows)
 	if err != nil && !errors.Is(err, io.EOF) {
@@ -178,11 +178,11 @@ func loadDailyPath(metricsDir, day string) string {
 
 // loadAppendDaily appends rows to the daily aggregate Parquet file,
 // reading existing rows first if the file already exists.
-func loadAppendDaily(metricsDir, day string, newRows []structured.Metrics) error {
+func loadAppendDaily(metricsDir, day string, newRows []ptnopdata.Metrics) error {
 	dailyPath := loadDailyPath(metricsDir, day)
 
 	// Read existing rows if the daily file already exists.
-	var existing []structured.Metrics
+	var existing []ptnopdata.Metrics
 	if _, err := os.Stat(dailyPath); err == nil {
 		existing, err = loadReadSpanMetrics(dailyPath)
 		if err != nil {
@@ -210,7 +210,7 @@ func loadAppendDaily(metricsDir, day string, newRows []structured.Metrics) error
 		}
 	}()
 
-	w := parquet.NewGenericWriter[structured.Metrics](filep, parquet.Compression(&parquet.Zstd))
+	w := parquet.NewGenericWriter[ptnopdata.Metrics](filep, parquet.Compression(&parquet.Zstd))
 	if _, err = w.Write(allRows); err != nil {
 		filep.Close()
 		return err

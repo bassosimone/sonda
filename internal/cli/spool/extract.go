@@ -13,7 +13,7 @@ import (
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/paths"
-	"github.com/bassosimone/sonda/internal/structured"
+	"github.com/bassosimone/sonda/internal/ptnopdata"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 	"github.com/google/uuid"
@@ -119,18 +119,18 @@ var extractDoneEvents = map[string]bool{
 	"dnsExchangeDone":   true,
 }
 
-func extractParseSpan(spanDir string) ([]structured.Metrics, error) {
+func extractParseSpan(spanDir string) ([]ptnopdata.Metrics, error) {
 	data, err := os.ReadFile(paths.SpanStdout(spanDir))
 	if err != nil {
 		return nil, err
 	}
 
-	var rows []structured.Metrics
+	var rows []ptnopdata.Metrics
 	for line := range bytes.SplitSeq(data, []byte("\n")) {
 		if len(line) <= 0 {
 			continue
 		}
-		ev, err := structured.ParseEvent(line)
+		ev, err := ptnopdata.ParseEvent(line)
 		if err != nil {
 			continue
 		}
@@ -145,8 +145,8 @@ func extractParseSpan(spanDir string) ([]structured.Metrics, error) {
 	return rows, nil
 }
 
-func extractEventToMetrics(ev *structured.Event) structured.Metrics {
-	m := structured.Metrics{
+func extractEventToMetrics(ev *ptnopdata.Event) ptnopdata.Metrics {
+	m := ptnopdata.Metrics{
 		SpanID:     ev.SpanID,
 		Msg:        ev.Msg,
 		T0:         ev.T0.UnixMicro(),
@@ -175,7 +175,7 @@ func extractEventToMetrics(ev *structured.Event) structured.Metrics {
 	return m
 }
 
-func extractWriteParquet(spanDir string, rows []structured.Metrics) (err error) {
+func extractWriteParquet(spanDir string, rows []ptnopdata.Metrics) (err error) {
 	tmpPath := paths.SpanMetricsParquetTmp(spanDir)
 	finalPath := paths.SpanMetricsParquet(spanDir)
 
@@ -189,7 +189,7 @@ func extractWriteParquet(spanDir string, rows []structured.Metrics) (err error) 
 		}
 	}()
 
-	w := parquet.NewGenericWriter[structured.Metrics](filep)
+	w := parquet.NewGenericWriter[ptnopdata.Metrics](filep)
 	if _, err = w.Write(rows); err != nil {
 		filep.Close()
 		return err

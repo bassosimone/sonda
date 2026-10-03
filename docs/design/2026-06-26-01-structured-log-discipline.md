@@ -89,7 +89,7 @@ query type"` for DNS query type parsing.
 ## The union struct
 
 All events are parsed into a single flat Go struct
-`structured.Event` in `internal/structured`. The `Msg` field
+`ptnopdata.Event` in `internal/ptnopdata`. The `Msg` field
 identifies which subset of fields is meaningful.
 
 This lives in sonda, not nop, because nop does not produce all
@@ -137,7 +137,7 @@ pairs.
 
 ## Parsing contract
 
-All consumers use `structured.ParseEvent(line []byte)` instead
+All consumers use `ptnopdata.ParseEvent(line []byte)` instead
 of `map[string]any` with type assertions. The schema is explicit
 in the struct definition, not implicit in scattered assertions.
 

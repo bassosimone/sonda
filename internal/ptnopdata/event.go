@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package structured
+package ptnopdata
 
 import (
 	"encoding/json"

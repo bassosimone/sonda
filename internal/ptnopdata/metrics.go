@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package structured
+package ptnopdata
 
 // Metrics is a Parquet row extracted from a *Done structured log event.
 // Each row represents a single completed operation (connect, TLS handshake,

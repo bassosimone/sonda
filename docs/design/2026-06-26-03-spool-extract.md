@@ -29,7 +29,7 @@ error analysis.
 
 ## Parquet schema
 
-A single flat struct (`structured.Metrics`) with required columns
+A single flat struct (`ptnopdata.Metrics`) with required columns
 for fields present on every `*Done` event and nullable columns for
 fields that are conditional on event type or session context:
 
