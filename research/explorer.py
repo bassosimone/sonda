@@ -11,7 +11,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-DEFAULT_METRICS_DIR = Path("/var/lib/sonda/metrics")
+DEFAULT_METRICS_DIR = Path("/var/lib/sonda/metrics/qoe")
 
 # Well-known DNS resolver IPs → provider name
 DNS_PROVIDERS = {}
