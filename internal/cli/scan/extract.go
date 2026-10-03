@@ -10,7 +10,7 @@ import (
 	"github.com/bassosimone/sonda/internal/testable"
 )
 
-// extractRunner runs `sonda metrics extract` as a subprocess.
+// extractRunner runs `sonda etl-ptnop-qoe extract` as a subprocess.
 type extractRunner struct {
 	Env      *testable.Environ
 	Logger   *slog.Logger
@@ -24,7 +24,7 @@ func (r *extractRunner) RunStep(ctx context.Context, with map[string]string) err
 		maxAge = "1h"
 	}
 
-	args := []string{"metrics", "extract", "--spool-dir", r.SpoolDir, "--max-age", maxAge}
+	args := []string{"etl-ptnop-qoe", "extract", "--spool-dir", r.SpoolDir, "--max-age", maxAge}
 	if err := r.Env.ReExec(ctx, args); err != nil {
 		return fmt.Errorf("extract: %w", err)
 	}

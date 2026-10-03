@@ -33,6 +33,10 @@ go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 chmod 755 "$stage/usr/libexec/sonda/sonda"
 
 go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
+	-o "$stage/usr/libexec/sonda/sonda-etl-ptnop-qoe" ./cmd/sonda-etl-ptnop-qoe
+chmod 755 "$stage/usr/libexec/sonda/sonda-etl-ptnop-qoe"
+
+go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 	-o "$stage/usr/libexec/sonda/sonda-measure-ptnop" ./cmd/sonda-measure-ptnop
 chmod 755 "$stage/usr/libexec/sonda/sonda-measure-ptnop"
 

@@ -3,12 +3,18 @@ author: sbs
 status: active
 ---
 
-# Design: `sonda metrics extract`
+# Design: `sonda etl-ptnop-qoe extract`
 
 *Update (2026-10-03):* this command was originally `sonda spool
 extract`. We moved it under `sonda metrics` because parsing ptnop
 events and choosing the QoE metrics are not spool concerns. The
 command still reads and writes inside span directories.
+
+*Update (2026-10-03):* `sonda metrics` is now the
+`sonda-etl-ptnop-qoe` plugin, so this command is `sonda
+etl-ptnop-qoe extract`. The plugin owns the metric schema and the
+per-span file names, because they are specific to turning ptnop
+logs into QoE metrics.
 
 ## Purpose
 
@@ -34,9 +40,10 @@ error analysis.
 
 ## Parquet schema
 
-A single flat struct (`metricsRow`, private to `internal/cli/metrics`) with required columns
-for fields present on every `*Done` event and nullable columns for
-fields that are conditional on event type or session context:
+A single flat struct (`metricsRow`, private to the plugin) with
+required columns for fields present on every `*Done` event and
+nullable columns for fields that are conditional on event type or
+session context:
 
 | Column                      | Type   | Nullable | Present on              |
 |-----------------------------|--------|----------|-------------------------|
@@ -88,7 +95,7 @@ than `--max-age`.
 
 ## Integration with `sonda scan`
 
-`sonda scan` invokes `sonda metrics extract` as a subprocess
+`sonda scan` invokes `sonda etl-ptnop-qoe extract` as a subprocess
 before garbage collection, with `--max-age 1h`. This window
 covers the spans created during the current scan cycle.
 Extract runs before GC to ensure metrics are written before

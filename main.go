@@ -9,7 +9,6 @@ import (
 
 	"github.com/bassosimone/deferexit"
 	"github.com/bassosimone/sonda/internal/buildcfg"
-	"github.com/bassosimone/sonda/internal/cli/metrics"
 	"github.com/bassosimone/sonda/internal/cli/scan"
 	"github.com/bassosimone/sonda/internal/plugins"
 	"github.com/bassosimone/sonda/internal/reexec"
@@ -47,7 +46,6 @@ func main() {
 	disp.AddVersionHandlers(buildcfg.Version)
 
 	// Built-in subcommands.
-	disp.AddCommand("metrics", vclip.CommandFunc(metrics.Main), metrics.ShortDescr)
 	disp.AddCommand("scan", vclip.CommandFunc(scan.Main), scan.ShortDescr)
 
 	// Plugins subcommands (after builtins so they can't register existing names).

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package metrics
+package main
 
 import (
 	"context"
@@ -19,7 +19,7 @@ import (
 	parquet "github.com/parquet-go/parquet-go"
 )
 
-// loadMain is the main function of the `sonda metrics load` subcommand.
+// loadMain is the main function of the `sonda-etl-ptnop-qoe load` subcommand.
 func loadMain(ctx context.Context, args []string) error {
 	env := testable.ContextEnviron(ctx)
 
@@ -29,7 +29,7 @@ func loadMain(ctx context.Context, args []string) error {
 		spoolDir   = "."
 	)
 
-	fset := vflag.NewFlagSet("sonda metrics load", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-etl-ptnop-qoe load", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout

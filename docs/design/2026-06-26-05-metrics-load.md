@@ -3,7 +3,11 @@ author: sbs
 status: active
 ---
 
-# Design: `sonda metrics load`
+# Design: `sonda etl-ptnop-qoe load`
+
+*Update (2026-10-03):* this command was originally `sonda metrics
+load`. It is now part of the `sonda-etl-ptnop-qoe` plugin, together
+with `extract`, because both depend on the same metric schema.
 
 ## Purpose
 
@@ -23,7 +27,7 @@ $metricsDir/YYYY/MM/DD/YYYY-MM-DD.parquet
 
 Each daily file contains all rows from all spans whose UUIDv7
 timestamp falls on that UTC day. The schema is identical to the
-per-span `metrics.parquet` produced by `sonda metrics extract` —
+per-span `metrics.parquet` produced by `sonda etl-ptnop-qoe extract` —
 the same `metricsRow` struct, no transformations.
 
 ## Idempotency and concurrency
@@ -77,7 +81,7 @@ file format is just Parquet rows.
 ## Compression
 
 Daily files are written with zstd compression. Per-span files
-from `sonda metrics extract` are uncompressed (they are small and
+from `sonda etl-ptnop-qoe extract` are uncompressed (they are small and
 ephemeral). The reader handles both transparently.
 
 At current data rates, zstd shrinks the daily file from ~570 KB
@@ -95,8 +99,8 @@ dictionary encoding on repeated string columns (`msg`,
 
 ## Integration with `sonda scan`
 
-`sonda scan` invokes `sonda metrics load` as a subprocess after
-`sonda metrics extract` and before `sonda spool gc`. The ordering
+`sonda scan` invokes `sonda etl-ptnop-qoe load` as a subprocess after
+`sonda etl-ptnop-qoe extract` and before `sonda spool gc`. The ordering
 matters: extract must create `metrics.parquet` before load can
 read it, and load must copy metrics out before GC deletes the
 span.
@@ -105,7 +109,7 @@ The systemd service passes `--metrics-dir /var/lib/sonda/metrics`
 and `--spool-dir /var/spool/sonda` to `sonda scan`. In turn,
 `sonda scan` appends the specific datatype required by
 each specific action it executes. Therefore, the directories
-that `sonda metrics` sees are `/var/lib/sonda/metrics/$dataType`
+that `sonda etl-ptnop-qoe` sees are `/var/lib/sonda/metrics/$dataType`
 and `/var/spool/sonda/$dataType`.
 
 The metrics directory is created by the Debian `postinst`

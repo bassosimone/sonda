@@ -55,7 +55,7 @@ sonda scan --help         # scan-specific help
 
 ## Subcommands
 
-- `metrics` — aggregate and query measurement metrics.
+- `etl-ptnop-qoe` — extract QoE metrics from ptnop spans and load them into daily files.
 
 - `scan` — scan specific network endpoints storing results in the spool.
 
