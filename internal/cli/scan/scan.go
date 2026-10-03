@@ -6,6 +6,7 @@ package scan
 import (
 	"context"
 	"log/slog"
+	"path/filepath"
 	"sync"
 
 	"github.com/bassosimone/runtimex"
@@ -38,15 +39,23 @@ func Main(ctx context.Context, args []string) error {
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.BoolVar(&fail, 'f', "fail", "Exit with error on first failure.")
 	fset.StringVar(&configFile, 0, "config-file", "Load steps from `FILE` instead of using built-in defaults.")
-	fset.StringVar(&metricsDir, 0, "metrics-dir", "Write daily Parquet files to `DIR` instead of `@DEFAULT_VALUE@`.")
-	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
+	fset.StringVar(&metricsDir, 0, "metrics-dir",
+		"Top-level `DIR` containing processed metrics.",
+		"Default: `@DEFAULT_VALUE@`.")
+	fset.StringVar(&spoolDir, 0, "spool-dir",
+		"Top-level `DIR` containing raw measurement results.",
+		"Default: `@DEFAULT_VALUE@`.")
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
 	// Emit structured logs to stderr.
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
+	// Create datatype scoped directories.
+	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
+	qoeMetricsDir := filepath.Join(metricsDir, "qoe")
+
 	// Construct shared dependencies.
-	ptnopRootDir := ptnopspool.NewRootDir(env, spoolDir)
+	ptnopRootDir := ptnopspool.NewRootDir(env, ptnopSpoolDir)
 	state := &sharedState{}
 
 	// TODO(bassosimone): probe IPv6 connectivity here using a UDP connect
@@ -73,9 +82,9 @@ func Main(ctx context.Context, args []string) error {
 		"dns-over-udp":   &dnsOverUDPRunner{RootDir: ptnopRootDir, State: state},
 		"dns-over-https": &dnsOverHTTPSRunner{RootDir: ptnopRootDir, State: state},
 		"https":          &httpsRunner{RootDir: ptnopRootDir, State: state},
-		"extract":        &extractRunner{Env: env, Logger: logger, SpoolDir: spoolDir},
-		"load":           &loadRunner{Env: env, Logger: logger, MetricsDir: metricsDir, SpoolDir: spoolDir},
-		"gc":             &gcRunner{Env: env, Logger: logger, SpoolDir: spoolDir},
+		"extract":        &extractRunner{Env: env, Logger: logger, SpoolDir: ptnopSpoolDir},
+		"load":           &loadRunner{Env: env, Logger: logger, MetricsDir: qoeMetricsDir, SpoolDir: ptnopSpoolDir},
+		"gc":             &gcRunner{Env: env, Logger: logger, SpoolDir: ptnopSpoolDir},
 	}
 
 	// Execute each step in order.

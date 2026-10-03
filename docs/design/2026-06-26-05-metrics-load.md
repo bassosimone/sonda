@@ -18,7 +18,7 @@ between the short-lived spool and long-term analysis.
 Daily files are organized by date:
 
 ```
-metricsDir/YYYY/MM/DD/YYYY-MM-DD.parquet
+$metricsDir/YYYY/MM/DD/YYYY-MM-DD.parquet
 ```
 
 Each daily file contains all rows from all spans whose UUIDv7
@@ -102,10 +102,16 @@ read it, and load must copy metrics out before GC deletes the
 span.
 
 The systemd service passes `--metrics-dir /var/lib/sonda/metrics`
-and `--spool-dir /var/spool/sonda`. The metrics directory is
-created by the Debian `postinst` with `_sonda:adm` ownership
-and `2750` permissions, matching the spool directory. The systemd
-unit's `ReadWritePaths` includes both directories.
+and `--spool-dir /var/spool/sonda` to `sonda scan`. In turn,
+`sonda scan` appends the specific datatype required by
+each specific action it executes. Therefore, the directories
+that `sonda metrics` sees are `/var/lib/sonda/metrics/$dataType`
+and `/var/spool/sonda/$dataType`.
+
+The metrics directory is created by the Debian `postinst`
+with `_sonda:adm` ownership and `2750` permissions, matching
+the spool directory. The systemd unit's `ReadWritePaths`
+includes both directories.
 
 ## What this is not
 
