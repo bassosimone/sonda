@@ -7,9 +7,19 @@ sonda \- network quality of experience probe
 .RI [ args ...]
 .SH DESCRIPTION
 .B sonda
-is an experimental network probe that periodically measures DNS, STUN,
-and other network properties, storing structured results in a local spool
-for later analysis.
+is an experimental network probe.
+It measures STUN, DNS over UDP, DNS over HTTPS, and HTTPS, and
+stores the raw results in a local spool.
+It then extracts quality of experience (QoE) metrics from the spool
+into daily Parquet files for later analysis.
+.PP
+The Debian package installs a systemd timer that runs
+.B sonda scan
+five minutes after the previous scan finishes.
+Each scan runs the steps listed in
+.IR /etc/sonda/scan/default.yml :
+the measurements, then the metrics extraction and loading, and
+then the spool garbage collection.
 .PP
 This tool is under active development and its interface may change.
 For the full list of commands and per\-command help, run:
@@ -19,6 +29,40 @@ For the full list of commands and per\-command help, run:
 .br
 .BI "sonda " command " \-\-help"
 .RE
+.SH FILES
+.TP
+.I /etc/sonda/scan/default.yml
+Steps executed by the periodic scan.
+.TP
+.I /var/spool/sonda/
+Spool with one directory per measurement, containing the command
+line, stdout, stderr, and exit code.
+The default steps remove entries older than six hours.
+.TP
+.I /var/lib/sonda/metrics/
+Daily QoE metrics, written as
+.IR qoe/YYYY/MM/DD/YYYY\-MM\-DD.parquet .
+Nothing removes these files.
+.TP
+.I /usr/libexec/sonda/
+The
+.B sonda
+executable and its plugins.
+.TP
+.I /usr/share/sonda/plugins/
+Plugin descriptions shown by
+.BR "sonda \-\-help" .
+.SH ENVIRONMENT
+.TP
+.B SONDA_EXEC_PATH
+Directory containing the executable and its plugins
+(default:
+.IR /usr/libexec/sonda ).
+.TP
+.B SONDA_SHARE_PATH
+Directory containing the plugin descriptions
+(default:
+.IR /usr/share/sonda ).
 .SH AUTHOR
 Simone Basso <bassosimone@gmail.com>
 .SH LICENSE
