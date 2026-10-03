@@ -24,7 +24,7 @@ go test -race ./...
 To run from the development tree:
 
 ```bash
-SONDA_EXEC_PATH=. ./sonda
+./bin/sonda
 ```
 
 Packaging is handled by `scripts/makedeb.bash`.

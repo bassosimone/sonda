@@ -11,7 +11,6 @@ import (
 	"github.com/bassosimone/sonda/internal/buildcfg"
 	"github.com/bassosimone/sonda/internal/cli/metrics"
 	"github.com/bassosimone/sonda/internal/cli/scan"
-	"github.com/bassosimone/sonda/internal/cli/spool"
 	"github.com/bassosimone/sonda/internal/plugins"
 	"github.com/bassosimone/sonda/internal/reexec"
 	"github.com/bassosimone/sonda/internal/testable"
@@ -50,7 +49,6 @@ func main() {
 	// Built-in subcommands.
 	disp.AddCommand("metrics", vclip.CommandFunc(metrics.Main), metrics.ShortDescr)
 	disp.AddCommand("scan", vclip.CommandFunc(scan.Main), scan.ShortDescr)
-	disp.AddCommand("spool", vclip.CommandFunc(spool.Main), spool.ShortDescr)
 
 	// Plugins subcommands (after builtins so they can't register existing names).
 	if err := plugins.Load(env, disp); err != nil {

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package spool
+package main
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// gcMain is the main function of the `sonda spool gc` subcommand.
+// gcMain is the main function of the `sonda-spool gc` subcommand.
 func gcMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
@@ -28,7 +28,7 @@ func gcMain(ctx context.Context, args []string) error {
 	)
 
 	// Parse command line flags.
-	fset := vflag.NewFlagSet("sonda spool gc", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-spool gc", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout

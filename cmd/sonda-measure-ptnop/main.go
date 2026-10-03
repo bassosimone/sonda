@@ -18,27 +18,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bassosimone/deferexit"
 	"github.com/bassosimone/dnscodec"
 	"github.com/bassosimone/iox"
 	"github.com/bassosimone/runtimex"
+	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/testable"
-	"github.com/bassosimone/vclip"
 	"github.com/bassosimone/vflag"
 	"github.com/miekg/dns"
 )
 
 func main() {
-	// Transform panics into [os.Exit] calls.
-	defer deferexit.Recover(os.Exit)
-	env := testable.Env
-
-	// Wrap the realMain using `vclip.RootCommand`.
-	root := vclip.NewRootCommand(vclip.CommandFunc(realMain))
-	root.LogFatalOnError0 = env.LogFatalOnError0
-
-	// Execute the dispatcher command wrapper.
-	root.Main(context.Background(), env.Args[1:])
+	plugincommand.Main(0, realMain)
 }
 
 // options contains the command line options.

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package spool
+package main
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 	"github.com/bassosimone/vflag"
 )
 
-// runMain is the main function of the `sonda spool run` subcommand.
+// runMain is the main function of the `sonda-spool run` subcommand.
 func runMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
@@ -34,7 +34,7 @@ func runMain(ctx context.Context, args []string) error {
 	)
 
 	// Parse command line flags
-	fset := vflag.NewFlagSet("sonda spool run", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-spool run", vflag.ExitOnError)
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout

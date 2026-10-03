@@ -20,11 +20,11 @@ The compiled `sonda` binary will report its version as `(devel)`.
 To run the compiled `sonda` binary use:
 
 ```sh
-SONDA_EXEC_PATH=. ./sonda
+./bin/sonda
 ```
 
-Running without `SONDA_EXEC_PATH` will not always work: `sonda` needs
-this environment variable to locate its plugins.
+It is a development-only launcher that sets the correct environment
+variables so that `sonda` can find its plugins.
 
 Installing via `go install github.com/bassosimone/sonda@latest` yields
 a binary for which commands requiring plugins won't work.

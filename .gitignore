@@ -5,4 +5,6 @@ __pycache__/
 /sonda.exe
 /sonda-measure-ptnop
 /sonda-measure-ptnop.exe
+/sonda-spool
+/sonda-spool.exe
 /.venv/

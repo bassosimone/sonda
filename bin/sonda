@@ -1,0 +1,4 @@
+#!/bin/sh
+export SONDA_EXEC_PATH="${SONDA_EXEC_PATH:-.}"
+export SONDA_SHARE_PATH="${SONDA_SHARE_PATH:-./dist/unix/usr/share/sonda}"
+exec "$SONDA_EXEC_PATH/sonda" "$@"

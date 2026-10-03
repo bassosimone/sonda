@@ -36,6 +36,10 @@ go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 	-o "$stage/usr/libexec/sonda/sonda-measure-ptnop" ./cmd/sonda-measure-ptnop
 chmod 755 "$stage/usr/libexec/sonda/sonda-measure-ptnop"
 
+go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
+	-o "$stage/usr/libexec/sonda/sonda-spool" ./cmd/sonda-spool
+chmod 755 "$stage/usr/libexec/sonda/sonda-spool"
+
 # Compute the libc6 version the binary actually requires: the highest
 # GLIBC_x.y symbol version it references. This mirrors what
 # dpkg-shlibdeps derives for real Debian packages.
@@ -66,8 +70,11 @@ install -m 644 dist/debian/copyright "$stage/usr/share/doc/sonda/"
 install -d "$stage/usr/share/lintian/overrides"
 install -m 644 dist/debian/lintian-overrides "$stage/usr/share/lintian/overrides/sonda"
 
-# Install the `/usr/share/sonda` dir.
-install -d "$stage/usr/share/sonda"
+# Install the `/usr/share/sonda/plugins` directory.
+install -d "$stage/usr/share/sonda/plugins"
+for p in dist/unix/usr/share/sonda/plugins/*.txt; do
+	install -m 644 "$p" "$stage/usr/share/sonda/plugins"
+done
 
 # Install control file with substitutions.
 #
