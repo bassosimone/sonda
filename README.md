@@ -59,7 +59,7 @@ sonda scan --help         # scan-specific help
 
 - `measure-ptnop` — run a measurement pipeline using the ptnop engine.
 
-- `scan` — scan specific network endpoints storing results in the spool.
+- `scan` — scan network endpoints and generate metrics.
 
 - `spool` — manage the measurement spool directory.
 

@@ -16,5 +16,7 @@ Homepage: https://github.com/bassosimone/sonda
 # sonda binary, computed by makedeb.bash at build time.
 Depends: adduser, libc6 (>= @LIBC@), systemd
 Description: Network quality of experience probe
- Periodically measures DNS, STUN, and other network properties,
- storing structured results in a local spool for later analysis.
+ Experimental network probe that periodically measures STUN, DNS over
+ UDP, DNS over HTTPS, and HTTPS, and stores the raw results in a local
+ spool. It then extracts quality of experience (QoE) metrics from the
+ spool into daily Parquet files for later analysis.
