@@ -60,6 +60,12 @@ func mainMain(ctx context.Context, args []string) error {
 			"sends logs to the journal. The code assumes that the stdin "+
 			"is a socket unless `--stdio` is given; use it for manual testing.")
 
+	upr.AddExamples(
+		"Serve a Unix socket without installing the systemd units, using "+
+			"a socket path that is absolute and shorter than 108 bytes:",
+		"    systemd-socket-activate --listen=/tmp/ptnop.sock --accept --inetd \\\n"+
+			"          sonda-inetd-ptnop --spool-dir /tmp/spool")
+
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.DurationVar(&idleTimeout, 0, "idle-timeout",
 		"Close the connection after waiting `DURATION` for I/O to occur on the "+
