@@ -35,8 +35,8 @@ type runResult struct {
 	// SpanID is the generated span ID.
 	SpanID string `json:"spanId"`
 
-	// SpanDir is the final span directory path, derived from `--spool-dir`
-	// and thus relative when `--spool-dir` is relative.
+	// SpanDir is the final span directory path, which is absolute
+	// because we make `--spool-dir` absolute before using it.
 	SpanDir string `json:"spanDir"`
 }
 
@@ -54,14 +54,18 @@ func runMain(ctx context.Context, args []string) error {
 
 	// Parse command line flags
 	fset := vflag.NewFlagSet("sonda-spool run", vflag.ExitOnError)
+
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
+
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")
+
 	fset.SetMinMaxPositionalArgs(1, math.MaxInt)
-	fset.DisablePermute = true               // make the `--` optional
+	fset.DisablePermute = true // make the `--` optional
+
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
 	// Remaining args after "--" are the command to execute.
@@ -72,29 +76,35 @@ func runMain(ctx context.Context, args []string) error {
 	// it at the end to tell the caller where we wrote the span.
 	stdout := env.Stdout
 
+	// Make the spoolDir absolute for robustness.
+	spoolDir, err := env.Abs(spoolDir)
+	if err != nil {
+		logger.Error("failed to canonicalize the spool directory", slog.Any("err", err))
+		env.Exit(1)
+	}
+
 	// Generate the span ID and build the spool directory path.
 	spanID := newSpanID()
 	spanDir := ptnoppaths.SpanDir(spoolDir, spanID)
 	tmpDir := ptnoppaths.SpanDirTmp(spoolDir, spanID)
 
-	// Expand @SONDA_SPAN_DIR@ in the command arguments so that inner
-	// commands can reference the span directory for auxiliary files.
+	// Expand @SONDA_SPAN_DIR@ in the command arguments so that inner commands
+	// can reference the span directory for auxiliary files.
 	for idx, arg := range cmdArgs {
 		cmdArgs[idx] = strings.ReplaceAll(arg, "@SONDA_SPAN_DIR@", tmpDir)
 	}
 
 	// Create the temporary spool directory.
+	//
+	// Note that `/var/spool/sonda` is `02750 _sonda:adm` so we use `0750` when creating
+	// directories and `0640` when creating files to allow `adm` to read.
 	if err := env.MkdirAll(tmpDir, 0750); err != nil {
 		logger.Error("failed to create spool directory", slog.Any("err", err))
 		env.Exit(1)
 	}
 
 	// Record the command that will be executed.
-	argvData, err := json.Marshal(cmdArgs)
-	if err != nil {
-		logger.Error("failed to marshal argv", slog.Any("err", err))
-		env.Exit(1)
-	}
+	argvData := runtimex.PanicOnError1(json.Marshal(cmdArgs)) // []string{} always marshals
 	argvData = append(argvData, '\n')
 	if err := env.WriteFile(ptnoppaths.SpanArgvJSON(tmpDir), argvData, 0640); err != nil {
 		logger.Error("failed to write argv.json", slog.Any("err", err))
@@ -164,7 +174,7 @@ func runMain(ctx context.Context, args []string) error {
 	resultData = append(resultData, '\n')
 	if _, err := stdout.Write(resultData); err != nil {
 		logger.Error("failed to write result", slog.Any("err", err))
-		env.Exit(1)
+		env.Exit(1) // note that the data has been written anyway at this point
 	}
 
 	return nil

@@ -22,12 +22,16 @@ func realMain(ctx context.Context, args []string) error {
 
 	// Create the `sonda-spool` dispatcher.
 	disp := vclip.NewDispatcherCommand("sonda-spool", vflag.ExitOnError)
+
 	disp.Exit = env.Exit
 	disp.Stderr = env.Stderr
 	disp.Stdout = env.UsageStdout
+
 	disp.AddDescription(shortDescr)
+
 	disp.AddCommand("gc", vclip.CommandFunc(gcMain), "Remove old span directories.")
-	disp.AddCommand("run", vclip.CommandFunc(runMain), "Execute a sonda subcommand and collect its output.")
+	disp.AddCommand("run", vclip.CommandFunc(runMain),
+		"Execute a sonda subcommand and collect its output.")
 
 	disp.Main(ctx, args)
 	return nil

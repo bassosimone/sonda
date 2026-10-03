@@ -29,12 +29,15 @@ func gcMain(ctx context.Context, args []string) error {
 
 	// Parse command line flags.
 	fset := vflag.NewFlagSet("sonda-spool gc", vflag.ExitOnError)
+
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
+
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.DurationVar(&maxAge, 0, "max-age", "Remove spans older than `DURATION`.")
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
+
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
 	// Compute the cutoff time.
@@ -71,19 +74,19 @@ func gcWalkDir(logger *slog.Logger, dir string, cutoff time.Time, depth int) {
 // gcMaybeRemoveSpan removes a span directory if its UUIDv7 timestamp is older
 // than the cutoff. Handles both final and .tmp directories.
 func gcMaybeRemoveSpan(logger *slog.Logger, parent, name string, cutoff time.Time) {
-	// Entries are UUIDv7 with an optional `.tmp` prefix if in progress
+	// Entries are UUIDv7 with an optional `.tmp` suffix if in progress
 	// that said it's fine to delete very old in progress entries.
 	uuidStr := strings.TrimSuffix(name, ".tmp")
-	id, err := uuid.Parse(uuidStr)
+	spanID, err := uuid.Parse(uuidStr)
 	if err != nil {
 		return
 	}
-	if id.Version() != 7 {
+	if spanID.Version() != 7 {
 		return
 	}
 
 	// Determine whether this entry is too new to remove.
-	sec, nsec := id.Time().UnixTime()
+	sec, nsec := spanID.Time().UnixTime()
 	ts := time.Unix(sec, nsec)
 	if !ts.Before(cutoff) {
 		return
