@@ -9,7 +9,6 @@ import (
 
 	"github.com/bassosimone/deferexit"
 	"github.com/bassosimone/sonda/internal/buildcfg"
-	"github.com/bassosimone/sonda/internal/cli/measure"
 	"github.com/bassosimone/sonda/internal/cli/metrics"
 	"github.com/bassosimone/sonda/internal/cli/scan"
 	"github.com/bassosimone/sonda/internal/cli/spool"
@@ -49,7 +48,6 @@ func main() {
 	disp.AddVersionHandlers(buildcfg.Version)
 
 	// Built-in subcommands.
-	disp.AddCommand("measure", vclip.CommandFunc(measure.Main), measure.ShortDescr)
 	disp.AddCommand("metrics", vclip.CommandFunc(metrics.Main), metrics.ShortDescr)
 	disp.AddCommand("scan", vclip.CommandFunc(scan.Main), scan.ShortDescr)
 	disp.AddCommand("spool", vclip.CommandFunc(spool.Main), spool.ShortDescr)

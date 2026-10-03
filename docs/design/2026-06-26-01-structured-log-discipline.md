@@ -16,7 +16,7 @@ producers and consumers.
 
 ## Event taxonomy
 
-Following nop's documentation, events fall into three categories:
+Following ptnop's documentation, events fall into three categories:
 
 - **Span events**: `*Start`/`*Done` pairs bracketing an operation.
   `*Start` carries `t` (start timestamp). `*Done` carries `t0`
@@ -34,22 +34,21 @@ Following nop's documentation, events fall into three categories:
 ### Event names (`msg` field)
 
 - Sonda command-layer events use a `sonda` prefix to avoid
-  collision with nop pipeline events: `sondaCommandStart`,
-  `sondaCommandDone`, `sondaCommandLineArgs`, `sondaFailure`,
-  `sondaHttpResponseBodyStats`, `sondaDnsRecordsA`.
+  collision with ptnop pipeline events: `sondaFailure`,
+  `sondaDnsRecordsA` etc.
 
 - STUN events use a `stun` prefix because STUN binding is a
-  protocol-level operation that may migrate to nop in the future:
+  protocol-level operation that may migrate to ptnop in the future:
   `stunBindingResult`.
 
-- Nop pipeline events (`connectStart`, `tlsHandshakeDone`, etc.)
-  are not prefixed. They are defined and tested by nop.
+- Ptnop pipeline events (`connectStart`, `tlsHandshakeDone`, etc.)
+  are not prefixed. They are defined and tested by ptnop.
 
 ### Field names (JSON keys)
 
 - JavaScript casing: lowercase first letter for acronyms.
-  `httpUrl`, `httpResponseBodySize`, `tlsServerName`. Not Go
-  convention (`HTTPUrl`). This matches common JSON conventions.
+  `httpUrl`, `httpResponseBodySize`, `tlsServerName`. This
+  matches common JSON conventions.
 
 - Qualified names: field names must be unambiguous without the
   event name. `cliArgs` not `args`, `httpResponseBodySize` not
@@ -92,16 +91,16 @@ All events are parsed into a single flat Go struct
 `ptnopdata.Event` in `internal/ptnopdata`. The `Msg` field
 identifies which subset of fields is meaningful.
 
-This lives in sonda, not nop, because nop does not produce all
-fields (sonda adds `spanID`, `operation`, `cliArgs`, etc.). Nop
-has its own tests verifying its field names.
+This lives in sonda, not ptnop, because ptnop does not produce all
+fields (sonda adds `spanID`, `operation`, etc.). Ptnop has its own
+tests verifying its field names.
 
 ### Type choices
 
 - `*Failure` (`type Failure string`) for nullable errors. Named
   type avoids the semantic emptiness of `*string`.
 
-- `[]byte` for `dnsRawQuery` and `dnsRawResponse`. Nop emits
+- `[]byte` for `dnsRawQuery` and `dnsRawResponse`. Ptnop emits
   base64-encoded DNS wire bytes, which `encoding/json` decodes
   into `[]byte`. `json.RawMessage` would expect embedded JSON.
 
@@ -152,11 +151,7 @@ parsing mechanism is now typed.
 
 |                         Event |     Category |                                    Fields |
 |-------------------------------|--------------|-------------------------------------------|
-|          `sondaCommandStart`  |    SpanStart |                                       `t` |
-|           `sondaCommandDone`  |     SpanDone |                                `t0`, `t`  |
-|       `sondaCommandLineArgs`  | Notification |                                 `cliArgs` |
 |              `sondaFailure`   | Notification |            `operation`, `err`, `exitCode` |
-| `sondaHttpResponseBodyStats`  | Notification |                    `httpResponseBodySize` |
 |           `sondaDnsRecordsA`  | Notification |                          `dnsRecordsList` |
 |        `sondaDnsRecordsAAAA`  | Notification |                          `dnsRecordsList` |
 |       `sondaDnsRecordsCNAME`  | Notification |                          `dnsRecordsList` |
@@ -169,7 +164,7 @@ parsing mechanism is now typed.
 | `reflexiveAddrV4` |  STUN lookup, injected by `sonda scan`      |
 | `reflexiveAddrV6` |  STUN lookup, injected by `sonda scan`      |
 
-### Nop pipeline (see nop docs for full list)
+### Ptnop pipeline (see ptnop docs for full list)
 
 All span events carry `t`, `t0`, `localAddr`, `remoteAddr`,
 `protocol`. All `*Done` events carry `err` and `errClass`.

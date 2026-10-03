@@ -14,7 +14,7 @@ permissions, and installing systemd units for periodic execution.
 
 ## Directory layout
 
-Packaging artifacts live under `dist/`, not `scripts/`:
+Packaging artifacts live under `dist/`:
 
 - `dist/debian/` — Debian control file (templated), copyright,
   lintian overrides, and maintainer scripts (`postinst`,

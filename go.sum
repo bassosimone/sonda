@@ -36,8 +36,6 @@ github.com/bassosimone/must v0.0.0-20260928112453-2a38e7bb20e8 h1:RsTgUXqi1mQge6
 github.com/bassosimone/must v0.0.0-20260928112453-2a38e7bb20e8/go.mod h1:KW6Z6NoQaOLq/qpj5PWYWuqBRfcByBp6qY4HOOdfFOQ=
 github.com/bassosimone/netstub v0.0.0-20260928112048-621fd84591bd h1:vAoIMc8ElFVshoUVj5/yThBnJ9UBXnFyRJq/xxOv81M=
 github.com/bassosimone/netstub v0.0.0-20260928112048-621fd84591bd/go.mod h1:6b7sfD5MznDaY0CxJXQ52OhuqG+yWDvjoN7A9+wKLLs=
-github.com/bassosimone/nop v0.0.0-20260928114558-014414f67632 h1:GBiXOfLQxLuq6Q1otnZAhwefCFghY/wbNBHpCVAX/gs=
-github.com/bassosimone/nop v0.0.0-20260928114558-014414f67632/go.mod h1:JbREX/5YQHf1HzcGo9WSQymVVTSnIQzTAv7rA2f6XVg=
 github.com/bassosimone/pkitest v0.0.0-20260928112139-c2ca7e68520a h1:4GH9qDsexyElM8jPHVVWoYj1NJJJ/hR1LDqFk15ziNo=
 github.com/bassosimone/pkitest v0.0.0-20260928112139-c2ca7e68520a/go.mod h1:8yycIHyEq14IvdJOEhj4/GK1+hM+VTF0rhtmkCCi7FA=
 github.com/bassosimone/ptnop v0.0.0-20261002225153-d365127f443a h1:aKHz72g6NWe2YZGFDThqSAAurio8H3I/kzgiD8fdITw=
@@ -46,8 +44,6 @@ github.com/bassosimone/runtimex v0.0.0-20260928111457-f2fe934d5065 h1:kTLEe+4NAR
 github.com/bassosimone/runtimex v0.0.0-20260928111457-f2fe934d5065/go.mod h1:2aW76skIZNS7ljOpIqU3eARVLmtb0AG/Gab4aegSkTA=
 github.com/bassosimone/safeconn v0.0.0-20260928112542-9eef1e681eca h1:RwPT/kd004Jj+tKPLWJEQTFct8hAJZVn3JvvFUaiDVw=
 github.com/bassosimone/safeconn v0.0.0-20260928112542-9eef1e681eca/go.mod h1:D6HuONu4Wih7WXbuomi5R9gzfPwX0dD7t9RrHXdArmw=
-github.com/bassosimone/slogstub v0.0.0-20260928112222-2a9d5f7dd26c h1:whxu2zqRni42dKP5O8yo6Qqn433EMQwXxAgKhkEMsKY=
-github.com/bassosimone/slogstub v0.0.0-20260928112222-2a9d5f7dd26c/go.mod h1:+16EzDo5CUd8v7EPAH+jsnGLeVNYpBWSFE6nMNXdB4Y=
 github.com/bassosimone/sud v0.0.0-20260928111541-4be641f562ce h1:m8uIR/Rou937cRBO8gjSPPqil4Msrk7JsBa8wG6iHKs=
 github.com/bassosimone/sud v0.0.0-20260928111541-4be641f562ce/go.mod h1:rWgLB1knwP392RwXnPA0FOlfHmzPpLJD/1KrHg+ev1I=
 github.com/bassosimone/textwrap v0.0.0-20260928111620-10df61158669 h1:utgi154TR8438lCyqL2mTpiwe6+iB3w5mCpepfXbeew=

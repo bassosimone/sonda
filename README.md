@@ -51,12 +51,9 @@ runtime dependencies, run `sudo apt-get -f install` to pull them in.
 ```bash
 sonda --help              # interactive help
 sonda scan --help         # scan-specific help
-sonda measure --help      # single-measurement help
 ```
 
 ## Subcommands
-
-- `measure` — run a single low-level network measurement.
 
 - `metrics` — aggregate and query measurement metrics.
 
@@ -88,12 +85,12 @@ SPDX-License-Identifier: GPL-3.0-or-later
 - [github.com/bassosimone/closepool](https://pkg.go.dev/github.com/bassosimone/closepool)
 - [github.com/bassosimone/deferexit](https://pkg.go.dev/github.com/bassosimone/deferexit)
 - [github.com/bassosimone/dnscodec](https://pkg.go.dev/github.com/bassosimone/dnscodec)
-- [github.com/bassosimone/errclass](https://pkg.go.dev/github.com/bassosimone/errclass)
-- [github.com/bassosimone/nop](https://pkg.go.dev/github.com/bassosimone/nop)
+- [github.com/bassosimone/iox](https://pkg.go.dev/github.com/bassosimone/iox)
 - [github.com/bassosimone/ptnop](https://pkg.go.dev/github.com/bassosimone/ptnop)
 - [github.com/bassosimone/runtimex](https://pkg.go.dev/github.com/bassosimone/runtimex)
 - [github.com/bassosimone/vclip](https://pkg.go.dev/github.com/bassosimone/vclip)
 - [github.com/bassosimone/vflag](https://pkg.go.dev/github.com/bassosimone/vflag)
+- [github.com/goccy/go-yaml](https://pkg.go.dev/github.com/goccy/go-yaml)
 - [github.com/google/uuid](https://pkg.go.dev/github.com/google/uuid)
 - [github.com/miekg/dns](https://pkg.go.dev/github.com/miekg/dns)
 - [github.com/parquet-go/parquet-go](https://pkg.go.dev/github.com/parquet-go/parquet-go)

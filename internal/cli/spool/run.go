@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/bassosimone/closepool"
-	"github.com/bassosimone/nop"
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/ptnoppaths"
+	"github.com/bassosimone/sonda/internal/ptnopspool"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 )
@@ -28,7 +28,7 @@ func runMain(ctx context.Context, args []string) error {
 
 	// Set command defaults.
 	var (
-		spanID   = nop.NewSpanID()
+		spanID   = ptnopspool.NewSpanID()
 		spoolDir = "."
 		timeout  = 5 * time.Minute
 	)

@@ -19,8 +19,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// newSpanID returns a new spanID.
-func newSpanID() string {
+// NewSpanID returns a new spanID.
+func NewSpanID() string {
 	return uuid.Must(uuid.NewV7()).String()
 }
 
@@ -110,7 +110,7 @@ func (d *RootDir) Run(ctx context.Context, opts *Options) (*SpanDir, error) {
 	//
 	// Passing all possible command line options, including empty lines, is
 	// fine because the plugin handles this gracefully.
-	spanID := newSpanID()
+	spanID := NewSpanID()
 	args := []string{
 		"spool", "run",
 		"--span-id", spanID,

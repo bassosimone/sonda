@@ -88,16 +88,6 @@ type Event struct {
 	DNSQueryName   string `json:"dnsQueryName,omitempty"`
 	DNSQueryType   string `json:"dnsQueryType,omitempty"`
 
-	// --- sonda command layer: lifecycle ---
-	// Used by: sondaCommandLineArgs
-
-	CLIArgs []string `json:"cliArgs,omitempty"`
-
-	// --- sonda command layer: HTTP response ---
-	// Used by: sondaHttpResponseBodyStats
-
-	HTTPResponseBodySize int64 `json:"httpResponseBodySize,omitempty"`
-
 	// --- sonda command layer: STUN ---
 	// Used by: stunBindingResult
 
