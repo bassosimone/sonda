@@ -97,6 +97,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 - [github.com/miekg/dns](https://pkg.go.dev/github.com/miekg/dns)
 - [github.com/parquet-go/parquet-go](https://pkg.go.dev/github.com/parquet-go/parquet-go)
 - [github.com/pion/stun/v3](https://pkg.go.dev/github.com/pion/stun/v3)
+- [github.com/rogpeppe/go-internal](https://pkg.go.dev/github.com/rogpeppe/go-internal)
 
 ### Python (research)
 

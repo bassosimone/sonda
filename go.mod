@@ -16,6 +16,7 @@ require (
 	github.com/miekg/dns v1.1.73
 	github.com/parquet-go/parquet-go v0.32.0
 	github.com/pion/stun/v3 v3.1.7
+	github.com/rogpeppe/go-internal v1.16.0
 )
 
 require (

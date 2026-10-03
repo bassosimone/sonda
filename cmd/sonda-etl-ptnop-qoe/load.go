@@ -17,6 +17,7 @@ import (
 	"github.com/bassosimone/vflag"
 	"github.com/google/uuid"
 	parquet "github.com/parquet-go/parquet-go"
+	"github.com/rogpeppe/go-internal/lockedfile"
 )
 
 // loadMain is the main function of the `sonda-etl-ptnop-qoe load` subcommand.
@@ -42,8 +43,25 @@ func loadMain(ctx context.Context, args []string) error {
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using ExitOnError
 
-	cutoff := time.Now().Add(-maxAge)
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
+
+	// Serialize concurrent loads. The per-span sentinel prevents loading
+	// the same span twice, but two loaders handling different spans of the
+	// same day would both rewrite the daily file and the last rename wins,
+	// losing the other loader's rows. The lock lives inside the metrics dir
+	// because it protects that dir and follows `--metrics-dir`.
+	if err := os.MkdirAll(metricsDir, 0750); err != nil {
+		logger.Error("failed to create metrics directory", slog.Any("err", err))
+		env.Exit(1)
+	}
+	unlock, err := lockedfile.MutexAt(filepath.Join(metricsDir, "lock")).Lock()
+	if err != nil {
+		logger.Error("failed to lock metrics directory", slog.Any("err", err))
+		env.Exit(1)
+	}
+	defer unlock()
+
+	cutoff := time.Now().Add(-maxAge)
 	loadWalkDir(logger, spoolDir, metricsDir, cutoff, 3)
 	return nil
 }

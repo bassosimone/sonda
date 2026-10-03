@@ -9,6 +9,9 @@ status: active
 load`. It is now part of the `sonda-etl-ptnop-qoe` plugin, together
 with `extract`, because both depend on the same metric schema.
 
+*Update (2026-10-03):* `load` now holds a lock file to serialize
+concurrent runs. See "Lock file" below.
+
 ## Purpose
 
 Aggregates per-span `qoe.parquet` files from the spool into
@@ -55,8 +58,24 @@ span can be retried on the next run.
 
 The daily Parquet file is written via a temporary file and
 `os.Rename`, so readers never see a partially written file.
-Since `O_EXCL` ensures only one process appends per span, the
-daily file is never concurrently modified.
+
+### Lock file
+
+`O_EXCL` ensures that only one process appends a given span,
+but it does not serialize the daily file rewrites. Two loaders
+handling different spans of the same day would both read the
+daily file, append their own rows, and rename: the last rename
+wins and the other loader's rows are lost. They would also share
+the same temporary file name.
+
+To prevent this, `load` holds an exclusive lock on
+`$metricsDir/lock` for the whole run, using
+`github.com/rogpeppe/go-internal/lockedfile`. The lock is blocking:
+a manual run started during a scan waits for the scan's `load`
+to finish. The lock lives inside the metrics directory because it
+protects that directory and follows `--metrics-dir`. The lock file
+is empty and persists after the run, which is harmless because the
+lock is released when the process exits.
 
 ## Append strategy
 
