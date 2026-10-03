@@ -36,7 +36,7 @@ func scanMain(ctx context.Context, args []string) error {
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.BoolVar(&fail, 0, "fail", "Exit with error on first failure.")
-	fset.StringVar(&configFile, 0, "config-file", "Load steps from `FILE` instead of using built-in defaults.")
+	fset.StringVar(&configFile, 0, "config-file", "Load steps from `FILE` (required).")
 	fset.StringVar(&metricsDir, 0, "metrics-dir",
 		"Top-level `DIR` containing processed metrics.",
 		"Default: `@DEFAULT_VALUE@`.")
@@ -64,15 +64,21 @@ func scanMain(ctx context.Context, args []string) error {
 	// of ENETUNREACH noise on v4-only hosts. Consider a rfc6724.go file that
 	// performs the check and returns a boolean. See also RFC 6724 §6 Rule 1.
 
+	// Provide useful output when no flags were specified.
+	if len(args) <= 0 {
+		fset.PrintUsageString(fset.Stdout)
+		env.Exit(0)
+	}
+
 	// Determine which steps to execute.
-	steps := defaultSteps
-	if configFile != "" {
-		loaded, err := loadConfigFile(configFile)
-		if err != nil {
-			logger.Error("loading config", slog.Any("err", err))
-			env.Exit(2)
-		}
-		steps = loaded
+	if configFile == "" {
+		logger.Error("no `--config-file` specified; nothing to do.")
+		env.Exit(2)
+	}
+	steps, err := loadConfigFile(configFile)
+	if err != nil {
+		logger.Error("loading config", slog.Any("err", err))
+		env.Exit(2)
 	}
 
 	// Build the runner registry.
@@ -122,18 +128,6 @@ type singleStep struct {
 // stepRunner executes a step's operation.
 type stepRunner interface {
 	RunStep(ctx context.Context, with map[string]string) error
-}
-
-// defaultSteps is a minimal fallback used when no --config-file is given.
-var defaultSteps = []singleStep{
-	{Name: "STUN lookup", Run: "stun", With: map[string]string{
-		"server": "stun.l.google.com",
-	}},
-	{Name: "DNS over UDP via Google", Run: "dns-over-udp", With: map[string]string{
-		"server": "dns.google",
-		"query":  "www.example.com",
-	}},
-	{Name: "Garbage collect", Run: "gc", With: map[string]string{}},
 }
 
 // sharedState holds state that steps can read and write during a scan.
