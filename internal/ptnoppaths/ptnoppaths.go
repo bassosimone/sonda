@@ -15,6 +15,11 @@ func SpanArgvJSON(spanDir string) string {
 	return filepath.Join(spanDir, "argv.json")
 }
 
+// SpanRequestJSON returns the path to request.json inside a span directory.
+func SpanRequestJSON(spanDir string) string {
+	return filepath.Join(spanDir, "request.json")
+}
+
 // SpanStdout returns the path to stdout.txt inside a span directory.
 func SpanStdout(spanDir string) string {
 	return filepath.Join(spanDir, "stdout.txt")
