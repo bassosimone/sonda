@@ -24,6 +24,7 @@ import (
 	"github.com/bassosimone/dnscodec"
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/ptnoppaths"
+	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/google/uuid"
 	"github.com/miekg/dns"
@@ -45,46 +46,6 @@ func newSpanID() string {
 	return uuid.Must(uuid.NewV7()).String()
 }
 
-// serveRequest is the request received from the client.
-//
-// The ID is opaque: we echo it back in the response, so the client can match
-// responses to requests. A missing ID is echoed as a missing ID.
-//
-// A Timeout <= 0 means [defaultTimeout].
-type serveRequest struct {
-	ID           json.RawMessage `json:"id,omitempty"`
-	ALPN         []string        `json:"alpn"`
-	AddrPort     string          `json:"addrPort"`
-	DNSQueryName string          `json:"dnsQueryName"`
-	DNSQueryType string          `json:"dnsQueryType"`
-	HTTPBodyFile bool            `json:"httpBodyFile"`
-	HTTPHeaders  []string        `json:"httpHeaders"`
-	HTTPHost     string          `json:"httpHost"`
-	HTTPMethod   string          `json:"httpMethod"`
-	HTTPScheme   string          `json:"httpScheme"`
-	Pipeline     string          `json:"pipeline"`
-	SNI          string          `json:"sni"`
-	Tags         []string        `json:"tags"`
-	Timeout      time.Duration   `json:"timeout"`
-	URLPath      string          `json:"urlPath"`
-}
-
-// serveResponse is the response sent to the client.
-//
-// On success, Error is empty and SpanID, SpanDir, and ExitCode are set. The
-// ExitCode is either `0` (success) or `1` (measurement failure).
-//
-// On failure, Error is set and ExitCode is nil. SpanID is set if and only if
-// the failure happened after we started creating the span directory, in which
-// case a `.tmp` directory may be left behind for `sonda spool gc` to remove.
-type serveResponse struct {
-	ID       json.RawMessage `json:"id,omitempty"`
-	Error    string          `json:"error,omitempty"`
-	ExitCode *int            `json:"exitCode,omitempty"`
-	SpanDir  string          `json:"spanDir,omitempty"`
-	SpanID   string          `json:"spanId,omitempty"`
-}
-
 // serveLine serves a raw request line received on the standard input and
 // returns the response to send back. It never returns nil.
 //
@@ -99,13 +60,13 @@ func serveLine(
 	rawLine []byte,
 	spoolDir string,
 	peer peerCreds,
-) *serveResponse {
+) *ptnoprpc.Response {
 	// 1. Parse the raw line received on the stdin.
-	var req serveRequest
+	var req ptnoprpc.Request
 	if err := json.Unmarshal(rawLine, &req); err != nil {
-		return &serveResponse{Error: err.Error()}
+		return &ptnoprpc.Response{Error: err.Error()}
 	}
-	resp := &serveResponse{ID: req.ID}
+	resp := &ptnoprpc.Response{ID: req.ID}
 
 	// 2. Configure the pipeline timeout.
 	//
@@ -136,7 +97,7 @@ func serveLine(
 
 	// From now on, failures are failures of the server rather than of the
 	// request, hence we also log them to the journal.
-	serverFailure := func(operation string, err error) *serveResponse {
+	serverFailure := func(operation string, err error) *ptnoprpc.Response {
 		logger.Error(operation, slog.String("spanId", spanID), slog.Any("err", err))
 		resp.Error = err.Error()
 		return resp
@@ -295,7 +256,7 @@ type pipelineInput struct {
 // pipeline needs. This function does not perform any I/O: in particular, it does not create
 // files, such that [serveLine] can reject a request before touching the spool.
 func newPipelineInput(
-	ctx context.Context, env *testable.Environ, req *serveRequest) (*pipelineInput, error) {
+	ctx context.Context, env *testable.Environ, req *ptnoprpc.Request) (*pipelineInput, error) {
 	// 0. Initialize with defaults
 	input := &pipelineInput{
 		addrPort:  netip.AddrPort{},
@@ -363,7 +324,7 @@ func newPipelineInput(
 }
 
 // newHTTPRequest builds the HTTP request from the request options.
-func newHTTPRequest(ctx context.Context, req *serveRequest) (*http.Request, error) {
+func newHTTPRequest(ctx context.Context, req *ptnoprpc.Request) (*http.Request, error) {
 	// 1. Make sure the input is valid.
 	if req.HTTPHost == "" {
 		return nil, errors.New("http host is empty")
