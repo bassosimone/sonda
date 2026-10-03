@@ -5,6 +5,7 @@ Wants=network-online.target
 Requires=sonda-inetd-ptnop.socket
 
 [Service]
+Slice=system-sonda.slice
 Type=oneshot
 ExecStart=/usr/bin/sonda scan --config-file /etc/sonda/scan/default.yml --spool-dir /var/spool/sonda --metrics-dir /var/lib/sonda/metrics
 User=_sonda

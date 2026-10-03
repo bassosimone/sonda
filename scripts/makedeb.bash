@@ -71,6 +71,7 @@ install -m 644 dist/unix/usr/lib/systemd/system/sonda-inetd-ptnop.socket "$stage
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-inetd-ptnop@.service "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-scan.service "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-scan.timer "$stage/usr/lib/systemd/system/"
+install -m 644 dist/unix/usr/lib/systemd/system/system-sonda.slice "$stage/usr/lib/systemd/system/"
 
 # Install scan config file.
 install -d "$stage/etc/sonda/scan"
