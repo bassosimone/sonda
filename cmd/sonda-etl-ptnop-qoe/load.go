@@ -7,8 +7,10 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -61,14 +63,21 @@ func loadMain(ctx context.Context, args []string) error {
 	}
 	defer unlock()
 
+	// Collect the candidate spans grouped by UTC day, then load each
+	// day with a single rewrite of its daily file. Processing days in
+	// sorted order makes the logs easier to follow.
 	cutoff := time.Now().Add(-maxAge)
-	loadWalkDir(logger, spoolDir, metricsDir, cutoff, 3)
+	byDay := make(map[string][]string)
+	loadWalkDir(spoolDir, cutoff, byDay, 3)
+	for _, day := range slices.Sorted(maps.Keys(byDay)) {
+		loadProcessDay(logger, metricsDir, day, byDay[day])
+	}
 	return nil
 }
 
 // loadWalkDir walks the spool sharding tree recursively. At depth > 0,
-// it descends into subdirectories. At depth 0, it processes span directories.
-func loadWalkDir(logger *slog.Logger, dir, metricsDir string, cutoff time.Time, depth int) {
+// it descends into subdirectories. At depth 0, it collects span directories.
+func loadWalkDir(dir string, cutoff time.Time, byDay map[string][]string, depth int) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return
@@ -79,17 +88,18 @@ func loadWalkDir(logger *slog.Logger, dir, metricsDir string, cutoff time.Time, 
 		}
 		if depth > 0 {
 			child := filepath.Join(dir, e.Name())
-			loadWalkDir(logger, child, metricsDir, cutoff, depth-1)
+			loadWalkDir(child, cutoff, byDay, depth-1)
 		} else {
-			loadMaybeProcessSpan(logger, dir, metricsDir, e.Name(), cutoff)
+			loadMaybeCollectSpan(dir, e.Name(), cutoff, byDay)
 		}
 	}
 }
 
-// loadMaybeProcessSpan loads a span's metrics into the daily aggregate
-// if the span has qoe.parquet and hasn't been loaded yet. Skips
-// .tmp directories (incomplete spans).
-func loadMaybeProcessSpan(logger *slog.Logger, parent, metricsDir, name string, cutoff time.Time) {
+// loadMaybeCollectSpan adds the span directory to byDay, keyed by the
+// span's UTC day, if the span has qoe.parquet. Skips .tmp directories
+// (incomplete spans). Already loaded spans are collected as well and
+// skipped later by [loadProcessDay] when claiming them.
+func loadMaybeCollectSpan(parent, name string, cutoff time.Time, byDay map[string][]string) {
 	// Skip entry if the data is still being generated.
 	if strings.HasSuffix(name, ".tmp") {
 		return
@@ -118,35 +128,57 @@ func loadMaybeProcessSpan(logger *slog.Logger, parent, metricsDir, name string, 
 		return
 	}
 
-	// Atomically claim this span using O_CREATE|O_EXCL so that
-	// concurrent loaders cannot process the same span twice.
-	sentinelPath := spanMetricsLoaded(spanDir)
-	sentinel, err := os.OpenFile(sentinelPath, os.O_CREATE|os.O_EXCL, 0640)
-	if err != nil {
-		return
-	}
-	sentinel.Close()
+	// Collect the span under its UTC day.
+	day := ts.UTC().Format("2006-01-02")
+	byDay[day] = append(byDay[day], spanDir)
+}
 
-	// Read rows from the span's qoe.parquet.
-	rows, err := loadReadSpanMetrics(metricsPath)
-	if err != nil {
-		logger.Warn("failed to read span metrics", slog.String("spanDir", spanDir), slog.Any("err", err))
-		os.Remove(sentinelPath) // cleanup the sentinel on failure
-		return
+// loadProcessDay loads the metrics of the given spans, which all belong
+// to the given UTC day, into the daily aggregate with a single rewrite.
+func loadProcessDay(logger *slog.Logger, metricsDir, day string, spanDirs []string) {
+	// 1. Claim each span and read its rows. Spans we cannot read, or
+	// that have no rows, are released so that a later run retries them.
+	var (
+		rows      []metricsRow
+		sentinels []string
+	)
+	for _, spanDir := range spanDirs {
+		// Claim this span by creating its sentinel with O_CREATE|O_EXCL,
+		// which fails if a previous run already loaded the span.
+		sentinelPath := spanMetricsLoaded(spanDir)
+		sentinel, err := os.OpenFile(sentinelPath, os.O_CREATE|os.O_EXCL, 0640)
+		if err != nil {
+			continue
+		}
+		sentinel.Close()
+
+		spanRows, err := loadReadSpanMetrics(spanMetricsParquet(spanDir))
+		if err != nil {
+			logger.Warn("failed to read span metrics", slog.String("spanDir", spanDir), slog.Any("err", err))
+			os.Remove(sentinelPath) // cleanup the sentinel on failure
+			continue
+		}
+		if len(spanRows) <= 0 {
+			os.Remove(sentinelPath) // cleanup the sentinel on failure
+			continue
+		}
+		rows = append(rows, spanRows...)
+		sentinels = append(sentinels, sentinelPath)
 	}
 	if len(rows) <= 0 {
-		os.Remove(sentinelPath) // cleanup the sentinel on failure
 		return
 	}
 
-	// Append rows to the daily aggregate file.
-	day := ts.UTC().Format("2006-01-02")
+	// 2. Append all the rows to the daily aggregate file at once. On
+	// failure, release all the claimed spans so a later run retries them.
 	if err := loadAppendDaily(metricsDir, day, rows); err != nil {
 		logger.Warn("failed to append to daily metrics", slog.String("day", day), slog.Any("err", err))
-		os.Remove(sentinelPath) // cleanup the sentinel on failure
+		for _, sentinelPath := range sentinels {
+			os.Remove(sentinelPath) // cleanup the sentinel on failure
+		}
 		return
 	}
-	logger.Info("loaded metrics", slog.String("spanDir", spanDir), slog.String("day", day), slog.Int("rows", len(rows)))
+	logger.Info("loaded metrics", slog.String("day", day), slog.Int("spans", len(sentinels)), slog.Int("rows", len(rows)))
 }
 
 // loadReadSpanMetrics reads all rows from a span's qoe.parquet file.
@@ -190,10 +222,6 @@ func loadDailyPath(metricsDir, day string) string {
 		day+".parquet",
 	)
 }
-
-// TODO(bassosimone): loadAppendDaily is O(n²) for bulk loads because it
-// reads and rewrites the daily file for every span. Batch all spans by day
-// first, then write each daily file once.
 
 // loadAppendDaily appends rows to the daily aggregate Parquet file,
 // reading existing rows first if the file already exists.

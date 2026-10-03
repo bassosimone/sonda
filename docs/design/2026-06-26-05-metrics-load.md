@@ -12,6 +12,9 @@ with `extract`, because both depend on the same metric schema.
 *Update (2026-10-03):* `load` now holds a lock file to serialize
 concurrent runs. See "Lock file" below.
 
+*Update (2026-10-03):* `load` now rewrites each daily file once
+per run rather than once per span. See "Append strategy" below.
+
 ## Purpose
 
 Aggregates per-span `qoe.parquet` files from the spool into
@@ -79,9 +82,23 @@ lock is released when the process exits.
 
 ## Append strategy
 
-The command reads the entire existing daily file into memory,
-appends the new rows, and writes everything back. This is a
-full rewrite on each span.
+The command first walks the spool and groups the candidate spans
+by UTC day. Then, for each day, it claims the spans, reads their
+rows, reads the entire existing daily file into memory, appends
+the new rows, and writes everything back. This is one full rewrite
+per day touched by the run, regardless of how many spans it loads.
+
+If a span cannot be read or has no rows, its sentinel is removed
+and the other spans of the day are still loaded. If the daily
+rewrite fails, the sentinels of all the spans of that day are
+removed, so a later run retries them.
+
+An earlier version rewrote the daily file once per span. This
+was quadratic in the number of spans for bulk loads, and made
+each scan cycle pay one rewrite of a growing daily file per new
+span. On a copy of the spool with 1064 spans, all falling on the
+same day, the batched version took 0.28s instead of 5.2s and
+produced an identical daily file.
 
 This works because:
 
