@@ -30,14 +30,17 @@ func loadMain(ctx context.Context, args []string) error {
 	)
 
 	fset := vflag.NewFlagSet("sonda-etl-ptnop-qoe load", vflag.ExitOnError)
+
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
+
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.DurationVar(&maxAge, 0, "max-age", "Ignore spans older than `DURATION`.")
 	fset.StringVar(&metricsDir, 0, "metrics-dir", "Write daily Parquet files to `DIR` instead of `@DEFAULT_VALUE@`.")
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Read span metrics from `DIR` instead of `@DEFAULT_VALUE@`.")
-	runtimex.PanicOnError0(fset.Parse(args))
+
+	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using ExitOnError
 
 	cutoff := time.Now().Add(-maxAge)
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
@@ -75,16 +78,16 @@ func loadMaybeProcessSpan(logger *slog.Logger, parent, metricsDir, name string, 
 	}
 
 	// We only consider valid UUIDv7 entries.
-	id, err := uuid.Parse(name)
+	spanID, err := uuid.Parse(name)
 	if err != nil {
 		return
 	}
-	if id.Version() != 7 {
+	if spanID.Version() != 7 {
 		return
 	}
 
 	// Do not process the entry if it's too old.
-	sec, nsec := id.Time().UnixTime()
+	sec, nsec := spanID.Time().UnixTime()
 	ts := time.Unix(sec, nsec)
 	if ts.Before(cutoff) {
 		return
