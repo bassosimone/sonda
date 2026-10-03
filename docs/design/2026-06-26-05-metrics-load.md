@@ -24,7 +24,7 @@ $metricsDir/YYYY/MM/DD/YYYY-MM-DD.parquet
 Each daily file contains all rows from all spans whose UUIDv7
 timestamp falls on that UTC day. The schema is identical to the
 per-span `metrics.parquet` produced by `sonda metrics extract` —
-the same `ptnopdata.Metrics` struct, no transformations.
+the same `metricsRow` struct, no transformations.
 
 ## Idempotency and concurrency
 

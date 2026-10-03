@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package ptnopdata
+package metrics
 
-// Metrics is a Parquet row extracted from a *Done structured log event.
+// metricsRow is a Parquet row extracted from a *Done structured log event.
 // Each row represents a single completed operation (connect, TLS handshake,
 // HTTP round trip, or DNS exchange). Fields that are only meaningful for
 // a subset of event types are nullable (pointer types).
-type Metrics struct {
+type metricsRow struct {
 	SpanID                 string  `parquet:"span_id"`
 	Msg                    string  `parquet:"msg"`
 	T0                     int64   `parquet:"t0,timestamp(microsecond)"`

@@ -90,7 +90,7 @@ func extractMaybeProcessSpan(logger *slog.Logger, parent, name string, cutoff ti
 	spanDir := filepath.Join(parent, name)
 
 	// Do not process the entry if it's already processed.
-	if _, err := os.Stat(ptnoppaths.SpanMetricsParquet(spanDir)); err == nil {
+	if _, err := os.Stat(spanMetricsParquet(spanDir)); err == nil {
 		return
 	}
 
@@ -119,13 +119,13 @@ var extractDoneEvents = map[string]bool{
 	"dnsExchangeDone":   true,
 }
 
-func extractParseSpan(spanDir string) ([]ptnopdata.Metrics, error) {
+func extractParseSpan(spanDir string) ([]metricsRow, error) {
 	data, err := os.ReadFile(ptnoppaths.SpanStdout(spanDir))
 	if err != nil {
 		return nil, err
 	}
 
-	var rows []ptnopdata.Metrics
+	var rows []metricsRow
 	for line := range bytes.SplitSeq(data, []byte("\n")) {
 		if len(line) <= 0 {
 			continue
@@ -145,8 +145,8 @@ func extractParseSpan(spanDir string) ([]ptnopdata.Metrics, error) {
 	return rows, nil
 }
 
-func extractEventToMetrics(ev *ptnopdata.Event) ptnopdata.Metrics {
-	m := ptnopdata.Metrics{
+func extractEventToMetrics(ev *ptnopdata.Event) metricsRow {
+	m := metricsRow{
 		SpanID:     ev.SpanID,
 		Msg:        ev.Msg,
 		T0:         ev.T0.UnixMicro(),
@@ -175,9 +175,9 @@ func extractEventToMetrics(ev *ptnopdata.Event) ptnopdata.Metrics {
 	return m
 }
 
-func extractWriteParquet(spanDir string, rows []ptnopdata.Metrics) (err error) {
-	tmpPath := ptnoppaths.SpanMetricsParquetTmp(spanDir)
-	finalPath := ptnoppaths.SpanMetricsParquet(spanDir)
+func extractWriteParquet(spanDir string, rows []metricsRow) (err error) {
+	tmpPath := spanMetricsParquetTmp(spanDir)
+	finalPath := spanMetricsParquet(spanDir)
 
 	filep, err := os.Create(tmpPath)
 	if err != nil {
@@ -189,7 +189,7 @@ func extractWriteParquet(spanDir string, rows []ptnopdata.Metrics) (err error) {
 		}
 	}()
 
-	w := parquet.NewGenericWriter[ptnopdata.Metrics](filep)
+	w := parquet.NewGenericWriter[metricsRow](filep)
 	if _, err = w.Write(rows); err != nil {
 		filep.Close()
 		return err

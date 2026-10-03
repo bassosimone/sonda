@@ -13,8 +13,6 @@ import (
 	"time"
 
 	"github.com/bassosimone/runtimex"
-	"github.com/bassosimone/sonda/internal/ptnopdata"
-	"github.com/bassosimone/sonda/internal/ptnoppaths"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 	"github.com/google/uuid"
@@ -94,14 +92,14 @@ func loadMaybeProcessSpan(logger *slog.Logger, parent, metricsDir, name string, 
 	spanDir := filepath.Join(parent, name)
 
 	// Do not process the entry if metrics have not been extracted yet.
-	metricsPath := ptnoppaths.SpanMetricsParquet(spanDir)
+	metricsPath := spanMetricsParquet(spanDir)
 	if _, err := os.Stat(metricsPath); err != nil {
 		return
 	}
 
 	// Atomically claim this span using O_CREATE|O_EXCL so that
 	// concurrent loaders cannot process the same span twice.
-	sentinelPath := ptnoppaths.SpanMetricsLoaded(spanDir)
+	sentinelPath := spanMetricsLoaded(spanDir)
 	sentinel, err := os.OpenFile(sentinelPath, os.O_CREATE|os.O_EXCL, 0640)
 	if err != nil {
 		return
@@ -131,7 +129,7 @@ func loadMaybeProcessSpan(logger *slog.Logger, parent, metricsDir, name string, 
 }
 
 // loadReadSpanMetrics reads all rows from a span's metrics.parquet file.
-func loadReadSpanMetrics(path string) ([]ptnopdata.Metrics, error) {
+func loadReadSpanMetrics(path string) ([]metricsRow, error) {
 	filep, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -148,9 +146,9 @@ func loadReadSpanMetrics(path string) ([]ptnopdata.Metrics, error) {
 		return nil, err
 	}
 
-	reader := parquet.NewGenericReader[ptnopdata.Metrics](pf)
+	reader := parquet.NewGenericReader[metricsRow](pf)
 	defer reader.Close()
-	rows := make([]ptnopdata.Metrics, reader.NumRows())
+	rows := make([]metricsRow, reader.NumRows())
 
 	count, err := reader.Read(rows)
 	if err != nil && !errors.Is(err, io.EOF) {
@@ -178,11 +176,11 @@ func loadDailyPath(metricsDir, day string) string {
 
 // loadAppendDaily appends rows to the daily aggregate Parquet file,
 // reading existing rows first if the file already exists.
-func loadAppendDaily(metricsDir, day string, newRows []ptnopdata.Metrics) error {
+func loadAppendDaily(metricsDir, day string, newRows []metricsRow) error {
 	dailyPath := loadDailyPath(metricsDir, day)
 
 	// Read existing rows if the daily file already exists.
-	var existing []ptnopdata.Metrics
+	var existing []metricsRow
 	if _, err := os.Stat(dailyPath); err == nil {
 		existing, err = loadReadSpanMetrics(dailyPath)
 		if err != nil {
@@ -210,7 +208,7 @@ func loadAppendDaily(metricsDir, day string, newRows []ptnopdata.Metrics) error 
 		}
 	}()
 
-	w := parquet.NewGenericWriter[ptnopdata.Metrics](filep, parquet.Compression(&parquet.Zstd))
+	w := parquet.NewGenericWriter[metricsRow](filep, parquet.Compression(&parquet.Zstd))
 	if _, err = w.Write(allRows); err != nil {
 		filep.Close()
 		return err

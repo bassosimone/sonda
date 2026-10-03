@@ -39,20 +39,3 @@ func SpanDirTmp(spoolDir, spanID string) string {
 func SpanBodyBin(spanDir string) string {
 	return filepath.Join(spanDir, "body.bin")
 }
-
-// SpanMetricsParquet returns the path to metrics.parquet inside a span directory.
-func SpanMetricsParquet(spanDir string) string {
-	return filepath.Join(spanDir, "metrics.parquet")
-}
-
-// SpanMetricsParquetTmp returns the temporary path for metrics.parquet
-// (before atomic rename).
-func SpanMetricsParquetTmp(spanDir string) string {
-	return filepath.Join(spanDir, "metrics.parquet.tmp")
-}
-
-// SpanMetricsLoaded returns the path to the sentinel file that marks
-// a span's metrics as loaded into the daily aggregate.
-func SpanMetricsLoaded(spanDir string) string {
-	return filepath.Join(spanDir, "metrics.loaded")
-}
