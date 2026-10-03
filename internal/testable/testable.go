@@ -41,6 +41,7 @@ type Environ struct {
 	Environ          func() []string
 	Executable       func() (string, error)
 	Exit             func(code int)
+	FileConn         func(f *os.File) (net.Conn, error)
 	Getenv           func(key string) string
 	LogFatalOnError0 func(err error)
 	MkdirAll         func(path string, perm os.FileMode) error
@@ -90,6 +91,7 @@ func NewEnvironOS() *Environ {
 		Environ:    os.Environ,
 		Executable: os.Executable,
 		Exit:       deferexit.Panic,
+		FileConn:   net.FileConn,
 		Getenv:     os.Getenv,
 		LogFatalOnError0: func(err error) {
 			if err != nil {
@@ -132,6 +134,7 @@ func (e *Environ) Clone() *Environ {
 		Environ:          e.Environ,
 		Executable:       e.Executable,
 		Exit:             e.Exit,
+		FileConn:         e.FileConn,
 		Getenv:           e.Getenv,
 		LogFatalOnError0: e.LogFatalOnError0,
 		MkdirAll:         e.MkdirAll,

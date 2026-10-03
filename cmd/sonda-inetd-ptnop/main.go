@@ -6,7 +6,9 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"io"
 	"log/slog"
+	"os"
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
@@ -25,6 +27,7 @@ func mainMain(ctx context.Context, args []string) error {
 	// Set command defaults.
 	var (
 		spoolDir = "."
+		stdio    = false
 	)
 
 	// Parse command line flags.
@@ -40,15 +43,20 @@ func mainMain(ctx context.Context, args []string) error {
 	upr := vflag.NewDefaultUsagePrinter()
 	fset.UsagePrinter = upr
 	upr.AddDescription(
-		"Serve ptnop measurement requests read as JSON lines from the stdin, " +
-			"writing one span per request into `--spool-dir` and one JSON " +
-			"response line per request to the stdout. Designed to run behind " +
-			"a systemd socket with `Accept=yes`, `StandardInput=socket`, and " +
-			"`StandardError=journal`, which attaches the connection " +
-			"to the stdin and the stdout and sends logs to the journal.")
+		"Serve ptnop measurement requests read as JSON lines from the stdin, "+
+			"writing one span per request into the `--spool-dir` dir and one JSON "+
+			"response line per request to the stdout.",
+		"Designed to run behind a systemd socket with: ",
+		"    - Accept=yes",
+		"    - StandardError=journal",
+		"    - StandardInput=socket",
+		"which attaches the connection to stdin and stdout and "+
+			"sends logs to the journal. The code assumes that the stdin "+
+			"is a socket unless `--stdio` is given; use it for manual testing.")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
+	fset.BoolVar(&stdio, 0, "stdio", "Do not assume that the stdin is a socket.")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
@@ -62,18 +70,40 @@ func mainMain(ctx context.Context, args []string) error {
 		env.Exit(1)
 	}
 
+	// Select the transport.
+	//
+	// By default, the stdin must be a socket. We wrap it as a [net.Conn], which
+	// will later allow us to set deadlines. With `--stdio`, any stdin works.
+	//
+	// Note: once we wrap the socket, we MUST NOT use the stdout anymore, since
+	// [net.FileConn] makes the open file description non-blocking and, under
+	// systemd, the stdin and the stdout share the same file description.
+	var (
+		reader io.Reader = env.Stdin
+		writer io.Writer = env.Stdout
+	)
+	if !stdio {
+		conn, err := env.FileConn(os.Stdin)
+		if err != nil {
+			logger.Error("env.FileConn", slog.Any("err", err))
+			env.Exit(1)
+		}
+		defer conn.Close()
+		reader, writer = conn, conn
+	}
+
 	// Read and serve incoming requests, one per line, sequentially.
 	//
 	// Each request receives exactly one response line. A malformed or invalid
 	// request receives an error response and does not close the connection.
-	scanner := bufio.NewScanner(env.Stdin)
+	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(nil, maxLineSize)
 	for scanner.Scan() {
 		resp := serveLine(ctx, env, logger, scanner.Bytes(), spoolDir)
 		respData := runtimex.PanicOnError1(json.Marshal(resp)) // always serializable
 		respData = append(respData, '\n')
-		if _, err := env.Stdout.Write(respData); err != nil {
-			logger.Warn("env.Stdout.Write", slog.Any("err", err))
+		if _, err := writer.Write(respData); err != nil {
+			logger.Warn("writer.Write", slog.Any("err", err))
 			return nil // the client is gone
 		}
 	}
