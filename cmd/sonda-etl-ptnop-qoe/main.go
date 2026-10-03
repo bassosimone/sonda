@@ -15,7 +15,7 @@ func main() {
 	plugincommand.Main(0, realMain)
 }
 
-const shortDescr = "Extract QoE metrics from ptnop spans and load them into daily files."
+const shortDescr = "Extract and load QoE metrics from ptnop logs."
 
 func realMain(ctx context.Context, args []string) error {
 	env := testable.ContextEnviron(ctx)

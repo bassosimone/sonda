@@ -1,1 +1,1 @@
-Extract QoE metrics from ptnop spans and load them into daily files.
+Extract and load QoE metrics from ptnop logs.

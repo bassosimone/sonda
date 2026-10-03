@@ -1,1 +1,1 @@
-Manage the measurement spool directory.
+Run measurements and spool their results.
