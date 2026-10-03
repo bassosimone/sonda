@@ -51,6 +51,18 @@ func Subcommand(ctx context.Context, args []string) error {
 }
 
 // AsExitCode maps the error returned by [Subcommand] to an exit code.
+//
+// Conventions:
+//
+//  1. Return the process exit code if it exited normally
+//
+//  2. Return 128 + the signal number if it was terminated by a signal
+//
+//  3. Return 127 if executing the process fails
+//
+// We use these conventions to align to bash. Note that bash also has 126 when the
+// command exists but is not executable. We take a (portable) shortcut and always use
+// 127 with this reasoning: if it is not executable, it is not a command.
 func AsExitCode(err error) int {
 	if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 		code := exitErr.ExitCode()
@@ -58,6 +70,9 @@ func AsExitCode(err error) int {
 			code = 128 + int(ws.Signal())
 		}
 		return code
+	}
+	if pathErr, ok := errors.AsType[*os.PathError](err); ok && pathErr.Op == "fork/exec" {
+		return 127
 	}
 	if err != nil {
 		return 1
