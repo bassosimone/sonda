@@ -29,11 +29,13 @@ func scanMain(ctx context.Context, args []string) error {
 
 	// Parse command line flags.
 	fset := vflag.NewFlagSet("sonda-scan", vflag.ExitOnError)
+
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
+
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
-	fset.BoolVar(&fail, 'f', "fail", "Exit with error on first failure.")
+	fset.BoolVar(&fail, 0, "fail", "Exit with error on first failure.")
 	fset.StringVar(&configFile, 0, "config-file", "Load steps from `FILE` instead of using built-in defaults.")
 	fset.StringVar(&metricsDir, 0, "metrics-dir",
 		"Top-level `DIR` containing processed metrics.",
@@ -41,6 +43,7 @@ func scanMain(ctx context.Context, args []string) error {
 	fset.StringVar(&spoolDir, 0, "spool-dir",
 		"Top-level `DIR` containing raw measurement results.",
 		"Default: `@DEFAULT_VALUE@`.")
+
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
 	// Emit structured logs to stderr.
