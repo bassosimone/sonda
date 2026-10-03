@@ -16,7 +16,7 @@ import (
 )
 
 // ShortDescr is the command short description.
-const ShortDescr = "Scan specific network endpoints storing results in the spool."
+const ShortDescr = "Scan network endpoints and generate metrics."
 
 // Main is the main function of the `sonda scan` subcommand.
 func Main(ctx context.Context, args []string) error {
