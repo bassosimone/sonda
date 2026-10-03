@@ -334,7 +334,7 @@ func newLogger(env *testable.Environ, tags []string) *slog.Logger {
 	// Subsequent flags take precedence over previous flags.
 	uniq := make(map[string]string)
 	if value := env.Getenv("SONDA_SPAN_ID"); value != "" {
-		uniq["spanID"] = value
+		uniq["spanId"] = value
 	}
 	for _, tag := range tags {
 		if key, value, ok := strings.Cut(tag, "="); ok {

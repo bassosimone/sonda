@@ -24,7 +24,7 @@ type Event struct {
 
 	// --- sonda command layer (logger.With context) ---
 
-	SpanID string `json:"spanID,omitempty"`
+	SpanID string `json:"spanId,omitempty"`
 
 	// --- nop pipeline: common fields ---
 	// Used by: connectStart/Done, closeStart/Done, tlsHandshakeStart/Done,

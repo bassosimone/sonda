@@ -92,7 +92,7 @@ All events are parsed into a single flat Go struct
 identifies which subset of fields is meaningful.
 
 This lives in sonda, not ptnop, because ptnop does not produce all
-fields (sonda adds `spanID`, `operation`, etc.). Ptnop has its own
+fields (sonda adds `spanId`, `operation`, etc.). Ptnop has its own
 tests verifying its field names.
 
 ### Type choices
