@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/bassosimone/runtimex"
-	"github.com/bassosimone/sonda/internal/netstack"
+	"github.com/bassosimone/sonda/internal/ptnopspool"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 )
@@ -46,8 +46,7 @@ func Main(ctx context.Context, args []string) error {
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
 	// Construct shared dependencies.
-	measurer := netstack.NewSondaMeasurer(env, spoolDir)
-	resolver := netstack.NewResolver(netstack.NewDNSOverUDPTransport(measurer))
+	ptnopRootDir := ptnopspool.NewRootDir(env, spoolDir)
 	state := &sharedState{}
 
 	// TODO(bassosimone): probe IPv6 connectivity here using a UDP connect
@@ -70,10 +69,10 @@ func Main(ctx context.Context, args []string) error {
 
 	// Build the runner registry.
 	runners := map[string]stepRunner{
-		"stun":           &stunRunner{Logger: logger, Measurer: measurer, Resolver: resolver, State: state},
-		"dns-over-udp":   &dnsOverUDPRunner{Logger: logger, Measurer: measurer, Resolver: resolver, State: state},
-		"dns-over-https": &dnsOverHTTPSRunner{Logger: logger, Measurer: measurer, Resolver: resolver, State: state},
-		"https":          &httpsRunner{Logger: logger, Measurer: measurer, Resolver: resolver, State: state},
+		"stun":           &stunRunner{RootDir: ptnopRootDir, State: state},
+		"dns-over-udp":   &dnsOverUDPRunner{RootDir: ptnopRootDir, State: state},
+		"dns-over-https": &dnsOverHTTPSRunner{RootDir: ptnopRootDir, State: state},
+		"https":          &httpsRunner{RootDir: ptnopRootDir, State: state},
 		"extract":        &extractRunner{Env: env, Logger: logger, SpoolDir: spoolDir},
 		"load":           &loadRunner{Env: env, Logger: logger, MetricsDir: metricsDir, SpoolDir: spoolDir},
 		"gc":             &gcRunner{Env: env, Logger: logger, SpoolDir: spoolDir},

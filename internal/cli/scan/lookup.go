@@ -1,0 +1,56 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package scan
+
+import (
+	"context"
+	"errors"
+	"time"
+
+	"github.com/bassosimone/runtimex"
+	"github.com/bassosimone/sonda/internal/ptnopspool"
+)
+
+// lookupHost resolves a domain name using 8.8.8.8:53/udp.
+func lookupHost(ctx context.Context, rootDir *ptnopspool.RootDir,
+	state *sharedState, domain string) ([]string, error) {
+	a, errA := lookupA(ctx, rootDir, state, domain)
+	aaaa, errAAAA := lookupAAAA(ctx, rootDir, state, domain)
+	if errA != nil && errAAAA != nil {
+		return nil, errors.Join(errA, errAAAA)
+	}
+	out := append(a, aaaa...)
+	runtimex.Assert(len(out) > 0)
+	return out, nil
+}
+
+func newLookupOptions(state *sharedState, domain, queryType string) *ptnopspool.Options {
+	return &ptnopspool.Options{
+		AddrPort:     "8.8.8.8:53",
+		DNSQueryName: domain,
+		DNSQueryType: queryType,
+		Pipeline:     "dns-over-udp",
+		Tags:         state.Tags(),
+		Timeout:      5 * time.Second,
+	}
+}
+
+// lookupA resolves a domain name to A using 8.8.8.8:53/udp.
+func lookupA(ctx context.Context, rootDir *ptnopspool.RootDir,
+	state *sharedState, domain string) ([]string, error) {
+	spanDir, err := rootDir.Run(ctx, newLookupOptions(state, domain, "A"))
+	if err != nil {
+		return nil, err
+	}
+	return spanDir.ResolvedAddrsA()
+}
+
+// lookupAAAA resolves a domain name to AAAA using 8.8.8.8:53/udp.
+func lookupAAAA(ctx context.Context, rootDir *ptnopspool.RootDir,
+	state *sharedState, domain string) ([]string, error) {
+	spanDir, err := rootDir.Run(ctx, newLookupOptions(state, domain, "AAAA"))
+	if err != nil {
+		return nil, err
+	}
+	return spanDir.ResolvedAddrsAAAA()
+}

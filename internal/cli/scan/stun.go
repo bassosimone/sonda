@@ -6,20 +6,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net"
 	"net/netip"
+	"time"
 
-	"github.com/bassosimone/sonda/internal/netstack"
+	"github.com/bassosimone/sonda/internal/ptnopspool"
 )
 
 // stunRunner performs STUN lookups and writes reflexive addresses
 // as tags into the shared state.
 type stunRunner struct {
-	Logger   *slog.Logger
-	Measurer *netstack.SondaMeasurer
-	Resolver *netstack.Resolver
-	State    *sharedState
+	RootDir *ptnopspool.RootDir
+	State   *sharedState
 }
 
 // RunStep implements stepRunner.
@@ -35,23 +33,42 @@ func (r *stunRunner) RunStep(ctx context.Context, with map[string]string) error 
 	}
 
 	// Resolve the server hostname to addresses.
-	addrs, err := r.Resolver.LookupHost(ctx, server)
+	addrs, err := lookupHost(ctx, r.RootDir, r.State, server)
 	if err != nil {
 		return fmt.Errorf("stun: resolving %s: %w", server, err)
 	}
 
 	// Perform STUN lookups against each resolved address.
-	reflexives, err := stunLookup(ctx, r.Measurer, addrs, port)
-	if err != nil {
-		return fmt.Errorf("stun: %w", err)
+	var reflexives []string
+	for _, addr := range addrs {
+		opts := &ptnopspool.Options{
+			AddrPort: net.JoinHostPort(addr, port),
+			Pipeline: "stun",
+			Tags:     r.State.Tags(),
+			Timeout:  5 * time.Second,
+		}
+		spanDir, err := r.RootDir.Run(ctx, opts)
+		if err != nil {
+			return fmt.Errorf("stun: %w", err)
+		}
+		refaddr, err := spanDir.ReflexiveAddr()
+		if errors.Is(err, ptnopspool.ErrNoData) {
+			continue // typical case: we have no IPv6 support
+		}
+		if err != nil {
+			return fmt.Errorf("stun: %w", err)
+		}
+		reflexives = append(reflexives, refaddr)
+	}
+	if len(reflexives) <= 0 {
+		return errors.New("stun: no address found")
 	}
 
 	// Write reflexive addresses into the shared state.
 	for _, addr := range reflexives {
 		parsed, err := netip.ParseAddr(addr)
 		if err != nil {
-			r.Logger.Warn("STUN returned unparseable address", slog.String("addr", addr))
-			continue
+			return fmt.Errorf("stun: %w", err)
 		}
 		if parsed.Is4() {
 			r.State.SetTag("reflexiveAddrV4", addr)
@@ -60,27 +77,4 @@ func (r *stunRunner) RunStep(ctx context.Context, with map[string]string) error 
 		}
 	}
 	return nil
-}
-
-// stunLookup performs STUN lookups against all the given addresses and
-// returns the reflexive addresses found. Fails only if all addresses fail.
-func stunLookup(ctx context.Context, measurer *netstack.SondaMeasurer, addrs []string, port string) ([]string, error) {
-	var (
-		errs       []error
-		reflexives []string
-	)
-	for _, addr := range addrs {
-		stun := netstack.NewSTUNLookupper(measurer)
-		stun.ServerAddr = net.JoinHostPort(addr, port)
-		reflexive, err := stun.LookupIPAddr(ctx)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		reflexives = append(reflexives, reflexive)
-	}
-	if len(reflexives) <= 0 {
-		return nil, errors.Join(errs...)
-	}
-	return reflexives, nil
 }

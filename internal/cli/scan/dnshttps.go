@@ -5,27 +5,20 @@ package scan
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net"
+	"time"
 
-	"github.com/bassosimone/sonda/internal/netstack"
+	"github.com/bassosimone/sonda/internal/ptnopspool"
 )
 
 // dnsOverHTTPSRunner runs a DNS-over-HTTPS lookup.
 type dnsOverHTTPSRunner struct {
-	Logger   *slog.Logger
-	Measurer *netstack.SondaMeasurer
-	Resolver *netstack.Resolver
-	State    *sharedState
+	RootDir *ptnopspool.RootDir
+	State   *sharedState
 }
 
 // RunStep implements StepRunner.
 func (r *dnsOverHTTPSRunner) RunStep(ctx context.Context, with map[string]string) error {
-	// Inject tags from the shared state into the context.
-	if tags := r.State.Tags(); len(tags) > 0 {
-		ctx = netstack.ContextWithTags(ctx, tags)
-	}
-
 	// Parse arguments passed to the step.
 	server := with["server"]
 	if server == "" {
@@ -41,20 +34,29 @@ func (r *dnsOverHTTPSRunner) RunStep(ctx context.Context, with map[string]string
 	}
 
 	// Resolve the server hostname to addresses.
-	addrs, err := r.Resolver.LookupHost(ctx, server)
+	addrs, err := lookupHost(ctx, r.RootDir, r.State, server)
 	if err != nil {
 		return fmt.Errorf("dns-over-https: resolving %s: %w", server, err)
 	}
 
 	// Perform a DNS-over-HTTPS lookup against each resolved address.
 	for _, addr := range addrs {
-		txp := netstack.NewDNSOverHTTPSTransport(r.Measurer)
-		txp.HTTPHost = server
-		txp.SNI = server
-		txp.ServerAddr = net.JoinHostPort(addr, port)
-		resolver := netstack.NewResolver(txp)
-		if _, err := resolver.LookupHost(ctx, query); err != nil {
-			r.Logger.Warn("DNS over HTTPS failed", slog.String("addr", addr), slog.Any("err", err))
+		opts := &ptnopspool.Options{
+			ALPN:         []string{"h2", "http/1.1"},
+			AddrPort:     net.JoinHostPort(addr, port),
+			DNSQueryName: query,
+			DNSQueryType: "A",
+			HTTPHost:     server,
+			HTTPMethod:   "POST",
+			HTTPScheme:   "https",
+			Pipeline:     "dns-over-https",
+			SNI:          server,
+			Tags:         r.State.Tags(),
+			Timeout:      5 * time.Second,
+			URLPath:      "/dns-query",
+		}
+		if _, err := r.RootDir.Run(ctx, opts); err != nil {
+			return fmt.Errorf("dns-over-https: %w", err)
 		}
 	}
 	return nil
