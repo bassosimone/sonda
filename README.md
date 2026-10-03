@@ -57,6 +57,8 @@ sonda scan --help         # scan-specific help
 
 - `etl-ptnop-qoe` — extract QoE metrics from ptnop spans and load them into daily files.
 
+- `measure-ptnop` — run a measurement pipeline using the ptnop engine.
+
 - `scan` — scan specific network endpoints storing results in the spool.
 
 - `spool` — manage the measurement spool directory.

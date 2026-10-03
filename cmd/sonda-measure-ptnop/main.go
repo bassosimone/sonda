@@ -31,6 +31,8 @@ func main() {
 	plugincommand.Main(0, realMain)
 }
 
+const shortDescr = "Run a measurement pipeline using the ptnop engine."
+
 // options contains the command line options.
 type options struct {
 	alpn         []string
@@ -91,12 +93,12 @@ func realMain(ctx context.Context, args []string) error {
 	fset := vflag.NewFlagSet("sonda-measure-ptnop", vflag.ExitOnError)
 
 	fset.Exit = env.Exit
-	fset.Stdout = env.Stdout
+	fset.Stdout = env.UsageStdout
 	fset.Stderr = env.Stderr
 
 	upr := vflag.NewDefaultUsagePrinter()
 	fset.UsagePrinter = upr
-	upr.AddDescription("Run a measurement pipeline using the ptnop engine. Print structured logs "+
+	upr.AddDescription(shortDescr+" Print structured logs "+
 		"on the stdout. Optionally, save the HTTP response body on a separate file (only for "+
 		"the `http` and `https` pipelines).",
 		"Pipeline",
@@ -273,6 +275,12 @@ func realMain(ctx context.Context, args []string) error {
 		"Use the given `PATH` as the URL path.")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
+
+	// If the user provided no arguments, print the help.
+	if len(args) <= 0 {
+		fset.PrintUsageString(fset.Stdout)
+		env.Exit(0)
+	}
 
 	// 3. Create the structured logger.
 	logger := newLogger(env, opts.tags)
