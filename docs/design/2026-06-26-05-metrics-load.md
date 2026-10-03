@@ -11,7 +11,7 @@ with `extract`, because both depend on the same metric schema.
 
 ## Purpose
 
-Aggregates per-span `metrics.parquet` files from the spool into
+Aggregates per-span `qoe.parquet` files from the spool into
 daily Parquet files under a persistent directory. The spool is
 ephemeral — GC deletes spans after a few hours — so metrics must
 be copied out before they disappear. This command bridges the gap
@@ -27,7 +27,7 @@ $metricsDir/YYYY/MM/DD/YYYY-MM-DD.parquet
 
 Each daily file contains all rows from all spans whose UUIDv7
 timestamp falls on that UTC day. The schema is identical to the
-per-span `metrics.parquet` produced by `sonda etl-ptnop-qoe extract` —
+per-span `qoe.parquet` produced by `sonda etl-ptnop-qoe extract` —
 the same `metricsRow` struct, no transformations.
 
 ## Idempotency and concurrency
@@ -35,7 +35,7 @@ the same `metricsRow` struct, no transformations.
 ### Sentinel files
 
 After successfully appending a span's rows to the daily file,
-the command creates a `metrics.loaded` sentinel file inside the
+the command creates a `qoe.loaded` sentinel file inside the
 span directory. On subsequent runs, spans with a sentinel are
 skipped. This ensures each span's rows are loaded exactly once.
 
@@ -101,7 +101,7 @@ dictionary encoding on repeated string columns (`msg`,
 
 `sonda scan` invokes `sonda etl-ptnop-qoe load` as a subprocess after
 `sonda etl-ptnop-qoe extract` and before `sonda spool gc`. The ordering
-matters: extract must create `metrics.parquet` before load can
+matters: extract must create `qoe.parquet` before load can
 read it, and load must copy metrics out before GC deletes the
 span.
 

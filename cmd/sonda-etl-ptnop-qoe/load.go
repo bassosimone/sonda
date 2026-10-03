@@ -66,7 +66,7 @@ func loadWalkDir(logger *slog.Logger, dir, metricsDir string, cutoff time.Time, 
 }
 
 // loadMaybeProcessSpan loads a span's metrics into the daily aggregate
-// if the span has metrics.parquet and hasn't been loaded yet. Skips
+// if the span has qoe.parquet and hasn't been loaded yet. Skips
 // .tmp directories (incomplete spans).
 func loadMaybeProcessSpan(logger *slog.Logger, parent, metricsDir, name string, cutoff time.Time) {
 	// Skip entry if the data is still being generated.
@@ -106,7 +106,7 @@ func loadMaybeProcessSpan(logger *slog.Logger, parent, metricsDir, name string, 
 	}
 	sentinel.Close()
 
-	// Read rows from the span's metrics.parquet.
+	// Read rows from the span's qoe.parquet.
 	rows, err := loadReadSpanMetrics(metricsPath)
 	if err != nil {
 		logger.Warn("failed to read span metrics", slog.String("spanDir", spanDir), slog.Any("err", err))
@@ -128,7 +128,7 @@ func loadMaybeProcessSpan(logger *slog.Logger, parent, metricsDir, name string, 
 	logger.Info("loaded metrics", slog.String("spanDir", spanDir), slog.String("day", day), slog.Int("rows", len(rows)))
 }
 
-// loadReadSpanMetrics reads all rows from a span's metrics.parquet file.
+// loadReadSpanMetrics reads all rows from a span's qoe.parquet file.
 func loadReadSpanMetrics(path string) ([]metricsRow, error) {
 	filep, err := os.Open(path)
 	if err != nil {

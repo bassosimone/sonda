@@ -16,10 +16,15 @@ etl-ptnop-qoe extract`. The plugin owns the metric schema and the
 per-span file names, because they are specific to turning ptnop
 logs into QoE metrics.
 
+*Update (2026-10-03):* the per-span files are now named after
+the pipeline's destination data type: `qoe.parquet`,
+`qoe.parquet.tmp`, and `qoe.loaded` (previously `metrics.*`).
+See "Per-span file names" below.
+
 ## Purpose
 
 Extracts Parquet metrics from structured log spans. Each span
-directory gets its own `metrics.parquet` file containing one row
+directory gets its own `qoe.parquet` file containing one row
 per completed network operation. Go extracts, Python analyzes.
 
 ## What gets extracted
@@ -73,12 +78,32 @@ correctly by default.
 
 ## Atomicity and idempotency
 
-- Writes go to `metrics.parquet.tmp`, then `os.Rename` to
-  `metrics.parquet`. Consumers only see complete files.
+- Writes go to `qoe.parquet.tmp`, then `os.Rename` to
+  `qoe.parquet`. Consumers only see complete files.
 
-- If `metrics.parquet` already exists, the span is skipped.
+- If `qoe.parquet` already exists, the span is skipped.
   Running extract twice produces the same result. This makes
   it safe to invoke from `sonda scan` on every cycle.
+
+## Per-span file names
+
+The output and sentinel files that a pipeline adds to a span
+directory depend on the pipeline. We name them after the
+pipeline's destination data type, which is `qoe` here:
+
+- `qoe.parquet` is the extract output and the sentinel that
+  tells `extract` the span is already processed.
+
+- `qoe.parquet.tmp` is the extract output while being written.
+
+- `qoe.loaded` is the sentinel written by `load`.
+
+This allows several pipelines to read the same span. For
+example, a hypothetical `sonda-etl-ptnop-foo` would write
+`foo.parquet` and `foo.loaded` into the same `ptnop` span
+directory without interfering with `qoe.*`. Two pipelines
+with the same destination but different sources never share a
+span directory, so the destination name alone is enough.
 
 ## How it walks
 
