@@ -15,6 +15,11 @@ func SpanArgvJSON(spanDir string) string {
 	return filepath.Join(spanDir, "argv.json")
 }
 
+// SpanPeerJSON returns the path to peer.json inside a span directory.
+func SpanPeerJSON(spanDir string) string {
+	return filepath.Join(spanDir, "peer.json")
+}
+
 // SpanRequestJSON returns the path to request.json inside a span directory.
 func SpanRequestJSON(spanDir string) string {
 	return filepath.Join(spanDir, "request.json")

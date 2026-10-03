@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"io"
 	"log/slog"
+	"net"
 	"os"
 	"time"
 
@@ -95,6 +96,7 @@ func mainMain(ctx context.Context, args []string) error {
 	// [net.FileConn] makes the open file description non-blocking and, under
 	// systemd, the stdin and the stdout share the same file description.
 	var (
+		peer   peerCreds = unknownPeerCreds
 		reader io.Reader = env.Stdin
 		writer io.Writer = env.Stdout
 	)
@@ -107,6 +109,19 @@ func mainMain(ctx context.Context, args []string) error {
 		defer conn.Close()
 		reader = &idleReader{conn: conn, timeout: idleTimeout}
 		writer = &idleWriter{conn: conn, timeout: idleTimeout}
+
+		// Obtain the peer credentials once, since they belong to the connection.
+		//
+		// We only try with Unix domain sockets: on a TCP socket, Linux does not fail
+		// SO_PEERCRED but returns pid 0 and uid/gid 4294967295 (tested on 7.0.0).
+		// Failing is fine: we log and continue without credentials.
+		if uconn, ok := conn.(*net.UnixConn); ok {
+			var err error
+			peer, err = peerCred(uconn)
+			if err != nil {
+				logger.Warn("peerCred", slog.Any("err", err))
+			}
+		}
 	}
 
 	// Read and serve incoming requests, one per line, sequentially.
@@ -116,7 +131,7 @@ func mainMain(ctx context.Context, args []string) error {
 	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(nil, maxLineSize)
 	for scanner.Scan() {
-		resp := serveLine(ctx, env, logger, scanner.Bytes(), spoolDir)
+		resp := serveLine(ctx, env, logger, scanner.Bytes(), spoolDir, peer)
 		respData := runtimex.PanicOnError1(json.Marshal(resp)) // always serializable
 		respData = append(respData, '\n')
 		if _, err := writer.Write(respData); err != nil {

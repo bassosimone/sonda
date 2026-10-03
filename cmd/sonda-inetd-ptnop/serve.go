@@ -90,12 +90,15 @@ type serveResponse struct {
 //
 // The logger is the operational logger (i.e., the journal). The measurement
 // events go to the span's `stdout.txt` file instead.
+//
+// The peer contains the client credentials, possibly [unknownPeerCreds].
 func serveLine(
 	ctx context.Context,
 	env *testable.Environ,
 	logger *slog.Logger,
 	rawLine []byte,
 	spoolDir string,
+	peer peerCreds,
 ) *serveResponse {
 	// 1. Parse the raw line received on the stdin.
 	var req serveRequest
@@ -147,10 +150,18 @@ func serveLine(
 		return serverFailure("env.MkdirAll", err)
 	}
 
-	// 6. Record the request that will be executed.
+	// 6. Record the request that will be executed and, if known, who sent it.
+	//
+	// We keep these separate because the request is what the client sent while
+	// the peer is what we observed.
 	reqData := runtimex.PanicOnError1(json.Marshal(req)) // always serializable
 	reqData = append(reqData, '\n')
 	if err := env.WriteFile(ptnoppaths.SpanRequestJSON(tmpDir), reqData, 0640); err != nil {
+		return serverFailure("env.WriteFile", err)
+	}
+	peerData := runtimex.PanicOnError1(json.Marshal(peer)) // always serializable
+	peerData = append(peerData, '\n')
+	if err := env.WriteFile(ptnoppaths.SpanPeerJSON(tmpDir), peerData, 0640); err != nil {
 		return serverFailure("env.WriteFile", err)
 	}
 
