@@ -9,7 +9,7 @@ status: active
 
 Sonda's measurement commands emit structured JSON logs to stdout.
 The spool stores these as `stdout.txt` files, and every consumer
-— Go netstack parsers, future Python extractors (sondax), any
+— Go parsers and extractors, future Python extractors (sondax), any
 downstream pipeline — parses the same JSON lines. The schema must
 be well-defined and stable because it is the interface between
 producers and consumers.
@@ -123,9 +123,7 @@ Tags are the mechanism for injecting session-level context into
 individual measurements. The orchestrator (e.g., `sonda scan`)
 discovers context — such as the reflexive IPv4/IPv6 addresses
 from a STUN lookup — and propagates it to subsequent measurements
-via `netstack.ContextWithTags(ctx, tags)`. The `SondaMeasurer`
-reads tags from the context and appends `--tag` flags to the
-inner command, avoiding shared mutable state.
+by appending `--tag` flags to the inner command.
 
 Current tag keys:
 

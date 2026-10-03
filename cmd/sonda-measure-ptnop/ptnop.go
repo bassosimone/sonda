@@ -152,7 +152,7 @@ func ptnopRunDNS(ctx context.Context, input *pipelineInput,
 		return logFailure(input.logger, "exchange", err, 1)
 	}
 
-	// 3. Print records as expected by `./internal/netstack`.
+	// 3. Print records as expected by `./internal/ptnopspool`.
 	//
 	// TODO(bassosimone): we may want to support logging other response types.
 	if cnames, err := resp.RecordsCNAME(); err == nil {
