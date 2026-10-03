@@ -5,16 +5,6 @@ status: active
 
 # Design: `sonda etl-ptnop-qoe load`
 
-*Update (2026-10-03):* this command was originally `sonda metrics
-load`. It is now part of the `sonda-etl-ptnop-qoe` plugin, together
-with `extract`, because both depend on the same metric schema.
-
-*Update (2026-10-03):* `load` now holds a lock file to serialize
-concurrent runs. See "Lock file" below.
-
-*Update (2026-10-03):* `load` now rewrites each daily file once
-per run rather than once per span. See "Append strategy" below.
-
 ## Purpose
 
 Aggregates per-span `qoe.parquet` files from the spool into
@@ -22,6 +12,9 @@ daily Parquet files under a persistent directory. The spool is
 ephemeral — GC deletes spans after a few hours — so metrics must
 be copied out before they disappear. This command bridges the gap
 between the short-lived spool and long-term analysis.
+
+It shares the `etl-ptnop-qoe` plugin with `extract` because
+both depend on the same metric schema.
 
 ## Output layout
 

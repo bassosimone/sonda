@@ -5,27 +5,16 @@ status: active
 
 # Design: `sonda etl-ptnop-qoe extract`
 
-*Update (2026-10-03):* this command was originally `sonda spool
-extract`. We moved it under `sonda metrics` because parsing ptnop
-events and choosing the QoE metrics are not spool concerns. The
-command still reads and writes inside span directories.
-
-*Update (2026-10-03):* `sonda metrics` is now the
-`sonda-etl-ptnop-qoe` plugin, so this command is `sonda
-etl-ptnop-qoe extract`. The plugin owns the metric schema and the
-per-span file names, because they are specific to turning ptnop
-logs into QoE metrics.
-
-*Update (2026-10-03):* the per-span files are now named after
-the pipeline's destination data type: `qoe.parquet`,
-`qoe.parquet.tmp`, and `qoe.loaded` (previously `metrics.*`).
-See "Per-span file names" below.
-
 ## Purpose
 
 Extracts Parquet metrics from structured log spans. Each span
 directory gets its own `qoe.parquet` file containing one row
 per completed network operation. Go extracts, Python analyzes.
+
+It lives in the `etl-ptnop-qoe` plugin rather than in `spool`
+because parsing ptnop events and choosing the QoE metrics are
+not spool concerns. The plugin owns the metric schema and the
+per-span file names.
 
 ## What gets extracted
 
