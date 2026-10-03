@@ -5,7 +5,7 @@ Description=Serve sonda ptnop measurement requests
 ListenStream=/run/sonda/inetd-ptnop.sock
 SocketUser=_sonda
 SocketGroup=_sonda
-SocketMode=0600
+SocketMode=0660
 Accept=yes
 MaxConnections=8
 
