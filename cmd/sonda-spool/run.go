@@ -59,6 +59,16 @@ func runMain(ctx context.Context, args []string) error {
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
 
+	upr := vflag.NewDefaultUsagePrinter()
+	fset.UsagePrinter = upr
+	upr.AddDescription(
+		"Run a sonda subcommand and save its command line, stdout, stderr, " +
+			"and exit code into a new span directory below `--spool-dir`. On " +
+			"success, print a JSON object containing `spanId` and `spanDir` to " +
+			"the stdout and exit with `0`, regardless of the subcommand's exit " +
+			"code. Before running the subcommand, replace `@SONDA_SPAN_DIR@` in " +
+			"its arguments with the span directory.")
+
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")

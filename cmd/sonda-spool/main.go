@@ -15,7 +15,7 @@ func main() {
 	plugincommand.Main(plugincommand.FlagAllowReExec, realMain)
 }
 
-const shortDescr = "Run measurements and spool their results."
+const shortDescr = "Manage the measurement spool."
 
 func realMain(ctx context.Context, args []string) error {
 	env := testable.ContextEnviron(ctx)

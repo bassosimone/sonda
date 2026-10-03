@@ -38,6 +38,14 @@ func loadMain(ctx context.Context, args []string) error {
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
 
+	upr := vflag.NewDefaultUsagePrinter()
+	fset.UsagePrinter = upr
+	upr.AddDescription(
+		"Append the rows of each span's `qoe.parquet` to the daily file " +
+			"`<metrics-dir>/YYYY/MM/DD/YYYY-MM-DD.parquet`, choosing the day from " +
+			"the span's UTC timestamp. A `qoe.loaded` file marks the spans already " +
+			"loaded, and a lock file in `--metrics-dir` serializes concurrent runs.")
+
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.DurationVar(&maxAge, 0, "max-age", "Ignore spans older than `DURATION`.")
 	fset.StringVar(&metricsDir, 0, "metrics-dir", "Write daily Parquet files to `DIR` instead of `@DEFAULT_VALUE@`.")

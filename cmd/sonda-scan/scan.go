@@ -34,6 +34,15 @@ func scanMain(ctx context.Context, args []string) error {
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
 
+	upr := vflag.NewDefaultUsagePrinter()
+	fset.UsagePrinter = upr
+	upr.AddDescription(
+		"Run the steps listed in the `--config-file` YAML file, in order. " +
+			"Measurement steps store their results under `<spool-dir>/ptnop`. " +
+			"The `extract`, `load`, and `gc` steps process that spool and write " +
+			"daily metrics under `<metrics-dir>/qoe`. A failed step does not stop " +
+			"the scan unless `--fail` is set.")
+
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.BoolVar(&fail, 0, "fail", "Exit with error on first failure.")
 	fset.StringVar(&configFile, 0, "config-file", "Load steps from `FILE` (required).")

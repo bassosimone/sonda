@@ -1,1 +1,1 @@
-Run measurements and spool their results.
+Manage the measurement spool.

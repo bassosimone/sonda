@@ -35,6 +35,13 @@ func extractMain(ctx context.Context, args []string) error {
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
 
+	upr := vflag.NewDefaultUsagePrinter()
+	fset.UsagePrinter = upr
+	upr.AddDescription(
+		"For each span newer than `--max-age`, read the structured logs in " +
+			"`stdout.txt` and write the QoE metrics to `qoe.parquet` inside the " +
+			"span directory. Skip spans that already contain `qoe.parquet`.")
+
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.DurationVar(&maxAge, 0, "max-age", "Only extract spans newer than `DURATION`.")
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")

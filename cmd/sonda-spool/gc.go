@@ -34,6 +34,13 @@ func gcMain(ctx context.Context, args []string) error {
 	fset.Stderr = env.Stderr
 	fset.Stdout = env.UsageStdout
 
+	upr := vflag.NewDefaultUsagePrinter()
+	fset.UsagePrinter = upr
+	upr.AddDescription(
+		"Remove span directories whose UUIDv7 timestamp is older than " +
+			"`--max-age`, including incomplete `.tmp` ones. Also remove the " +
+			"sharding directories left empty.")
+
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.DurationVar(&maxAge, 0, "max-age", "Remove spans older than `DURATION`.")
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
