@@ -13,6 +13,7 @@ import (
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
+	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
@@ -34,7 +35,7 @@ func realMain(ctx context.Context, args []string) error {
 	}
 	var (
 		dryRun      = false
-		ptnopSocket = "/run/sonda/inetd-ptnop.sock"
+		ptnopSocket = config.PtnopSocketPath
 	)
 	fset := vflag.NewFlagSet("sonda-measure-ptnop", vflag.ExitOnError)
 

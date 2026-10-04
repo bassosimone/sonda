@@ -16,6 +16,11 @@ import (
 // DefaultConfigFilePath contains the default config file path.
 const DefaultConfigFilePath = "/etc/sonda/config.toml"
 
+// PtnopSocketPath is the `sonda-inetd-ptnop` socket path.
+//
+// Not configurable: it must match `ListenStream=` in `sonda-inetd-ptnop.socket`.
+const PtnopSocketPath = "/run/sonda/inetd-ptnop.sock"
+
 // Duration is the type used to parse [time.Duration] safely. The decoder we use
 // allows representing [time.Duration] as either integer or string, which leads to
 // ambiguity and surprises; e.g., "6" meaning 6 nanoseconds not 6 hours. So, we

@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/bassosimone/runtimex"
+	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
@@ -24,7 +25,7 @@ func scanMain(ctx context.Context, args []string) error {
 		configFile  = ""
 		fail        = false
 		metricsDir  = "."
-		ptnopSocket = "/run/sonda/inetd-ptnop.sock"
+		ptnopSocket = config.PtnopSocketPath
 		spoolDir    = "."
 	)
 
