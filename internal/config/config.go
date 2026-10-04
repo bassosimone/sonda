@@ -52,7 +52,8 @@ type Settings struct {
 
 // Core contains settings that apply to all tools.
 type Core struct {
-	SpoolDir string `toml:"spool-dir"`
+	MetricsDir string `toml:"metrics-dir"`
+	SpoolDir   string `toml:"spool-dir"`
 }
 
 // Inetd contains settings for the inetd-like servers.
@@ -79,7 +80,8 @@ type SpoolGC struct {
 func Defaults() *Settings {
 	return &Settings{
 		Core: Core{
-			SpoolDir: "/var/spool/sonda",
+			MetricsDir: "/var/lib/sonda/metrics",
+			SpoolDir:   "/var/spool/sonda",
 		},
 		// The idle timeout is a guess: it should leave plenty of margin
 		// to a client sending requests back to back, such as `sonda scan`.

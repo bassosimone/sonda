@@ -4,6 +4,9 @@
 ## commented out. Uncomment and modify them to override.
 
 [core]
+## Directory for processed metrics.
+#metrics-dir = "/var/lib/sonda/metrics"
+
 ## Directory for spooling measurement results.
 #spool-dir = "/var/spool/sonda"
 
