@@ -1,0 +1,14 @@
+## This is sonda's configuration file.
+
+## We specify options with their default value but leave them
+## commented out. Uncomment and modify them to override.
+
+[core]
+## Directory for spooling measurement results.
+#spool-dir = "/var/spool/sonda"
+
+[spool.gc]
+## Age after which measurements are removed from the spool.
+##
+## The value is a Go time duration string.
+#max-age = "6h"

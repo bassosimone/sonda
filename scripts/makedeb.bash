@@ -55,6 +55,9 @@ chmod 755 "$stage/usr/libexec/sonda/sonda-spool"
 # Compute the libc6 version the binary actually requires: the highest
 # GLIBC_x.y symbol version it references. This mirrors what
 # dpkg-shlibdeps derives for real Debian packages.
+#
+# TODO(bassosimone): here we should take the maximum of the above
+# binaries rather than trusting just `sonda`.
 libc_ver="$(objdump -T "$stage/usr/libexec/sonda/sonda" \
     | grep -oE 'GLIBC_[0-9.]+' | sed 's/^GLIBC_//' | sort -uV | tail -1)"
 
@@ -73,9 +76,10 @@ install -m 644 dist/unix/usr/lib/systemd/system/sonda-scan.service "$stage/usr/l
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-scan.timer "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/system-sonda.slice "$stage/usr/lib/systemd/system/"
 
-# Install scan config file.
+# Install config files.
 install -d "$stage/etc/sonda/scan"
 install -m 644 dist/unix/etc/sonda/scan/default.yml "$stage/etc/sonda/scan/"
+install -m 644 dist/unix/etc/sonda/config.toml "$stage/etc/sonda"
 
 # Install copyright.
 install -d "$stage/usr/share/doc/sonda"
@@ -107,6 +111,7 @@ install -m 755 dist/debian/prerm "$stage/DEBIAN/"
 # Declare conffiles so dpkg preserves local edits on upgrade.
 cat > "$stage/DEBIAN/conffiles" <<'CONFFILES'
 /etc/sonda/scan/default.yml
+/etc/sonda/config.toml
 CONFFILES
 chmod 644 "$stage/DEBIAN/conffiles"
 
