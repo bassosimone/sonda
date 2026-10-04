@@ -64,7 +64,9 @@ func mainMain(ctx context.Context, args []string) error {
 		"Serve a Unix socket without installing the systemd units, using "+
 			"a socket path that is absolute and shorter than 108 bytes:",
 		"    systemd-socket-activate --listen=/tmp/ptnop.sock --accept --inetd \\\n"+
-			"          sonda-inetd-ptnop --spool-dir /tmp/spool")
+			"          sonda-inetd-ptnop --spool-dir /tmp/spool",
+		"Connect to the socket using:",
+		"    nc -U /tmp/ptnop.sock")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.DurationVar(&idleTimeout, 0, "idle-timeout",
