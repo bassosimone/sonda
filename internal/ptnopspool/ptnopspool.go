@@ -5,14 +5,8 @@ package ptnopspool
 
 import (
 	"bufio"
-	"bytes"
-	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
-	"strconv"
-	"time"
 
 	"github.com/bassosimone/sonda/internal/ptnopdata"
 	"github.com/bassosimone/sonda/internal/ptnoppaths"
@@ -46,154 +40,7 @@ func (e ReadError) Unwrap() error {
 	return e.Err
 }
 
-// ExecError is an error indicating that we cannot execute the ptnop plugin.
-type ExecError struct {
-	Err error
-}
-
-// Error returns a string representation of the error.
-func (e ExecError) Error() string {
-	return e.Err.Error()
-}
-
-// Unwrap returns the underlying error.
-func (e ExecError) Unwrap() error {
-	return e.Err
-}
-
-// Options contains command line options for the ptnop plugin.
-//
-// You should fill the options relevant for the pipeline you want
-// to run and you can safely leave the others empty.
-type Options struct {
-	ALPN         []string
-	AddrPort     string
-	DNSQueryName string
-	DNSQueryType string
-	HTTPBodyFile string
-	HTTPHeaders  []string
-	HTTPHost     string
-	HTTPMethod   string
-	HTTPScheme   string
-	Pipeline     string
-	SNI          string
-	Tags         []string
-	Timeout      time.Duration
-	URLPath      string
-}
-
-// RootDir is the root spool dir assigned to the ptnop plugin.
-//
-// Use [NewRootDir] to construct.
-type RootDir struct {
-	Env  *testable.Environ
-	Path string
-}
-
-// NewRootDir creates and returns a new [*RootDir] instance.
-func NewRootDir(env *testable.Environ, spoolDir string) *RootDir {
-	return &RootDir{Env: env, Path: spoolDir}
-}
-
-// Run runs a measurement pipeline and returns its [*SpanDir].
-//
-// This command fails with [ExecError] for any child status code different from `0` (success)
-// and `1` (measurement failure), thus covering, among other things, missing plugins.
-func (d *RootDir) Run(ctx context.Context, opts *Options) (*SpanDir, error) {
-	// Create the command to run. `spool run` generates the span ID and
-	// tells us the span directory by writing JSON to its stdout.
-	//
-	// Passing all possible command line options, including empty lines, is
-	// fine because the plugin handles this gracefully.
-	args := []string{
-		"spool", "run",
-		"--spool-dir", d.Path,
-		"--",
-		"measure-ptnop",
-		"--addr-port", opts.AddrPort,
-		"--dns-query-name", opts.DNSQueryName,
-		"--dns-query-type", opts.DNSQueryType,
-		"--http-body-file", opts.HTTPBodyFile,
-		"--http-host", opts.HTTPHost,
-		"--http-method", opts.HTTPMethod,
-		"--http-scheme", opts.HTTPScheme,
-		"--pipeline", opts.Pipeline,
-		"--sni", opts.SNI,
-		"--url-path", opts.URLPath,
-	}
-	for _, e := range opts.ALPN {
-		args = append(args, "--alpn")
-		args = append(args, e)
-	}
-	for _, e := range opts.HTTPHeaders {
-		args = append(args, "--http-header")
-		args = append(args, e)
-	}
-	for _, e := range opts.Tags {
-		args = append(args, "--tag")
-		args = append(args, e)
-	}
-	if opts.Timeout > 0 {
-		args = append(args, "--timeout")
-		args = append(args, opts.Timeout.String())
-	}
-
-	// Execute the command capturing its stdout.
-	//
-	// The child's stderr is not captured: `spool run` only writes
-	// there when it fails to manage the span directory.
-	var stdout bytes.Buffer
-	env := d.Env.Clone()
-	env.Stdout = &stdout
-	if err := env.ReExec(testable.WithEnviron(ctx, env), args); err != nil {
-		return nil, ExecError{err}
-	}
-
-	// Parse the JSON written by `spool run` to learn the span directory.
-	var result struct {
-		SpanID  string `json:"spanId"`
-		SpanDir string `json:"spanDir"`
-	}
-	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
-		return nil, ExecError{err}
-	}
-	if result.SpanID == "" || result.SpanDir == "" {
-		err := fmt.Errorf("spool run: missing spanId or spanDir in %q", stdout.String())
-		return nil, ExecError{err}
-	}
-	spanDir := result.SpanDir
-
-	// Read the exitcode and handle exit codes different from `0` (success)
-	// and `1` (failure). By doing this, we cover `127` (subcommand execution
-	// failed), and `2` (usage error including unknown subcommand), as
-	// well as all the other unexpected exit codes.
-	data, err := d.Env.ReadFile(ptnoppaths.SpanExitCode(spanDir))
-	if err != nil {
-		return nil, ExecError{err}
-	}
-	exitCode, err := strconv.Atoi(string(bytes.TrimSpace(data)))
-	if err != nil {
-		return nil, ExecError{err}
-	}
-	if exitCode != 0 && exitCode != 1 {
-		err := fmt.Errorf("unexpected exit code %d (see %s/stderr.txt)", exitCode, spanDir)
-		return nil, ExecError{err}
-	}
-
-	// On success, return the span directory.
-	sdx := &SpanDir{
-		Env:      d.Env,
-		ExitCode: exitCode,
-		Path:     spanDir,
-	}
-	return sdx, nil
-}
-
 // SpanDir is the directory containing the result of running a pipeline.
-//
-// Returned by [*RootDir.Run].
-//
-// The Env is same as in the [*RootDir].
 //
 // The ExitCode is either `0` (success) or `1` (measurement error).
 //
