@@ -159,6 +159,7 @@ func (c *Client) Run(ctx context.Context, req *Request) (*ptnopspool.SpanDir, er
 		Env:      c.env,
 		ExitCode: *resp.ExitCode,
 		Path:     resp.SpanDir,
+		SpanID:   resp.SpanID,
 	}
 	return spanDir, nil
 }

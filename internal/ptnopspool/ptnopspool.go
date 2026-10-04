@@ -49,6 +49,7 @@ type SpanDir struct {
 	Env      *testable.Environ
 	ExitCode int
 	Path     string
+	SpanID   string
 }
 
 // ResolvedAddrsA returns the resolved IPv4 addrs.
