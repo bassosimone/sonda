@@ -9,10 +9,10 @@ set -e
 # when generating, and we express it with our usual case statement.
 case "$1" in
     remove)
-        # Stop the timer, but only when systemd is running (not in a
+        # Stop the socket and the timer, but only when systemd is running (not in a
         # chroot) and respecting policy-rc.d.
         if [ -z "$DPKG_ROOT" ] && [ -d /run/systemd/system ]; then
-            deb-systemd-invoke stop 'sonda-scan.timer' >/dev/null || true
+            deb-systemd-invoke stop 'sonda-inetd-ptnop.socket' 'sonda-scan.timer' >/dev/null || true
         fi
         ;;
 esac

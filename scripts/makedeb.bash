@@ -37,6 +37,10 @@ go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 chmod 755 "$stage/usr/libexec/sonda/sonda-etl-ptnop-qoe"
 
 go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
+	-o "$stage/usr/libexec/sonda/sonda-inetd-ptnop" ./cmd/sonda-inetd-ptnop
+chmod 755 "$stage/usr/libexec/sonda/sonda-inetd-ptnop"
+
+go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 	-o "$stage/usr/libexec/sonda/sonda-measure-ptnop" ./cmd/sonda-measure-ptnop
 chmod 755 "$stage/usr/libexec/sonda/sonda-measure-ptnop"
 
@@ -63,6 +67,8 @@ chmod 644 "$stage/usr/share/man/man1/sonda.1.gz"
 
 # Install systemd units.
 install -d "$stage/usr/lib/systemd/system"
+install -m 644 dist/unix/usr/lib/systemd/system/sonda-inetd-ptnop.socket "$stage/usr/lib/systemd/system/"
+install -m 644 dist/unix/usr/lib/systemd/system/sonda-inetd-ptnop@.service "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-scan.service "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-scan.timer "$stage/usr/lib/systemd/system/"
 
