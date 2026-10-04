@@ -28,7 +28,7 @@ func gcMain(ctx context.Context, args []string) error {
 	configErr := config.ReadInto(env, config.DefaultConfigFilePath, presets)
 	var (
 		maxAge   = time.Duration(presets.Spool.GC.MaxAge)
-		spoolDir = presets.Core.SpoolDir
+		spoolDir = config.SpoolDir
 	)
 
 	// Parse command line flags.

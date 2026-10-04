@@ -21,6 +21,19 @@ const DefaultConfigFilePath = "/etc/sonda/config.toml"
 // Not configurable: it must match `ListenStream=` in `sonda-inetd-ptnop.socket`.
 const PtnopSocketPath = "/run/sonda/inetd-ptnop.sock"
 
+// MetricsDir is the top-level metrics directory.
+//
+// Not configurable: `postinst` creates it and `sonda-scan.service` lists
+// it in `ReadWritePaths=`. To relocate it, use a bind mount or a symlink.
+const MetricsDir = "/var/lib/sonda/metrics"
+
+// SpoolDir is the top-level spool directory.
+//
+// Not configurable: `postinst` creates it, `postrm` removes it, and the
+// units list it in `ReadWritePaths=`. To relocate it, use a bind mount or
+// a symlink.
+const SpoolDir = "/var/spool/sonda"
+
 // Duration is the type used to parse [time.Duration] safely. The decoder we use
 // allows representing [time.Duration] as either integer or string, which leads to
 // ambiguity and surprises; e.g., "6" meaning 6 nanoseconds not 6 hours. So, we
@@ -45,15 +58,8 @@ func (d *Duration) UnmarshalText(text []byte) error {
 
 // Settings contains `sonda` settings.
 type Settings struct {
-	Core  Core  `toml:"core"`
 	Inetd Inetd `toml:"inetd"`
 	Spool Spool `toml:"spool"`
-}
-
-// Core contains settings that apply to all tools.
-type Core struct {
-	MetricsDir string `toml:"metrics-dir"`
-	SpoolDir   string `toml:"spool-dir"`
 }
 
 // Inetd contains settings for the inetd-like servers.
@@ -79,10 +85,6 @@ type SpoolGC struct {
 // Defaults returns the default [*Settings].
 func Defaults() *Settings {
 	return &Settings{
-		Core: Core{
-			MetricsDir: "/var/lib/sonda/metrics",
-			SpoolDir:   "/var/spool/sonda",
-		},
 		// The idle timeout is a guess: it should leave plenty of margin
 		// to a client sending requests back to back, such as `sonda scan`.
 		Inetd: Inetd{

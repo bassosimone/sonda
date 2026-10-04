@@ -25,11 +25,9 @@ import (
 func extractMain(ctx context.Context, args []string) error {
 	env := testable.ContextEnviron(ctx)
 
-	presets := config.Defaults()
-	configErr := config.ReadInto(env, config.DefaultConfigFilePath, presets)
 	var (
 		maxAge   = 6 * time.Hour
-		spoolDir = presets.Core.SpoolDir
+		spoolDir = config.SpoolDir
 	)
 
 	fset := vflag.NewFlagSet("sonda-etl-ptnop-qoe extract", vflag.ExitOnError)
@@ -54,12 +52,6 @@ func extractMain(ctx context.Context, args []string) error {
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using ExitOnError
 
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
-
-	// Defer reporting config errors after flag parsing to honor `-h/--help`.
-	if configErr != nil {
-		logger.Error("config.Read", slog.Any("err", configErr))
-		env.Exit(1)
-	}
 
 	// We read from the ptnop data type directory.
 	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")

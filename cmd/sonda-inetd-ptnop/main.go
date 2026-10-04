@@ -33,7 +33,7 @@ func mainMain(ctx context.Context, args []string) error {
 	configErr := config.ReadInto(env, config.DefaultConfigFilePath, presets)
 	var (
 		idleTimeout = time.Duration(presets.Inetd.Ptnop.IdleTimeout)
-		spoolDir    = presets.Core.SpoolDir
+		spoolDir    = config.SpoolDir
 		stdio       = false
 	)
 

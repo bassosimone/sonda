@@ -53,11 +53,9 @@ func runMain(ctx context.Context, args []string) error {
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
 	// Set the command defaults.
-	presets := config.Defaults()
-	configErr := config.ReadInto(env, config.DefaultConfigFilePath, presets)
 	var (
 		dataType = "_"
-		spoolDir = presets.Core.SpoolDir
+		spoolDir = config.SpoolDir
 		timeout  = 5 * time.Minute
 	)
 
@@ -91,12 +89,6 @@ func runMain(ctx context.Context, args []string) error {
 	fset.DisablePermute = true // make the `--` optional
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
-
-	// Defer reporting config errors after flag parsing to honor `-h/--help`.
-	if configErr != nil {
-		logger.Error("config.Read", slog.Any("err", configErr))
-		env.Exit(1)
-	}
 
 	// Remaining args after "--" are the command to execute.
 	cmdArgs := fset.Args()

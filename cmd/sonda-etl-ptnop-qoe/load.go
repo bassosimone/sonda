@@ -27,12 +27,10 @@ import (
 func loadMain(ctx context.Context, args []string) error {
 	env := testable.ContextEnviron(ctx)
 
-	presets := config.Defaults()
-	configErr := config.ReadInto(env, config.DefaultConfigFilePath, presets)
 	var (
 		maxAge     = 24 * time.Hour
-		metricsDir = presets.Core.MetricsDir
-		spoolDir   = presets.Core.SpoolDir
+		metricsDir = config.MetricsDir
+		spoolDir   = config.SpoolDir
 	)
 
 	fset := vflag.NewFlagSet("sonda-etl-ptnop-qoe load", vflag.ExitOnError)
@@ -61,12 +59,6 @@ func loadMain(ctx context.Context, args []string) error {
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using ExitOnError
 
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
-
-	// Defer reporting config errors after flag parsing to honor `-h/--help`.
-	if configErr != nil {
-		logger.Error("config.Read", slog.Any("err", configErr))
-		env.Exit(1)
-	}
 
 	// We read from the ptnop data type and write the qoe data type.
 	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
