@@ -72,14 +72,3 @@ steps:
     with:
       host: www.cloudflare.com
       url_path: /cdn-cgi/trace
-
-  #
-  # Housekeeping
-  #
-  - name: "Extract metrics"
-    run: extract
-    with:
-      max_age: 1h
-
-  - name: "Load metrics"
-    run: load

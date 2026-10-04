@@ -66,6 +66,17 @@ triggers with `OnActiveSec=1min` and `OnUnitInactiveSec=1h`. Its
 service passes no flags, so its settings come from
 `/etc/sonda/config.toml` (see `2026-06-26-02-spool-gc.md`).
 
+The ETL timer (`sonda-etl-ptnop-qoe.timer`) uses the same two
+triggers with `OnActiveSec=2min` and `OnUnitInactiveSec=1h`. Its
+service runs `sonda etl-ptnop-qoe extract` and then `load`, with no
+flags. Running the ETL hourly rather than in every scan pays the
+daily Parquet rewrite once per hour instead of once every five
+minutes. The service also sets `Nice=10` and `IOSchedulingClass=idle`,
+so the ETL does not compete with the measurements, and
+`PrivateNetwork=yes`, since it needs no network. The hourly interval
+must stay well below `spool.gc.max-age` (`6h` by default), otherwise
+GC may remove spans before the ETL processes them.
+
 ## Security
 
 The service runs as `User=_sonda`, `Group=_sonda` — a

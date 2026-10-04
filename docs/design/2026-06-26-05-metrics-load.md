@@ -67,7 +67,7 @@ the same temporary file name.
 To prevent this, `load` holds an exclusive lock on
 `$metricsDir/lock` for the whole run, using
 `github.com/rogpeppe/go-internal/lockedfile`. The lock is blocking:
-a manual run started during a scan waits for the scan's `load`
+a manual run started during a timer run waits for that `load`
 to finish. The lock lives inside the metrics directory because it
 protects that directory and follows `--metrics-dir`. The lock file
 is empty and persists after the run, which is harmless because the
@@ -126,14 +126,15 @@ dictionary encoding on repeated string columns (`msg`,
 
 - `--max-age DURATION` — ignore spans older than this (default: `24h`).
 
-## Integration with `sonda scan`
+## Scheduling
 
-`sonda scan` invokes `sonda etl-ptnop-qoe load` as a subprocess after
-`sonda etl-ptnop-qoe extract`. The ordering matters: extract must
-create `qoe.parquet` before load can read it. Load must also copy
-metrics out before GC deletes the span: GC runs from its own timer
-and removes spans older than `6h` by default, which leaves plenty
-of margin.
+The ETL service (`sonda-etl-ptnop-qoe.service`) runs
+`sonda etl-ptnop-qoe load` after `sonda etl-ptnop-qoe extract`, from an
+hourly timer. The ordering matters: extract must create
+`qoe.parquet` before load can read it, and the oneshot service skips
+load when extract fails. Load must also copy metrics out before GC
+deletes the span: GC runs from its own timer and removes spans older
+than `6h` by default, which leaves several hourly runs of margin.
 
 The systemd service passes `--metrics-dir /var/lib/sonda/metrics`
 and `--spool-dir /var/spool/sonda` to `sonda scan`. In turn,

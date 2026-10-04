@@ -16,10 +16,12 @@ into daily Parquet files for later analysis.
 The Debian package installs a systemd timer that runs
 .B sonda scan
 five minutes after the previous scan finishes.
-Each scan runs the steps listed in
-.IR /etc/sonda/scan/default.yml :
-the measurements, then the metrics extraction and loading.
+Each scan runs the measurements listed in
+.IR /etc/sonda/scan/default.yml .
 A second timer runs
+.B sonda etl\-ptnop\-qoe
+every hour to extract and load the QoE metrics.
+A third timer runs
 .B sonda spool gc
 every hour to remove old spool entries.
 .PP

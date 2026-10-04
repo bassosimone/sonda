@@ -18,4 +18,11 @@
 ## Age after which measurements are removed from the spool.
 ##
 ## The value is a Go time duration string.
+##
+## Keep it well above the interval of `sonda-etl-ptnop-qoe.timer`
+## (1h), otherwise spans may be removed before their metrics are
+## extracted. The ETL only looks at spans newer than 6h, so raising
+## this value does not let the ETL recover from longer outages.
+##
+## With the default workflow, the spool grows by about 25 MB/hour.
 #max-age = "6h"

@@ -72,7 +72,7 @@ correctly by default.
 
 - If `qoe.parquet` already exists, the span is skipped.
   Running extract twice produces the same result. This makes
-  it safe to invoke from `sonda scan` on every cycle.
+  it safe to run periodically and to run by hand at any time.
 
 ## Per-span file names
 
@@ -107,13 +107,18 @@ than `--max-age`.
 - `--max-age DURATION` — only extract spans newer than this
   (default: `6h`).
 
-## Integration with `sonda scan`
+## Scheduling
 
-`sonda scan` invokes `sonda etl-ptnop-qoe extract` as a subprocess,
-with `--max-age 1h`. This window covers the spans created during
-the current scan cycle. GC runs from its own timer and removes
+The Debian package runs extract, followed by load, from its own
+systemd timer (`sonda-etl-ptnop-qoe.timer`), one hour after each
+run finishes. The service passes no flags, so the `6h` window
+covers several missed runs. GC runs from its own timer and removes
 spans older than `6h` by default, so extract normally processes
 a span long before GC could remove it.
+
+`sonda scan` can still run extract as a workflow step (`run: extract`,
+with `--max-age 1h` unless `max_age` says otherwise), which is
+handy in development. The default workflow no longer does.
 
 ## Lambda-per-span, not global aggregation
 

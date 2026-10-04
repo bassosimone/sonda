@@ -1,0 +1,9 @@
+[Unit]
+Description=Extract and load the sonda QoE metrics periodically
+
+[Timer]
+OnActiveSec=2min
+OnUnitInactiveSec=1h
+
+[Install]
+WantedBy=timers.target

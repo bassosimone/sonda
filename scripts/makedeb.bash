@@ -70,6 +70,8 @@ chmod 644 "$stage/usr/share/man/man1/sonda.1.gz"
 
 # Install systemd units.
 install -d "$stage/usr/lib/systemd/system"
+install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-qoe.service "$stage/usr/lib/systemd/system/"
+install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-qoe.timer "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-inetd-ptnop.socket "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-inetd-ptnop@.service "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-scan.service "$stage/usr/lib/systemd/system/"

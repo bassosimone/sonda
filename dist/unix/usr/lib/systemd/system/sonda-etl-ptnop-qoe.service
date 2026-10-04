@@ -1,0 +1,39 @@
+# Extract and load the QoE metrics, independently of measurements.
+#
+# We pass no flags: the default windows (`6h` for extract, `24h` for load)
+# cover the whole spool under the default `spool.gc.max-age`. A oneshot runs
+# the `ExecStart=` lines in order and skips `load` when `extract` fails.
+
+[Unit]
+Description=Extract and load the sonda QoE metrics
+
+[Service]
+Slice=system-sonda.slice
+Type=oneshot
+ExecStart=/usr/bin/sonda etl-ptnop-qoe extract
+ExecStart=/usr/bin/sonda etl-ptnop-qoe load
+User=_sonda
+Group=_sonda
+
+# Keep the ETL from competing with the measurements for CPU and I/O.
+Nice=10
+IOSchedulingClass=idle
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/spool/sonda /var/lib/sonda/metrics
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+PrivateNetwork=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+CapabilityBoundingSet=
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallFilter=@system-service
+RestrictRealtime=yes
