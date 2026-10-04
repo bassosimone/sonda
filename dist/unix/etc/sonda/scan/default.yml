@@ -83,8 +83,3 @@ steps:
 
   - name: "Load metrics"
     run: load
-
-  - name: "Garbage collect"
-    run: gc
-    with:
-      max_age: 6h

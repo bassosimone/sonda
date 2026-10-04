@@ -44,8 +44,7 @@ func scanMain(ctx context.Context, args []string) error {
 			"listening at `--ptnop-socket`, which must store its results under " +
 			"`<spool-dir>/ptnop`. " +
 			"The `extract` and `load` steps process that spool and write " +
-			"daily metrics under `<metrics-dir>/qoe`. The `gc` step removes old " +
-			"spans from every data type under `<spool-dir>`. A failed step does not stop " +
+			"daily metrics under `<metrics-dir>/qoe`. A failed step does not stop " +
 			"the scan unless `--fail` is set.")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
@@ -116,7 +115,6 @@ func scanMain(ctx context.Context, args []string) error {
 		"https":          &httpsRunner{Client: ptnopClient, State: state},
 		"extract":        &extractRunner{Env: env, Logger: logger, SpoolDir: ptnopSpoolDir},
 		"load":           &loadRunner{Env: env, Logger: logger, MetricsDir: qoeMetricsDir, SpoolDir: ptnopSpoolDir},
-		"gc":             &gcRunner{Env: env, Logger: logger, SpoolDir: spoolDir},
 	}
 
 	// Execute each step in order.
@@ -144,7 +142,7 @@ type singleStep struct {
 
 	// Run selects the operation to execute (e.g., "stun",
 	// "dns-over-udp", "dns-over-https", "https", "extract",
-	// "load", "gc").
+	// "load").
 	Run string `yaml:"run"`
 
 	// With contains operation-specific parameters (e.g., "server",
