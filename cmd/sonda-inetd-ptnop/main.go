@@ -69,7 +69,8 @@ func mainMain(ctx context.Context, args []string) error {
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.DurationVar(&idleTimeout, 0, "idle-timeout",
 		"Close the connection after waiting `DURATION` for I/O to occur on the "+
-			"client connection. Ignored with `--stdio`.")
+			"client connection. Ignored with `--stdio`.",
+		"Default: @DEFAULT_VALUE@.")
 	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
 	fset.BoolVar(&stdio, 0, "stdio", "Do not assume that the stdin is a socket.")
 
@@ -79,7 +80,7 @@ func mainMain(ctx context.Context, args []string) error {
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
 	// Make sure the idle timeout makes sense.
-	if idleTimeout <= 0 {
+	if !stdio && idleTimeout <= 0 {
 		logger.Error("invalid --idle-timeout", slog.Duration("idleTimeout", idleTimeout))
 		env.Exit(1)
 	}
