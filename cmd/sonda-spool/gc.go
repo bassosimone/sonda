@@ -38,12 +38,15 @@ func gcMain(ctx context.Context, args []string) error {
 	fset.UsagePrinter = upr
 	upr.AddDescription(
 		"Remove span directories whose UUIDv7 timestamp is older than " +
-			"`--max-age`, including incomplete `.tmp` ones. Also remove the " +
-			"sharding directories left empty.")
+			"`--max-age`, including incomplete `.tmp` ones, for every data type " +
+			"directory under `--spool-dir` (e.g., `<spool-dir>/ptnop`). Also " +
+			"remove the sharding directories left empty.")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.DurationVar(&maxAge, 0, "max-age", "Remove spans older than `DURATION`.")
-	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
+	fset.StringVar(&spoolDir, 0, "spool-dir",
+		"Top-level spool `DIR` containing the data type directories.",
+		"Default: `@DEFAULT_VALUE@`.")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
@@ -51,14 +54,33 @@ func gcMain(ctx context.Context, args []string) error {
 	cutoff := time.Now().Add(-maxAge)
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
-	// Walk the spool sharding structure: spoolDir/XXXX/X/X/<spanID>.
-	gcWalkDir(logger, spoolDir, cutoff, 3)
+	// Walk the spool structure: spoolDir/<dataType>/XXXX/X/X/<spanID>.
+	gcWalkSpool(logger, spoolDir, cutoff)
 	return nil
 }
 
-// gcWalkDir walks the spool sharding tree recursively. At depth > 0,
-// it descends into subdirectories and removes empty ones. At depth 0,
-// it processes span directories.
+// gcWalkSpool treats each subdirectory of the spool dir as a data type
+// directory (e.g., `ptnop`) and walks its sharding tree.
+//
+// We never remove data type directories, even when they become empty, since
+// they are part of the spool structure rather than sharding artifacts.
+func gcWalkSpool(logger *slog.Logger, spoolDir string, cutoff time.Time) {
+	entries, err := os.ReadDir(spoolDir)
+	if err != nil {
+		logger.Warn("os.ReadDir", slog.String("path", spoolDir), slog.Any("err", err))
+		return
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		gcWalkDir(logger, filepath.Join(spoolDir, e.Name()), cutoff, 3)
+	}
+}
+
+// gcWalkDir walks a data type's sharding tree (XXXX/X/X/<spanID>) recursively.
+// At depth > 0, it descends into subdirectories and removes empty ones. At depth
+// 0, it processes span directories.
 func gcWalkDir(logger *slog.Logger, dir string, cutoff time.Time, depth int) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {

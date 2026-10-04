@@ -42,8 +42,9 @@ func scanMain(ctx context.Context, args []string) error {
 			"Measurement steps send requests to the `sonda-inetd-ptnop` server " +
 			"listening at `--ptnop-socket`, which must store its results under " +
 			"`<spool-dir>/ptnop`. " +
-			"The `extract`, `load`, and `gc` steps process that spool and write " +
-			"daily metrics under `<metrics-dir>/qoe`. A failed step does not stop " +
+			"The `extract` and `load` steps process that spool and write " +
+			"daily metrics under `<metrics-dir>/qoe`. The `gc` step removes old " +
+			"spans from every data type under `<spool-dir>`. A failed step does not stop " +
 			"the scan unless `--fail` is set.")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
@@ -114,7 +115,7 @@ func scanMain(ctx context.Context, args []string) error {
 		"https":          &httpsRunner{Client: ptnopClient, State: state},
 		"extract":        &extractRunner{Env: env, Logger: logger, SpoolDir: ptnopSpoolDir},
 		"load":           &loadRunner{Env: env, Logger: logger, MetricsDir: qoeMetricsDir, SpoolDir: ptnopSpoolDir},
-		"gc":             &gcRunner{Env: env, Logger: logger, SpoolDir: ptnopSpoolDir},
+		"gc":             &gcRunner{Env: env, Logger: logger, SpoolDir: spoolDir},
 	}
 
 	// Execute each step in order.
