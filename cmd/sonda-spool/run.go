@@ -8,12 +8,15 @@ import (
 	"log/slog"
 	"math"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/bassosimone/closepool"
 	"github.com/bassosimone/runtimex"
+	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/ptnoppaths"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
@@ -40,15 +43,21 @@ type runResult struct {
 	SpanDir string `json:"spanDir"`
 }
 
+// dataTypeRe matches valid data type names.
+var dataTypeRe = regexp.MustCompile(`^[_a-z][_a-z0-9-]*$`)
+
 // runMain is the main function of the `sonda-spool run` subcommand.
 func runMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
-	// Set command defaults.
+	// Set the command defaults.
+	presets := config.Defaults()
+	configErr := config.ReadInto(env, config.DefaultConfigFilePath, presets)
 	var (
-		spoolDir = "."
+		dataType = "_"
+		spoolDir = presets.Core.SpoolDir
 		timeout  = 5 * time.Minute
 	)
 
@@ -63,20 +72,31 @@ func runMain(ctx context.Context, args []string) error {
 	fset.UsagePrinter = upr
 	upr.AddDescription(
 		"Run a sonda subcommand and save its command line, stdout, stderr, " +
-			"and exit code into a new span directory below `--spool-dir`. On " +
+			"and exit code into a new span directory below `<spool-dir>/<data-type>`. On " +
 			"success, print a JSON object containing `spanId` and `spanDir` to " +
 			"the stdout and exit with `0`, regardless of the subcommand's exit " +
 			"code. Before running the subcommand, replace `@SONDA_SPAN_DIR@` in " +
 			"its arguments with the span directory.")
 
+	fset.StringVar(&dataType, 0, "data-type",
+		"Store the span below the `NAME` data type directory.",
+		"Default: `@DEFAULT_VALUE@`.")
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
-	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
+	fset.StringVar(&spoolDir, 0, "spool-dir",
+		"Top-level spool `DIR` containing the data type directories.",
+		"Default: `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&timeout, 0, "timeout", "Use `DURATION` instead of `@DEFAULT_VALUE@`.")
 
 	fset.SetMinMaxPositionalArgs(1, math.MaxInt)
 	fset.DisablePermute = true // make the `--` optional
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
+
+	// Defer reporting config errors after flag parsing to honor `-h/--help`.
+	if configErr != nil {
+		logger.Error("config.Read", slog.Any("err", configErr))
+		env.Exit(1)
+	}
 
 	// Remaining args after "--" are the command to execute.
 	cmdArgs := fset.Args()
@@ -86,12 +106,19 @@ func runMain(ctx context.Context, args []string) error {
 	// it at the end to tell the caller where we wrote the span.
 	stdout := env.Stdout
 
-	// Make the spoolDir absolute for robustness.
+	// Make sure the data type is a valid name (which implies a single path component).
+	if !dataTypeRe.MatchString(dataType) {
+		logger.Error("invalid --data-type", slog.String("dataType", dataType))
+		env.Exit(2)
+	}
+
+	// Make the spoolDir absolute for robustness and select the data type dir.
 	spoolDir, err := env.Abs(spoolDir)
 	if err != nil {
 		logger.Error("failed to canonicalize the spool directory", slog.Any("err", err))
 		env.Exit(1)
 	}
+	spoolDir = filepath.Join(spoolDir, dataType)
 
 	// Generate the span ID and build the spool directory path.
 	spanID := newSpanID()
