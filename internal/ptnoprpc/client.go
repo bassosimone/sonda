@@ -12,6 +12,7 @@ import (
 	"io"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bassosimone/runtimex"
@@ -75,6 +76,25 @@ func (c *Client) Close() error {
 	return c.conn.Close()
 }
 
+// UsageErrorPrefix is the prefix the server adds to errors
+// that indicate that a usage error occurred.
+const UsageErrorPrefix = "usage error: "
+
+// UsageError wraps a remote error starting with [UsageErrorPrefix].
+type UsageError struct {
+	Err error
+}
+
+// Error returns the error as a string.
+func (e UsageError) Error() string {
+	return e.Err.Error()
+}
+
+// Unwrap returns the underlying error.
+func (e UsageError) Unwrap() error {
+	return e.Err
+}
+
 // Run sends the request, waits for the response, and returns the [*ptnopspool.SpanDir].
 //
 // We do not mutate the request. We send a copy with the ID replaced by our own
@@ -85,6 +105,9 @@ func (c *Client) Close() error {
 // We fail if the server reports an error or returns an invalid response, which do
 // not break the connection, or on transport errors or when the response does not
 // match the request, which do (see [Client]).
+//
+// The error is [UsageError] when the server noticed that the request contained invalid
+// fields such as, for example, an unknown pipeline name or an invalid addrport.
 func (c *Client) Run(ctx context.Context, req *Request) (*ptnopspool.SpanDir, error) {
 	// 1. Refuse to use a connection that is out of sync.
 	if c.err != nil {
@@ -142,7 +165,11 @@ func (c *Client) Run(ctx context.Context, req *Request) (*ptnopspool.SpanDir, er
 
 	// 7. Handle the errors reported by the server.
 	if resp.Error != "" {
-		return nil, fmt.Errorf("ptnoprpc: server error: %s", resp.Error)
+		err := fmt.Errorf("ptnoprpc: server error: %s", resp.Error)
+		if strings.HasPrefix(resp.Error, UsageErrorPrefix) {
+			err = UsageError{err}
+		}
+		return nil, err
 	}
 	if resp.ExitCode == nil {
 		return nil, errors.New("ptnoprpc: missing exitCode in response")

@@ -75,7 +75,12 @@ func serveLine(
 		req.Timeout = defaultTimeout
 	}
 	if req.Timeout > maxTimeout {
-		resp.Error = fmt.Sprintf("timeout %s exceeds the maximum %s", req.Timeout, maxTimeout)
+		resp.Error = fmt.Sprintf(
+			"%stimeout %s exceeds the maximum %s",
+			ptnoprpc.UsageErrorPrefix,
+			req.Timeout,
+			maxTimeout,
+		)
 		return resp
 	}
 	ctx, cancel := context.WithTimeout(ctx, req.Timeout)
@@ -85,7 +90,7 @@ func serveLine(
 	// request does not leave a span directory behind.
 	input, err := newPipelineInput(ctx, env, &req)
 	if err != nil {
-		resp.Error = err.Error()
+		resp.Error = fmt.Sprintf("%s%s", ptnoprpc.UsageErrorPrefix, err.Error())
 		return resp
 	}
 

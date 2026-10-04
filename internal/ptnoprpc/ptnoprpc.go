@@ -44,6 +44,10 @@ type Request struct {
 // On failure, Error is set and ExitCode is nil. SpanID is set if and only if
 // the failure happened after the server started creating the span directory, in
 // which case a `.tmp` directory may be left behind for `sonda spool gc` to remove.
+//
+// When the server detects a usage error (e.g., an invalid pipeline name), it
+// creates an Error string starting with [UsageErrorPrefix] so that [*Client]
+// can return a [UsageError].
 type Response struct {
 	ID       json.RawMessage `json:"id,omitempty"`
 	Error    string          `json:"error,omitempty"`
