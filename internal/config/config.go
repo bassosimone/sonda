@@ -23,8 +23,8 @@ const PtnopSocketPath = "/run/sonda/inetd-ptnop.sock"
 
 // MetricsDir is the top-level metrics directory.
 //
-// Not configurable: `postinst` creates it and `sonda-scan.service` lists
-// it in `ReadWritePaths=`. To relocate it, use a bind mount or a symlink.
+// Not configurable: `postinst` creates it and `sonda-etl-ptnop-qoe.service`
+// lists it in `ReadWritePaths=`. To relocate it, use a bind mount or a symlink.
 const MetricsDir = "/var/lib/sonda/metrics"
 
 // SpoolDir is the top-level spool directory.
