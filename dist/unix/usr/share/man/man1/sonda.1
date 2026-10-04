@@ -18,8 +18,10 @@ The Debian package installs a systemd timer that runs
 five minutes after the previous scan finishes.
 Each scan runs the steps listed in
 .IR /etc/sonda/scan/default.yml :
-the measurements, then the metrics extraction and loading, and
-then the spool garbage collection.
+the measurements, then the metrics extraction and loading.
+A second timer runs
+.B sonda spool gc
+every hour to remove old spool entries.
 .PP
 This tool is under active development and its interface may change.
 For the full list of commands and per\-command help, run:
@@ -31,13 +33,21 @@ For the full list of commands and per\-command help, run:
 .RE
 .SH FILES
 .TP
+.I /etc/sonda/config.toml
+Settings for the
+.B sonda
+commands, such as the spool directory and the maximum age of
+spool entries.
+The commented\-out values are the defaults.
+.TP
 .I /etc/sonda/scan/default.yml
 Steps executed by the periodic scan.
 .TP
 .I /var/spool/sonda/
 Spool with one directory per measurement, containing the request,
 stdout, stderr, and exit code.
-The default steps remove entries older than six hours.
+The spool garbage collection removes entries older than six hours
+by default.
 Members of the
 .B _sonda
 group can read it.

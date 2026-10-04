@@ -19,8 +19,8 @@ Packaging artifacts live under `dist/`:
 - `dist/debian/` — Debian control file (templated), copyright,
   lintian overrides, and maintainer scripts (`postinst`,
   `postrm`, `prerm`).
-- `dist/unix/` — static files (systemd units, manpage, default
-  scan config) laid out mirroring their install paths on a
+- `dist/unix/` — static files (systemd units, manpage,
+  `/etc/sonda/config.toml`, default scan config) laid out mirroring their install paths on a
   modern Unix (e.g. `dist/unix/usr/share/man/man1/sonda.1`).
 - `scripts/makedeb.bash` — builds the Go binary, substitutes
   templates, assembles the staging tree, calls `dpkg-deb`, and
@@ -44,7 +44,7 @@ variables if they are not already set:
 
 ## Scheduling
 
-The timer uses two triggers:
+The scan timer (`sonda-scan.timer`) uses two triggers:
 
 - `OnActiveSec=10s` — fires 10 seconds after the timer unit
   is started, providing the initial run. `OnBootSec` was
@@ -52,7 +52,7 @@ The timer uses two triggers:
   timer activation — on a long-running system the trigger
   time is already past and systemd skips it silently.
 
-- `OnUnitInactiveSec=60s` — fires 60 seconds after the
+- `OnUnitInactiveSec=5min` — fires 5 minutes after the
   service finishes. This spaces runs relative to completion,
   not relative to start, avoiding pile-up when a scan takes
   longer than the interval.
@@ -60,6 +60,11 @@ The timer uses two triggers:
 Overlap is impossible: systemd will not start a service that
 is already running. `AccuracySec=1s` prevents coalescing
 delays. `Persistent=true` fires a missed run on next boot.
+
+The spool GC timer (`sonda-spool-gc.timer`) uses the same two
+triggers with `OnActiveSec=1min` and `OnUnitInactiveSec=1h`. Its
+service passes no flags, so its settings come from
+`/etc/sonda/config.toml` (see `2026-06-26-02-spool-gc.md`).
 
 ## Security
 
@@ -134,9 +139,10 @@ interaction is skipped when systemd is not running (chroots).
 1. Creates the `_sonda` system user and group if absent.
 2. Creates `/var/spool/sonda` and `/var/lib/sonda/metrics`
    with `2750 _sonda:_sonda`.
-3. Reloads systemd and enables/starts the timer as above.
+3. Reloads systemd and enables/starts the socket and the
+   timers as above.
 
-`prerm` (runs on remove): stops the timer.
+`prerm` (runs on remove): stops the socket and the timers.
 
 `postrm` (runs on remove and purge):
 

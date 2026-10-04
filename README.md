@@ -43,7 +43,8 @@ sudo dpkg -i sonda_*.deb
 ```
 
 The package installs a systemd timer (`sonda-scan.timer`) that
-periodically runs scans. If `dpkg -i` complains about missing
+periodically runs scans, and another one (`sonda-spool-gc.timer`)
+that periodically removes old spool entries. If `dpkg -i` complains about missing
 runtime dependencies, run `sudo apt-get -f install` to pull them in.
 
 ## Quick Start

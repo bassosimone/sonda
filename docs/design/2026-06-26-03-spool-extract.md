@@ -96,8 +96,8 @@ span directory, so the destination name alone is enough.
 
 ## How it walks
 
-Same sharding tree walk as `sonda spool gc` (depth-3 descent
-through `XXXX/X/X/<spanID>/`). Skips `.tmp` directories
+Same sharding tree walk that `sonda spool gc` uses for each
+data type (depth-3 descent through `XXXX/X/X/<spanID>/`). Skips `.tmp` directories
 (incomplete spans) and spans whose UUIDv7 timestamp is older
 than `--max-age`.
 
@@ -109,11 +109,11 @@ than `--max-age`.
 
 ## Integration with `sonda scan`
 
-`sonda scan` invokes `sonda etl-ptnop-qoe extract` as a subprocess
-before garbage collection, with `--max-age 1h`. This window
-covers the spans created during the current scan cycle.
-Extract runs before GC to ensure metrics are written before
-spans could be removed.
+`sonda scan` invokes `sonda etl-ptnop-qoe extract` as a subprocess,
+with `--max-age 1h`. This window covers the spans created during
+the current scan cycle. GC runs from its own timer and removes
+spans older than `6h` by default, so extract normally processes
+a span long before GC could remove it.
 
 ## Lambda-per-span, not global aggregation
 

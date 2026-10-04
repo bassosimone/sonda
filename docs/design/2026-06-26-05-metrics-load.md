@@ -129,10 +129,11 @@ dictionary encoding on repeated string columns (`msg`,
 ## Integration with `sonda scan`
 
 `sonda scan` invokes `sonda etl-ptnop-qoe load` as a subprocess after
-`sonda etl-ptnop-qoe extract` and before `sonda spool gc`. The ordering
-matters: extract must create `qoe.parquet` before load can
-read it, and load must copy metrics out before GC deletes the
-span.
+`sonda etl-ptnop-qoe extract`. The ordering matters: extract must
+create `qoe.parquet` before load can read it. Load must also copy
+metrics out before GC deletes the span: GC runs from its own timer
+and removes spans older than `6h` by default, which leaves plenty
+of margin.
 
 The systemd service passes `--metrics-dir /var/lib/sonda/metrics`
 and `--spool-dir /var/spool/sonda` to `sonda scan`. In turn,
