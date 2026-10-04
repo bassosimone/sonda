@@ -7,21 +7,9 @@ status: active
 
 ## Purpose
 
-Record what changed between v0.5.0 and the next release, and why.
-The other design documents describe the current state.
-
-## What changed
-
-- `sonda measure` (built on `nop`) became the `measure-ptnop` plugin
-(built on `ptnop`).
-
-- `internal/netstack` became `internal/ptnopspool`. The structured
-log parser and path helpers became `internal/ptnopdata` and
-`internal/ptnoppaths`.
-
-- `sonda spool`, `sonda scan`, and `sonda metrics` became plugins.
-`sonda metrics` is now `etl-ptnop-qoe`. The `sonda` binary only
-dispatches. See `2026-09-28-00-plugins.md`.
+Explain why sonda moved its measurements from `nop` to `ptnop`,
+and why this move also turned the subcommands into plugins named
+after the engine and the data they handle.
 
 ## Why ptnop
 
@@ -33,35 +21,37 @@ every column filled, without additional context from the caller.
 
 - See `go doc github.com/bassosimone/ptnop`.
 
-## Naming convention
+## Why not adapt `internal/netstack`
 
-- Measurement plugins: `measure-<engine>` (e.g., `measure-ptnop`).
-Results go to `$spoolDir/<engine>`.
+- The first plan was to keep `internal/netstack` and use ptnop as its
+backend.
 
-- ETL plugins: `etl-<source>-<dest>` (e.g., `etl-ptnop-qoe`). They
-read `$spoolDir/<source>` and write `$metricsDir/<dest>`.
+- netstack imitated the standard library: it exposed Go types with
+familiar signatures and moved tags around using the context. With
+ptnop, this meant converting results back and forth.
 
-- Per-span files: `<dest>.parquet` and `<dest>.loaded`, so several
-ETL plugins can process the same span.
+- A simpler design was to always run the measurement as a subcommand
+and give the caller accessors over the resulting span (now
+`internal/ptnopspool`). netstack is kept as a historical document
+(`2026-06-25-02-netstack.md`).
 
-- See `2026-06-25-01-spool-run.md` and `2026-06-26-03-spool-extract.md`.
+## Why name things after the engine
 
-## Breaking changes since v0.5.0
+- We expect more than one measurement engine (e.g., MSAK) and more
+than one way of processing each engine's output.
 
-- Spool and metrics move to `$spoolDir/ptnop` and `$metricsDir/qoe`.
-There is no automatic migration: after upgrading, `gc` does not
-remove spans left directly under `$spoolDir`.
+- So, the code that only makes sense for ptnop says so in its name:
+`internal/ptnopdata` (structured log schema), `internal/ptnoppaths`
+(spool files), `internal/ptnopspool` (span accessors).
 
-- `metrics.parquet` and `metrics.loaded` become `qoe.parquet` and
-`qoe.loaded`.
+- Likewise, plugins carry the engine and the data they produce:
+`measure-<engine>` (e.g., `measure-ptnop`) and
+`etl-<source>-<dest>` (e.g., `etl-ptnop-qoe`, which used to be
+`sonda metrics`).
 
-- The `spanID` log key becomes `spanId`, like the other keys.
+- Each engine's output is also its own data type, so the spool and
+the metrics directories separate data by type. See
+`2026-10-04-00-data-types.md`.
 
-- ptnop renamed `httpMethod`, `httpUrl`, and `serverProtocol` to
-`httpRequestMethod`, `httpRequestUrl`, and `dnsServerProtocol`.
-The Parquet column is still `server_protocol`.
-
-- `spool run` only runs sonda subcommands and always generates the
-span ID: `--span-id` is gone.
-
-- `scan` drops `-f` (use `--fail`) and requires `--config-file`.
+- Plugins also separate concerns at the process level. See
+`2026-09-28-00-plugins.md`.
