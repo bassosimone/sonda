@@ -68,8 +68,13 @@ func (d *SpanDir) ResolvedAddrsAAAA() ([]string, error) {
 	return d.resolvedAddrs("sondaDnsRecordsAAAA")
 }
 
+// OpenStdout opens the `stdout.txt` file in the span directory.
+func (d *SpanDir) OpenStdout() (testable.File, error) {
+	return d.Env.OpenFile(ptnoppaths.SpanStdout(d.Path), os.O_RDONLY, 0)
+}
+
 func (d *SpanDir) resolvedAddrs(msgName string) ([]string, error) {
-	filep, err := d.Env.OpenFile(ptnoppaths.SpanStdout(d.Path), os.O_RDONLY, 0)
+	filep, err := d.OpenStdout()
 	if err != nil {
 		return nil, ReadError{err}
 	}
@@ -107,7 +112,7 @@ func (d *SpanDir) resolvedAddrs(msgName string) ([]string, error) {
 //
 //  2. [ReadError] if we cannot open, scan, or parse the structured logs file
 func (d *SpanDir) ReflexiveAddr() (string, error) {
-	filep, err := d.Env.OpenFile(ptnoppaths.SpanStdout(d.Path), os.O_RDONLY, 0)
+	filep, err := d.OpenStdout()
 	if err != nil {
 		return "", ReadError{err}
 	}
