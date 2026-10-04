@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/bassosimone/runtimex"
+	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 	"github.com/google/uuid"
@@ -21,10 +22,13 @@ func gcMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
 
-	// Set command defaults.
+	// Set the command defaults.
+	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
+	presets := config.Defaults()
+	configErr := config.ReadInto(env, config.DefaultConfigFilePath, presets)
 	var (
-		maxAge   = 6 * time.Hour
-		spoolDir = "."
+		maxAge   = time.Duration(presets.Spool.GC.MaxAge)
+		spoolDir = presets.Core.SpoolDir
 	)
 
 	// Parse command line flags.
@@ -43,16 +47,23 @@ func gcMain(ctx context.Context, args []string) error {
 			"remove the sharding directories left empty.")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
-	fset.DurationVar(&maxAge, 0, "max-age", "Remove spans older than `DURATION`.")
+	fset.DurationVar(&maxAge, 0, "max-age", "Remove spans older than `DURATION`.",
+		"Default: `@DEFAULT_VALUE@`.")
+
 	fset.StringVar(&spoolDir, 0, "spool-dir",
 		"Top-level spool `DIR` containing the data type directories.",
 		"Default: `@DEFAULT_VALUE@`.")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
+	// Defer reporting config errors after flag parsing to honor `-h/--help`.
+	if configErr != nil {
+		logger.Error("config.Read", slog.Any("err", configErr))
+		env.Exit(1)
+	}
+
 	// Compute the cutoff time.
 	cutoff := time.Now().Add(-maxAge)
-	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
 	// Walk the spool structure: spoolDir/<dataType>/XXXX/X/X/<spanID>.
 	gcWalkSpool(logger, spoolDir, cutoff)
