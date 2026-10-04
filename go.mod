@@ -6,7 +6,6 @@ require (
 	github.com/bassosimone/closepool v0.0.0-20260928111144-9eef701bea99
 	github.com/bassosimone/deferexit v0.0.0-20260928111243-1ceec2208869
 	github.com/bassosimone/dnscodec v0.0.0-20260928111729-777d57044539
-	github.com/bassosimone/iox v0.0.0-20260928112414-6699b8367e72
 	github.com/bassosimone/ptnop v0.0.0-20261003115834-467885d02847
 	github.com/bassosimone/runtimex v0.0.0-20260928111457-f2fe934d5065
 	github.com/bassosimone/vclip v0.0.0-20260928114705-86887ca1c7df
@@ -26,6 +25,7 @@ require (
 	github.com/bassosimone/errclass v0.0.0-20260928111330-ca73f36d2c92 // indirect
 	github.com/bassosimone/flagparser v0.0.0-20260928111833-44e028b025f9 // indirect
 	github.com/bassosimone/flagscanner v0.0.0-20260928111414-ec0ac9195577 // indirect
+	github.com/bassosimone/iox v0.0.0-20260928112414-6699b8367e72 // indirect
 	github.com/bassosimone/minest v0.0.0-20260928113439-6dc61c09965e // indirect
 	github.com/bassosimone/must v0.0.0-20260928112453-2a38e7bb20e8 // indirect
 	github.com/bassosimone/safeconn v0.0.0-20260928112542-9eef1e681eca // indirect

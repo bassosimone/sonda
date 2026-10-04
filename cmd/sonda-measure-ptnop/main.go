@@ -4,27 +4,18 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
-	"maps"
-	"net/http"
-	"net/netip"
-	"net/url"
-	"os"
-	"slices"
-	"strings"
 	"time"
 
-	"github.com/bassosimone/dnscodec"
-	"github.com/bassosimone/iox"
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
+	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
-	"github.com/miekg/dns"
 )
 
 func main() {
@@ -33,63 +24,18 @@ func main() {
 
 const shortDescr = "Run a measurement pipeline using the ptnop engine."
 
-// options contains the command line options.
-type options struct {
-	alpn         []string
-	addrPort     string
-	dnsQueryName string
-	dnsQueryType string
-	httpBodyFile string
-	httpHeaders  []string
-	httpHost     string
-	httpMethod   string
-	httpScheme   string
-	pipeline     string
-	sni          string
-	tags         []string
-	timeout      time.Duration
-	urlPath      string
-}
-
-// pipelineInput contains the validated inputs shared by all pipelines.
-//
-// Fields that are nil under some configurations are explicitly documented as such.
-//
-// Use the [newPipelineInput] function to construct.
-type pipelineInput struct {
-	// addrPort is the remote endpoint address to connect to.
-	addrPort netip.AddrPort
-
-	// bodyFp is where to write the HTTP response body.
-	bodyFp io.WriteCloser
-
-	// env is the testable environ.
-	env *testable.Environ
-
-	// httpReq is the HTTP request (nil except for http, https, dns-over-https).
-	httpReq *http.Request
-
-	// logger emits the structured logs.
-	logger *slog.Logger
-
-	// name is the pipeline name.
-	name string
-
-	// query is the DNS query (nil except for dns-over-*).
-	query *dnscodec.Query
-
-	// tlsConfig is the TLS config (nil except for https, tls, dns-over-https, dns-over-tls).
-	tlsConfig *tls.Config
-}
-
 func realMain(ctx context.Context, args []string) error {
 	// 1. Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
 
 	// 2. Parse command line flags.
-	opts := &options{
-		timeout: 30 * time.Second,
+	opts := &ptnoprpc.Request{
+		Timeout: 30 * time.Second,
 	}
+	var (
+		dryRun      = false
+		ptnopSocket = "/run/sonda/inetd-ptnop.sock"
+	)
 	fset := vflag.NewFlagSet("sonda-measure-ptnop", vflag.ExitOnError)
 
 	fset.Exit = env.Exit
@@ -98,9 +44,18 @@ func realMain(ctx context.Context, args []string) error {
 
 	upr := vflag.NewDefaultUsagePrinter()
 	fset.UsagePrinter = upr
-	upr.AddDescription(shortDescr+" Print structured logs "+
-		"on the stdout. Optionally, save the HTTP response body on a separate file (only for "+
-		"the `http` and `https` pipelines).",
+	upr.AddDescription(shortDescr,
+		"The measurement runs in the remote `sonda-inetd-ptnop` process, with "+
+			"which we communicate using a Unix domain socket.",
+		"Output",
+		"    NDJSON. The first line is a `sondaRemoteMeasurementResult` event containing:",
+		"        exitCode",
+		"            remote measurement exit code",
+		"        spanDir",
+		"            measurement path within the spool dir",
+		"        spanId",
+		"            measurement span ID",
+		"    The following lines copy the remote structured logs, after the measurement completes.",
 		"Pipeline",
 		"    dns-over-https",
 		"        Requires: `--addr-port <addrport>`",
@@ -155,7 +110,9 @@ func realMain(ctx context.Context, args []string) error {
 		"Exit Code",
 		"    0 (success)",
 		"    1 (measurement error)",
-		"    2 (usage error)")
+		"    2 (usage error)",
+		"    3 (unix socket dial error)",
+		"    4 (any other error)")
 
 	upr.AddExamples(
 		"dns-over-https",
@@ -224,54 +181,60 @@ func realMain(ctx context.Context, args []string) error {
 			"          --addr-port 74.125.250.129:19302",
 	)
 
-	fset.StringSliceVar(&opts.alpn, 0, "alpn",
-		"Negotiate the given `PROTO` using TLS ALPN extension.",
+	fset.BoolVar(&dryRun, 'n', "dry-run", "Print RPC request to the stdout and exit.")
+
+	fset.StringSliceVar(&opts.ALPN, 0, "alpn",
+		"Negotiate the given `PROTO` using the TLS ALPN extension.",
 		"Repeat to negotiate multiple protocols.")
 
-	fset.StringVar(&opts.addrPort, 0, "addr-port",
+	fset.StringVar(&opts.AddrPort, 0, "addr-port",
 		"Connect to the transport endpoint at `ADDRPORT`.",
 		"Quote IPv6 addresses using `[` and `]`.")
 
-	fset.StringVar(&opts.dnsQueryName, 0, "dns-query-name",
+	fset.StringVar(&opts.DNSQueryName, 0, "dns-query-name",
 		"Use the given DNS query `NAME`.")
 
-	fset.StringVar(&opts.dnsQueryType, 0, "dns-query-type",
+	fset.StringVar(&opts.DNSQueryType, 0, "dns-query-type",
 		"Use the given DNS query `TYPE` (e.g., A, AAAA).")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 
-	fset.StringVar(&opts.httpBodyFile, 0, "http-body-file",
-		"Write the HTTP response body file at `PATH`.",
-		"Default: discard the response body.")
+	fset.BoolVar(&opts.HTTPBodyFile, 0, "http-body-file",
+		"Save the HTTP response body inside the spool dir.",
+		"Default: @DEFAULT_VALUE@.")
 
-	fset.StringSliceVar(&opts.httpHeaders, 0, "http-header",
+	fset.StringSliceVar(&opts.HTTPHeaders, 0, "http-header",
 		"Send the given HTTP request `HEADER` (`KEY: VALUE`).",
 		"Repeat to set additional headers.")
 
-	fset.StringVar(&opts.httpHost, 0, "http-host",
+	fset.StringVar(&opts.HTTPHost, 0, "http-host",
 		"Use `HOST` as the host header value.")
 
-	fset.StringVar(&opts.httpMethod, 0, "http-method",
+	fset.StringVar(&opts.HTTPMethod, 0, "http-method",
 		"Use `METHOD` as the request method.")
 
-	fset.StringVar(&opts.httpScheme, 0, "http-scheme",
+	fset.StringVar(&opts.HTTPScheme, 0, "http-scheme",
 		"Use `SCHEME` as the URL scheme.")
 
-	fset.StringVar(&opts.pipeline, 0, "pipeline",
+	fset.StringVar(&opts.Pipeline, 0, "pipeline",
 		"Use `PIPELINE` as the measurement pipeline.")
 
-	fset.StringVar(&opts.sni, 0, "sni",
+	fset.StringVar(&ptnopSocket, 0, "ptnop-socket",
+		"Unix domain socket `PATH` of the `sonda-inetd-ptnop` server.",
+		"Default: `@DEFAULT_VALUE@`.")
+
+	fset.StringVar(&opts.SNI, 0, "sni",
 		"Use `HOST` in the TLS SNI extension.")
 
-	fset.StringSliceVar(&opts.tags, 0, "tag",
+	fset.StringSliceVar(&opts.Tags, 0, "tag",
 		"Annotate the structured logs with the given `KEY=VALUE` tag.",
-		"Repeat to annotate with the logs multiple tags.")
+		"Repeat to annotate the logs with multiple tags.")
 
-	fset.DurationVar(&opts.timeout, 0, "timeout",
+	fset.DurationVar(&opts.Timeout, 0, "timeout",
 		"Timeout the measurement after `DURATION`.",
 		"Default value: `@DEFAULT_VALUE@`.")
 
-	fset.StringVar(&opts.urlPath, 0, "url-path",
+	fset.StringVar(&opts.URLPath, 0, "url-path",
 		"Use the given `PATH` as the URL path.")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
@@ -282,41 +245,44 @@ func realMain(ctx context.Context, args []string) error {
 		env.Exit(0)
 	}
 
-	// 3. Create the structured logger.
-	logger := newLogger(env, opts.tags)
+	// 3. Honor the `-n/--dry-run` flag.
+	if dryRun {
+		fmt.Fprintf(env.Stdout, "%s\n", runtimex.PanicOnError1(json.Marshal(opts)))
+		env.Exit(0)
+	}
 
-	// 4. Configure the pipeline timeout.
-	//
-	// Note: must precede creating the HTTP request so we bound it to the deadline.
-	ctx, cancel := context.WithTimeout(ctx, opts.timeout)
-	defer cancel()
+	// 4. Create the structured logger.
+	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
-	// 5. Validate the inputs.
-	input, err := newPipelineInput(ctx, env, opts, logger)
+	// 5. Refuse to run inside `sonda spool run`.
+	if env.Getenv("SONDA_SPAN_ID") != "" {
+		logger.Error("cannot run inside `sonda spool run`")
+		env.Exit(2)
+	}
+
+	// 6. Create the connection with `sonda-inetd-ptnop`.
+	conn, err := ptnoprpc.Dial(ctx, env, ptnopSocket)
 	if err != nil {
-		env.Exit(logUsageError(logger, "newPipelineInput", err))
+		logger.Error("ptnoprpc.Dial", slog.Any("err", err))
+		env.Exit(3)
+	}
+	defer conn.Close()
+
+	// 7. Send the request and receive the response.
+	spanDir, err := conn.Run(ctx, opts)
+	if err != nil {
+		logger.Error("conn.Run", slog.Any("err", err))
+		if _, ok := errors.AsType[ptnoprpc.UsageError](err); ok {
+			env.Exit(2)
+		}
+		env.Exit(4)
 	}
 
-	// 6. Run the pipeline.
-	exitCode := ptnopRunPipeline(ctx, input)
-
-	// 7. Make sure we can close the response body.
-	if err := input.Close(); err != nil {
-		env.Exit(logFailure(logger, "closeFile", err, 1))
-	}
-
-	// 8. Exit with the pipeline exit code.
-	env.Exit(exitCode)
-	return nil
-}
-
-// newLogger creates the JSON logger bound to tags.
-//
-// We omit the top-level time field: library events carry their own times.
-func newLogger(env *testable.Environ, tags []string) *slog.Logger {
-	// Configure the JSON handler.
-	logger := slog.New(slog.NewJSONHandler(env.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
+	// 8. Print the response to the stdout.
+	//
+	// Like `sonda-inetd-ptnop`, we omit the top-level time field, so that this
+	// line has the same shape as the structured logs we copy below.
+	stdoutLogger := slog.New(slog.NewJSONHandler(env.Stdout, &slog.HandlerOptions{
 		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
 			if attr.Key == slog.TimeKey && len(groups) <= 0 {
 				return slog.Attr{}
@@ -324,160 +290,26 @@ func newLogger(env *testable.Environ, tags []string) *slog.Logger {
 			return attr
 		},
 	}))
-
-	// Collect unique key/values in the tags and honor `SONDA_SPAN_ID`.
-	//
-	// The CLI flags take precedence over the environment.
-	//
-	// Subsequent flags take precedence over previous flags.
-	uniq := make(map[string]string)
-	if value := env.Getenv("SONDA_SPAN_ID"); value != "" {
-		uniq["spanId"] = value
-	}
-	for _, tag := range tags {
-		if key, value, ok := strings.Cut(tag, "="); ok {
-			uniq[key] = value
-		}
-	}
-
-	// Build logger with the unique (sorted) keys.
-	for _, key := range slices.Sorted(maps.Keys(uniq)) {
-		logger = logger.With(key, uniq[key])
-	}
-	return logger
-}
-
-// logFailure logs a sondaFailure event and returns the exit code.
-func logFailure(logger *slog.Logger, operation string, err error, exitCode int) int {
-	logger.Error(
-		"sondaFailure",
-		slog.String("operation", operation),
-		slog.Any("err", err),
-		slog.Int("exitCode", exitCode),
+	stdoutLogger.Info(
+		"sondaRemoteMeasurementResult",
+		slog.Int("exitCode", spanDir.ExitCode),
+		slog.String("spanDir", spanDir.Path),
+		slog.String("spanId", spanDir.SpanID),
 	)
-	return exitCode
-}
 
-// logUsageError is like [logFailure] with exit code 2.
-func logUsageError(logger *slog.Logger, operation string, err error) int {
-	return logFailure(logger, operation, err, 2)
-}
-
-// newPipelineInput validates the options and returns the inputs that the selected pipeline needs.
-func newPipelineInput(ctx context.Context,
-	env *testable.Environ, opts *options, logger *slog.Logger) (*pipelineInput, error) {
-	input := &pipelineInput{
-		addrPort:  netip.AddrPort{},
-		bodyFp:    iox.NopWriteCloser(io.Discard),
-		env:       env,
-		httpReq:   nil,
-		logger:    logger,
-		name:      opts.pipeline,
-		query:     nil,
-		tlsConfig: nil,
-	}
-
-	// 1. Validate the endpoint.
-	addrPort, err := netip.ParseAddrPort(opts.addrPort)
+	// 9. Stream the structured logs to the stdout.
+	filep, err := spanDir.OpenStdout()
 	if err != nil {
-		return nil, err
+		logger.Error("spanDir.OpenStdout", slog.Any("err", err))
+		env.Exit(4)
 	}
-	input.addrPort = addrPort
-
-	// 2. Build the TLS config, if needed.
-	switch opts.pipeline {
-	case "dns-over-https", "dns-over-tls", "https", "tls":
-		if opts.sni == "" {
-			return nil, errors.New("the SNI must not be empty")
-		}
-		input.tlsConfig = &tls.Config{
-			NextProtos: opts.alpn,
-			ServerName: opts.sni,
-		}
+	defer filep.Close()
+	if _, err := io.Copy(env.Stdout, filep); err != nil {
+		logger.Error("io.Copy", slog.Any("err", err))
+		env.Exit(4)
 	}
 
-	// 3. Build the HTTP request, if needed.
-	switch opts.pipeline {
-	case "dns-over-https", "http", "https":
-		req, err := newHTTPRequest(ctx, opts)
-		if err != nil {
-			return nil, err
-		}
-		input.httpReq = req
-	}
-
-	// 4. Build the DNS query, if needed.
-	switch opts.pipeline {
-	case "dns-over-https", "dns-over-tcp", "dns-over-tls", "dns-over-udp":
-		qtype := dns.StringToType[opts.dnsQueryType]
-		if qtype == 0 {
-			return nil, fmt.Errorf("invalid dns query type: %q", opts.dnsQueryType)
-		}
-		query := dnscodec.NewQuery(opts.dnsQueryName, qtype)
-		if _, err := query.NewMsg(); err != nil { // make sure the name is OK
-			return nil, err
-		}
-		input.query = query
-	}
-
-	// 5. Open the body file, if needed
-	//
-	// Using `0640` because `/var/spool/sonda` is `_sonda:_sonda` and `_sonda` must be
-	// able to read the spool without going through `sudo`.
-	switch opts.pipeline {
-	case "http", "https":
-		if opts.httpBodyFile != "" {
-			filep, err := env.OpenFile(opts.httpBodyFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0640)
-			if err != nil {
-				return nil, err
-			}
-			input.bodyFp = filep
-		}
-	}
-
-	return input, nil
-}
-
-// Close implements [io.Closer]
-func (pi *pipelineInput) Close() error {
-	return pi.bodyFp.Close()
-}
-
-// newHTTPRequest builds the HTTP request from the options.
-func newHTTPRequest(ctx context.Context, opts *options) (*http.Request, error) {
-	// 1. Make sure the input is valid.
-	if opts.httpHost == "" {
-		return nil, errors.New("http host is empty")
-	}
-	if opts.httpMethod == "" {
-		return nil, errors.New("http method is empty")
-	}
-	if opts.httpScheme == "" {
-		return nil, errors.New("http scheme is empty")
-	}
-	if opts.urlPath == "" {
-		return nil, errors.New("url path is empty")
-	}
-
-	// 2. Create the request.
-	reqURL := (&url.URL{Scheme: opts.httpScheme, Host: opts.httpHost, Path: opts.urlPath}).String()
-	req, err := http.NewRequestWithContext(ctx, opts.httpMethod, reqURL, http.NoBody)
-	if err != nil {
-		return nil, err
-	}
-
-	// 3. Assign the optional headers.
-	for _, h := range opts.httpHeaders {
-		key, value, ok := strings.Cut(h, ":")
-		if !ok {
-			return nil, fmt.Errorf("missing colon in header: %s", h)
-		}
-		req.Header.Add(strings.TrimSpace(key), strings.TrimSpace(value))
-	}
-	return req, nil
-}
-
-// errUnknownPipeline returns the error for an unknown pipeline name.
-func errUnknownPipeline(name string) error {
-	return fmt.Errorf("unknown pipeline name: %q", name)
+	// 10. Use the same exit code as the remote invocation.
+	env.Exit(spanDir.ExitCode)
+	return nil
 }
