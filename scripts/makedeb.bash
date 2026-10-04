@@ -52,6 +52,8 @@ go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 	-o "$stage/usr/libexec/sonda/sonda-spool" ./cmd/sonda-spool
 chmod 755 "$stage/usr/libexec/sonda/sonda-spool"
 
+install -m 755 cmd/sonda-status/sonda-status "$stage/usr/libexec/sonda/"
+
 # Compute the libc6 version the binary actually requires: the highest
 # GLIBC_x.y symbol version it references. This mirrors what
 # dpkg-shlibdeps derives for real Debian packages.

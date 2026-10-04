@@ -6,3 +6,4 @@ all:
 	go build -v ./cmd/sonda-measure-ptnop
 	go build -v ./cmd/sonda-scan
 	go build -v ./cmd/sonda-spool
+	install -m 755 cmd/sonda-status/sonda-status .

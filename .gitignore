@@ -13,4 +13,5 @@ __pycache__/
 /sonda-scan.exe
 /sonda-spool
 /sonda-spool.exe
+/sonda-status
 /.venv/
