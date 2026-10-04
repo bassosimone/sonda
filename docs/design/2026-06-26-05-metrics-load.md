@@ -120,9 +120,11 @@ dictionary encoding on repeated string columns (`msg`,
 
 ## Flags
 
-- `--spool-dir DIR` — root of the spool tree (default: `.`).
+- `--spool-dir DIR` — root of the spool tree, containing the data
+  type directories (default: `/var/spool/sonda`).
 
-- `--metrics-dir DIR` — root of the daily metrics tree (default: `.`).
+- `--metrics-dir DIR` — root of the metrics tree, containing the data
+  type directories (default: `/var/lib/sonda/metrics`).
 
 - `--max-age DURATION` — ignore spans older than this (default: `24h`).
 

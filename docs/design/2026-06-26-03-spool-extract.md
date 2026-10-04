@@ -103,7 +103,8 @@ than `--max-age`.
 
 ## Flags
 
-- `--spool-dir DIR` — root of the spool tree (default: `.`).
+- `--spool-dir DIR` — root of the spool tree, containing the data
+  type directories (default: `/var/spool/sonda`).
 - `--max-age DURATION` — only extract spans newer than this
   (default: `6h`).
 
