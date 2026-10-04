@@ -116,10 +116,6 @@ covers several missed runs. GC runs from its own timer and removes
 spans older than `6h` by default, so extract normally processes
 a span long before GC could remove it.
 
-`sonda scan` can still run extract as a workflow step (`run: extract`,
-with `--max-age 1h` unless `max_age` says otherwise), which is
-handy in development. The default workflow no longer does.
-
 ## Lambda-per-span, not global aggregation
 
 Each span gets its own Parquet file. There is no cross-span

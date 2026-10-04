@@ -86,8 +86,10 @@ shell, and no capabilities.
 Systemd hardening directives are applied in three tiers:
 
 1. Filesystem isolation: `ProtectSystem=strict` (read-only
-   root), `ReadWritePaths=/var/spool/sonda` (the one
-   exception), `ProtectHome=yes`, `PrivateTmp=yes`.
+   root), `ProtectHome=yes`, `PrivateTmp=yes`, and
+   `ReadWritePaths=` only where a unit writes: the spool for
+   `sonda-inetd-ptnop` and GC, the spool and the metrics for
+   the ETL, and nothing for the scan.
 
 2. Kernel isolation: `PrivateDevices=yes`,
    `ProtectKernelTunables=yes`, `ProtectKernelModules=yes`,

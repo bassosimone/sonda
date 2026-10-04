@@ -136,16 +136,14 @@ load when extract fails. Load must also copy metrics out before GC
 deletes the span: GC runs from its own timer and removes spans older
 than `6h` by default, which leaves several hourly runs of margin.
 
-The systemd service passes `--metrics-dir /var/lib/sonda/metrics`
-and `--spool-dir /var/spool/sonda` to `sonda scan`. In turn,
-`sonda scan` appends the specific datatype required by
-each specific action it executes. Therefore, the directories
-that `sonda etl-ptnop-qoe` sees are `/var/lib/sonda/metrics/$dataType`
-and `/var/spool/sonda/$dataType`.
+`--spool-dir` and `--metrics-dir` are the top-level directories
+(default: `/var/spool/sonda` and `/var/lib/sonda/metrics`), and
+`load` appends its data types: it reads `<spool-dir>/ptnop` and
+writes `<metrics-dir>/qoe`.
 
 The metrics directory is created by the Debian `postinst`
 with `_sonda:_sonda` ownership and `2750` permissions, matching
-the spool directory. The systemd unit's `ReadWritePaths`
+the spool directory. The ETL unit's `ReadWritePaths=`
 includes both directories.
 
 ## What this is not

@@ -13,7 +13,6 @@ Group=_sonda
 
 NoNewPrivileges=yes
 ProtectSystem=strict
-ReadWritePaths=/var/spool/sonda /var/lib/sonda/metrics
 ProtectHome=yes
 PrivateTmp=yes
 PrivateDevices=yes

@@ -5,5 +5,5 @@ package main
 import "github.com/bassosimone/sonda/cmd/internal/plugincommand"
 
 func main() {
-	plugincommand.Main(plugincommand.FlagAllowReExec, scanMain)
+	plugincommand.Main(0, scanMain)
 }

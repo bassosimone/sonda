@@ -44,7 +44,7 @@ read `$spoolDir/<source>` and write `$metricsDir/<dest>`.
 - Per-span files: `<dest>.parquet` and `<dest>.loaded`, so several
 ETL plugins can process the same span.
 
-- See `2026-06-25-03-scan.md` and `2026-06-26-03-spool-extract.md`.
+- See `2026-06-25-01-spool-run.md` and `2026-06-26-03-spool-extract.md`.
 
 ## Breaking changes since v0.5.0
 

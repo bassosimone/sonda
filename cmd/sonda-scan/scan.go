@@ -22,9 +22,7 @@ func scanMain(ctx context.Context, args []string) error {
 	// Set the command defaults.
 	var (
 		fail         = false
-		metricsDir   = config.MetricsDir
 		ptnopSocket  = config.PtnopSocketPath
-		spoolDir     = config.SpoolDir
 		workflowFile = ""
 	)
 
@@ -39,23 +37,14 @@ func scanMain(ctx context.Context, args []string) error {
 	fset.UsagePrinter = upr
 	upr.AddDescription(
 		"Run the steps listed in the `--workflow-file` YAML file, in order. " +
-			"Measurement steps send requests to the `sonda-inetd-ptnop` server " +
-			"listening at `--ptnop-socket`, which must store its results under " +
-			"`<spool-dir>/ptnop`. " +
-			"The `extract` and `load` steps process that spool and write " +
-			"daily metrics under `<metrics-dir>/qoe`. A failed step does not stop " +
-			"the scan unless `--fail` is set.")
+			"Each step sends a measurement request to the `sonda-inetd-ptnop` server " +
+			"listening at `--ptnop-socket`, which stores the results in the spool. " +
+			"A failed step does not stop the scan unless `--fail` is set.")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.BoolVar(&fail, 0, "fail", "Exit with error on first failure.")
-	fset.StringVar(&metricsDir, 0, "metrics-dir",
-		"Top-level `DIR` containing processed metrics.",
-		"Default: `@DEFAULT_VALUE@`.")
 	fset.StringVar(&ptnopSocket, 0, "ptnop-socket",
 		"Unix domain socket `PATH` of the `sonda-inetd-ptnop` server.",
-		"Default: `@DEFAULT_VALUE@`.")
-	fset.StringVar(&spoolDir, 0, "spool-dir",
-		"Top-level `DIR` containing raw measurement results.",
 		"Default: `@DEFAULT_VALUE@`.")
 	fset.StringVar(&workflowFile, 0, "workflow-file", "Load steps from `FILE` (required).")
 
@@ -108,8 +97,6 @@ func scanMain(ctx context.Context, args []string) error {
 		"dns-over-udp":   &dnsOverUDPRunner{Client: ptnopClient, State: state},
 		"dns-over-https": &dnsOverHTTPSRunner{Client: ptnopClient, State: state},
 		"https":          &httpsRunner{Client: ptnopClient, State: state},
-		"extract":        &extractRunner{Env: env, Logger: logger, SpoolDir: spoolDir},
-		"load":           &loadRunner{Env: env, Logger: logger, MetricsDir: metricsDir, SpoolDir: spoolDir},
 	}
 
 	// Execute each step in order.
@@ -136,8 +123,7 @@ type singleStep struct {
 	Name string `yaml:"name"`
 
 	// Run selects the operation to execute (e.g., "stun",
-	// "dns-over-udp", "dns-over-https", "https", "extract",
-	// "load").
+	// "dns-over-udp", "dns-over-https", "https").
 	Run string `yaml:"run"`
 
 	// With contains operation-specific parameters (e.g., "server",
