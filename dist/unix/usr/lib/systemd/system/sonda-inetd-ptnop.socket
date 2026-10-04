@@ -1,0 +1,12 @@
+[Unit]
+Description=Serve sonda ptnop measurement requests
+
+[Socket]
+ListenStream=/run/sonda/inetd-ptnop.sock
+SocketUser=_sonda
+SocketGroup=_sonda
+SocketMode=0600
+Accept=yes
+
+[Install]
+WantedBy=sockets.target

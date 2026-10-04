@@ -1,0 +1,27 @@
+[Unit]
+Description=Serve sonda ptnop measurement requests (connection %i)
+
+[Service]
+ExecStart=/usr/libexec/sonda/sonda-inetd-ptnop --spool-dir /var/spool/sonda/ptnop
+StandardInput=socket
+StandardError=journal
+User=_sonda
+Group=_sonda
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/spool/sonda
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+CapabilityBoundingSet=
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallFilter=@system-service
+RestrictRealtime=yes
