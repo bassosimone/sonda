@@ -3,6 +3,7 @@ module github.com/bassosimone/sonda
 go 1.27.1
 
 require (
+	github.com/BurntSushi/toml v1.6.0
 	github.com/bassosimone/closepool v0.0.0-20260928111144-9eef701bea99
 	github.com/bassosimone/deferexit v0.0.0-20260928111243-1ceec2208869
 	github.com/bassosimone/dnscodec v0.0.0-20260928111729-777d57044539
