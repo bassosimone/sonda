@@ -35,14 +35,22 @@ For the full list of commands and per\-command help, run:
 Steps executed by the periodic scan.
 .TP
 .I /var/spool/sonda/
-Spool with one directory per measurement, containing the command
-line, stdout, stderr, and exit code.
+Spool with one directory per measurement, containing the request,
+stdout, stderr, and exit code.
 The default steps remove entries older than six hours.
 .TP
 .I /var/lib/sonda/metrics/
 Daily QoE metrics, written as
 .IR qoe/YYYY/MM/DD/YYYY\-MM\-DD.parquet .
 Nothing removes these files.
+.TP
+.I /run/sonda/inetd\-ptnop.sock
+Socket served by
+.BR sonda\-inetd\-ptnop ,
+which accepts ptnop measurement requests.
+Members of the
+.B _sonda
+group can connect to it.
 .TP
 .I /usr/libexec/sonda/
 The
