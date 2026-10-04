@@ -19,12 +19,14 @@ func scanMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
 
-	// Set command defaults.
+	// Set the command defaults.
+	presets := config.Defaults()
+	configErr := config.ReadInto(env, config.DefaultConfigFilePath, presets)
 	var (
 		fail         = false
-		metricsDir   = "."
+		metricsDir   = presets.Core.MetricsDir
 		ptnopSocket  = config.PtnopSocketPath
-		spoolDir     = "."
+		spoolDir     = presets.Core.SpoolDir
 		workflowFile = ""
 	)
 
@@ -78,6 +80,13 @@ func scanMain(ctx context.Context, args []string) error {
 	if len(args) <= 0 {
 		fset.PrintUsageString(fset.Stdout)
 		env.Exit(0)
+	}
+
+	// Defer reporting config errors after flag parsing and after printing
+	// the usage to honor `-h/--help` and running without flags.
+	if configErr != nil {
+		logger.Error("config.Read", slog.Any("err", configErr))
+		env.Exit(1)
 	}
 
 	// Determine which steps to execute.
