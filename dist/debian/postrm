@@ -16,7 +16,7 @@ case "$1" in
         # packages can be relied upon (init-system-helpers is
         # essential today, but the reference stays defensive).
         if [ -x "/usr/bin/deb-systemd-helper" ]; then
-            deb-systemd-helper purge 'sonda-inetd-ptnop.socket' 'sonda-scan.timer' >/dev/null || true
+            deb-systemd-helper purge 'sonda-inetd-ptnop.socket' 'sonda-scan.timer' 'sonda-spool-gc.timer' >/dev/null || true
         fi
 
         # Remove the _sonda system user and group.

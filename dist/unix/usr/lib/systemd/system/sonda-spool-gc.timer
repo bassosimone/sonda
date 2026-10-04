@@ -1,0 +1,9 @@
+[Unit]
+Description=Garbage collect the sonda spool periodically
+
+[Timer]
+OnActiveSec=1min
+OnUnitInactiveSec=1h
+
+[Install]
+WantedBy=timers.target
