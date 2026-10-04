@@ -21,11 +21,11 @@ func scanMain(ctx context.Context, args []string) error {
 
 	// Set command defaults.
 	var (
-		configFile  = ""
-		fail        = false
-		metricsDir  = "."
-		ptnopSocket = config.PtnopSocketPath
-		spoolDir    = "."
+		fail         = false
+		metricsDir   = "."
+		ptnopSocket  = config.PtnopSocketPath
+		spoolDir     = "."
+		workflowFile = ""
 	)
 
 	// Parse command line flags.
@@ -38,7 +38,7 @@ func scanMain(ctx context.Context, args []string) error {
 	upr := vflag.NewDefaultUsagePrinter()
 	fset.UsagePrinter = upr
 	upr.AddDescription(
-		"Run the steps listed in the `--config-file` YAML file, in order. " +
+		"Run the steps listed in the `--workflow-file` YAML file, in order. " +
 			"Measurement steps send requests to the `sonda-inetd-ptnop` server " +
 			"listening at `--ptnop-socket`, which must store its results under " +
 			"`<spool-dir>/ptnop`. " +
@@ -48,7 +48,6 @@ func scanMain(ctx context.Context, args []string) error {
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.BoolVar(&fail, 0, "fail", "Exit with error on first failure.")
-	fset.StringVar(&configFile, 0, "config-file", "Load steps from `FILE` (required).")
 	fset.StringVar(&metricsDir, 0, "metrics-dir",
 		"Top-level `DIR` containing processed metrics.",
 		"Default: `@DEFAULT_VALUE@`.")
@@ -58,6 +57,7 @@ func scanMain(ctx context.Context, args []string) error {
 	fset.StringVar(&spoolDir, 0, "spool-dir",
 		"Top-level `DIR` containing raw measurement results.",
 		"Default: `@DEFAULT_VALUE@`.")
+	fset.StringVar(&workflowFile, 0, "workflow-file", "Load steps from `FILE` (required).")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
@@ -81,20 +81,20 @@ func scanMain(ctx context.Context, args []string) error {
 	}
 
 	// Determine which steps to execute.
-	if configFile == "" {
-		logger.Error("no `--config-file` specified; nothing to do.")
+	if workflowFile == "" {
+		logger.Error("no `--workflow-file` specified; nothing to do.")
 		env.Exit(2)
 	}
-	steps, err := loadConfigFile(configFile)
+	steps, err := loadWorkflowFile(workflowFile)
 	if err != nil {
-		logger.Error("loading config", slog.Any("err", err))
+		logger.Error("loading workflow", slog.Any("err", err))
 		env.Exit(2)
 	}
 
 	// Connect to the ptnop server, using a single connection for all the steps.
 	//
-	// We connect after loading the config, so `scan` fails early when the server
-	// is not running, but still prints the usage or config errors without it.
+	// We connect after loading the workflow, so `scan` fails early when the server
+	// is not running, but still prints the usage or workflow errors without it.
 	ptnopClient, err := ptnoprpc.Dial(ctx, env, ptnopSocket)
 	if err != nil {
 		logger.Error("connecting to the ptnop server", slog.Any("err", err))
