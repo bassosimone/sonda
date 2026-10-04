@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"log/slog"
-	"path/filepath"
 	"sync"
 
 	"github.com/bassosimone/runtimex"
@@ -65,10 +64,6 @@ func scanMain(ctx context.Context, args []string) error {
 	// Emit structured logs to stderr.
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
-	// Create datatype scoped directories.
-	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
-	qoeMetricsDir := filepath.Join(metricsDir, "qoe")
-
 	// Construct shared dependencies.
 	state := &sharedState{}
 
@@ -113,8 +108,8 @@ func scanMain(ctx context.Context, args []string) error {
 		"dns-over-udp":   &dnsOverUDPRunner{Client: ptnopClient, State: state},
 		"dns-over-https": &dnsOverHTTPSRunner{Client: ptnopClient, State: state},
 		"https":          &httpsRunner{Client: ptnopClient, State: state},
-		"extract":        &extractRunner{Env: env, Logger: logger, SpoolDir: ptnopSpoolDir},
-		"load":           &loadRunner{Env: env, Logger: logger, MetricsDir: qoeMetricsDir, SpoolDir: ptnopSpoolDir},
+		"extract":        &extractRunner{Env: env, Logger: logger, SpoolDir: spoolDir},
+		"load":           &loadRunner{Env: env, Logger: logger, MetricsDir: metricsDir, SpoolDir: spoolDir},
 	}
 
 	// Execute each step in order.

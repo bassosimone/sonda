@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/bassosimone/runtimex"
+	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/ptnopdata"
 	"github.com/bassosimone/sonda/internal/ptnoppaths"
 	"github.com/bassosimone/sonda/internal/testable"
@@ -24,9 +25,11 @@ import (
 func extractMain(ctx context.Context, args []string) error {
 	env := testable.ContextEnviron(ctx)
 
+	presets := config.Defaults()
+	configErr := config.ReadInto(env, config.DefaultConfigFilePath, presets)
 	var (
 		maxAge   = 6 * time.Hour
-		spoolDir = "."
+		spoolDir = presets.Core.SpoolDir
 	)
 
 	fset := vflag.NewFlagSet("sonda-etl-ptnop-qoe extract", vflag.ExitOnError)
@@ -38,19 +41,31 @@ func extractMain(ctx context.Context, args []string) error {
 	upr := vflag.NewDefaultUsagePrinter()
 	fset.UsagePrinter = upr
 	upr.AddDescription(
-		"For each span newer than `--max-age`, read the structured logs in " +
+		"For each span under `<spool-dir>/ptnop` newer than `--max-age`, read the structured logs in " +
 			"`stdout.txt` and write the QoE metrics to `qoe.parquet` inside the " +
 			"span directory. Skip spans that already contain `qoe.parquet`.")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.DurationVar(&maxAge, 0, "max-age", "Only extract spans newer than `DURATION`.")
-	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
+	fset.StringVar(&spoolDir, 0, "spool-dir",
+		"Top-level spool `DIR` containing the data type directories.",
+		"Default: `@DEFAULT_VALUE@`.")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using ExitOnError
 
-	cutoff := time.Now().Add(-maxAge)
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
-	extractWalkDir(logger, spoolDir, cutoff, 3)
+
+	// Defer reporting config errors after flag parsing to honor `-h/--help`.
+	if configErr != nil {
+		logger.Error("config.Read", slog.Any("err", configErr))
+		env.Exit(1)
+	}
+
+	// We read from the ptnop data type directory.
+	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
+
+	cutoff := time.Now().Add(-maxAge)
+	extractWalkDir(logger, ptnopSpoolDir, cutoff, 3)
 	return nil
 }
 

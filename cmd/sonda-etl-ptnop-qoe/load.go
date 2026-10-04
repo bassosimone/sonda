@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/bassosimone/runtimex"
+	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 	"github.com/google/uuid"
@@ -26,10 +27,12 @@ import (
 func loadMain(ctx context.Context, args []string) error {
 	env := testable.ContextEnviron(ctx)
 
+	presets := config.Defaults()
+	configErr := config.ReadInto(env, config.DefaultConfigFilePath, presets)
 	var (
 		maxAge     = 24 * time.Hour
-		metricsDir = "."
-		spoolDir   = "."
+		metricsDir = presets.Core.MetricsDir
+		spoolDir   = presets.Core.SpoolDir
 	)
 
 	fset := vflag.NewFlagSet("sonda-etl-ptnop-qoe load", vflag.ExitOnError)
@@ -41,30 +44,44 @@ func loadMain(ctx context.Context, args []string) error {
 	upr := vflag.NewDefaultUsagePrinter()
 	fset.UsagePrinter = upr
 	upr.AddDescription(
-		"Append the rows of each span's `qoe.parquet` to the daily file " +
-			"`<metrics-dir>/YYYY/MM/DD/YYYY-MM-DD.parquet`, choosing the day from " +
+		"Append the rows of each `<spool-dir>/ptnop` span's `qoe.parquet` to the daily file " +
+			"`<metrics-dir>/qoe/YYYY/MM/DD/YYYY-MM-DD.parquet`, choosing the day from " +
 			"the span's UTC timestamp. A `qoe.loaded` file marks the spans already " +
-			"loaded, and a lock file in `--metrics-dir` serializes concurrent runs.")
+			"loaded, and a lock file in `<metrics-dir>/qoe` serializes concurrent runs.")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.DurationVar(&maxAge, 0, "max-age", "Ignore spans older than `DURATION`.")
-	fset.StringVar(&metricsDir, 0, "metrics-dir", "Write daily Parquet files to `DIR` instead of `@DEFAULT_VALUE@`.")
-	fset.StringVar(&spoolDir, 0, "spool-dir", "Read span metrics from `DIR` instead of `@DEFAULT_VALUE@`.")
+	fset.StringVar(&metricsDir, 0, "metrics-dir",
+		"Top-level metrics `DIR` containing the data type directories.",
+		"Default: `@DEFAULT_VALUE@`.")
+	fset.StringVar(&spoolDir, 0, "spool-dir",
+		"Top-level spool `DIR` containing the data type directories.",
+		"Default: `@DEFAULT_VALUE@`.")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using ExitOnError
 
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
+	// Defer reporting config errors after flag parsing to honor `-h/--help`.
+	if configErr != nil {
+		logger.Error("config.Read", slog.Any("err", configErr))
+		env.Exit(1)
+	}
+
+	// We read from the ptnop data type and write the qoe data type.
+	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
+	qoeMetricsDir := filepath.Join(metricsDir, "qoe")
+
 	// Serialize concurrent loads. The per-span sentinel prevents loading
 	// the same span twice, but two loaders handling different spans of the
 	// same day would both rewrite the daily file and the last rename wins,
-	// losing the other loader's rows. The lock lives inside the metrics dir
-	// because it protects that dir and follows `--metrics-dir`.
-	if err := os.MkdirAll(metricsDir, 0750); err != nil {
+	// losing the other loader's rows. The lock lives inside the qoe metrics
+	// dir because it protects that dir.
+	if err := os.MkdirAll(qoeMetricsDir, 0750); err != nil {
 		logger.Error("failed to create metrics directory", slog.Any("err", err))
 		env.Exit(1)
 	}
-	unlock, err := lockedfile.MutexAt(filepath.Join(metricsDir, "lock")).Lock()
+	unlock, err := lockedfile.MutexAt(filepath.Join(qoeMetricsDir, "lock")).Lock()
 	if err != nil {
 		logger.Error("failed to lock metrics directory", slog.Any("err", err))
 		env.Exit(1)
@@ -76,9 +93,9 @@ func loadMain(ctx context.Context, args []string) error {
 	// sorted order makes the logs easier to follow.
 	cutoff := time.Now().Add(-maxAge)
 	byDay := make(map[string][]string)
-	loadWalkDir(spoolDir, cutoff, byDay, 3)
+	loadWalkDir(ptnopSpoolDir, cutoff, byDay, 3)
 	for _, day := range slices.Sorted(maps.Keys(byDay)) {
-		loadProcessDay(logger, metricsDir, day, byDay[day])
+		loadProcessDay(logger, qoeMetricsDir, day, byDay[day])
 	}
 	return nil
 }
