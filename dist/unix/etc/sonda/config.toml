@@ -7,6 +7,12 @@
 ## Directory for spooling measurement results.
 #spool-dir = "/var/spool/sonda"
 
+[inetd.ptnop]
+## Close idle client connections after this time.
+##
+## The value is a Go time duration string.
+#idle-timeout = "60s"
+
 [spool.gc]
 ## Age after which measurements are removed from the spool.
 ##

@@ -3,7 +3,7 @@ Description=Serve sonda ptnop measurement requests (connection %i)
 
 [Service]
 Slice=system-sonda.slice
-ExecStart=/usr/libexec/sonda/sonda-inetd-ptnop --spool-dir /var/spool/sonda/ptnop
+ExecStart=/usr/libexec/sonda/sonda-inetd-ptnop
 StandardInput=socket
 StandardError=journal
 User=_sonda

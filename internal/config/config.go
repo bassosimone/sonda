@@ -46,12 +46,23 @@ func (d *Duration) UnmarshalText(text []byte) error {
 // Settings contains `sonda` settings.
 type Settings struct {
 	Core  Core  `toml:"core"`
+	Inetd Inetd `toml:"inetd"`
 	Spool Spool `toml:"spool"`
 }
 
 // Core contains settings that apply to all tools.
 type Core struct {
 	SpoolDir string `toml:"spool-dir"`
+}
+
+// Inetd contains settings for the inetd-like servers.
+type Inetd struct {
+	Ptnop InetdPtnop `toml:"ptnop"`
+}
+
+// InetdPtnop contains `sonda-inetd-ptnop` settings.
+type InetdPtnop struct {
+	IdleTimeout Duration `toml:"idle-timeout"`
 }
 
 // Spool contains `sonda-spool` settings.
@@ -69,6 +80,13 @@ func Defaults() *Settings {
 	return &Settings{
 		Core: Core{
 			SpoolDir: "/var/spool/sonda",
+		},
+		// The idle timeout is a guess: it should leave plenty of margin
+		// to a client sending requests back to back, such as `sonda scan`.
+		Inetd: Inetd{
+			Ptnop: InetdPtnop{
+				IdleTimeout: Duration(60 * time.Second),
+			},
 		},
 		Spool: Spool{
 			GC: SpoolGC{

@@ -10,10 +10,12 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
+	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 )
@@ -26,13 +28,12 @@ func mainMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
 
-	// Set command defaults.
-	//
-	// The idleTimeout default is a guess: it should leave plenty of margin
-	// to a client sending requests back to back, such as `sonda scan`.
+	// Set the command defaults.
+	presets := config.Defaults()
+	configErr := config.ReadInto(env, config.DefaultConfigFilePath, presets)
 	var (
-		idleTimeout = 60 * time.Second
-		spoolDir    = "."
+		idleTimeout = time.Duration(presets.Inetd.Ptnop.IdleTimeout)
+		spoolDir    = presets.Core.SpoolDir
 		stdio       = false
 	)
 
@@ -50,7 +51,7 @@ func mainMain(ctx context.Context, args []string) error {
 	fset.UsagePrinter = upr
 	upr.AddDescription(
 		"Serve ptnop measurement requests read as JSON lines from the stdin, "+
-			"writing one span per request into the `--spool-dir` dir and one JSON "+
+			"writing one span per request into `<spool-dir>/ptnop` and one JSON "+
 			"response line per request to the stdout.",
 		"Designed to run behind a systemd socket with: ",
 		"    - Accept=yes",
@@ -73,7 +74,9 @@ func mainMain(ctx context.Context, args []string) error {
 		"Close the connection after waiting `DURATION` for I/O to occur on the "+
 			"client connection. Ignored with `--stdio`.",
 		"Default: @DEFAULT_VALUE@.")
-	fset.StringVar(&spoolDir, 0, "spool-dir", "Use `DIR` instead of `@DEFAULT_VALUE@`.")
+	fset.StringVar(&spoolDir, 0, "spool-dir",
+		"Top-level spool `DIR` containing the data type directories.",
+		"Default: `@DEFAULT_VALUE@`.")
 	fset.BoolVar(&stdio, 0, "stdio", "Do not assume that the stdin is a socket.")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
@@ -81,18 +84,25 @@ func mainMain(ctx context.Context, args []string) error {
 	// Emit operational logs to the stderr (i.e., the journal).
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
+	// Defer reporting config errors after flag parsing to honor `-h/--help`.
+	if configErr != nil {
+		logger.Error("config.Read", slog.Any("err", configErr))
+		env.Exit(1)
+	}
+
 	// Make sure the idle timeout makes sense.
 	if !stdio && idleTimeout <= 0 {
 		logger.Error("invalid --idle-timeout", slog.Duration("idleTimeout", idleTimeout))
 		env.Exit(1)
 	}
 
-	// Make the spoolDir absolute for robustness.
+	// Make the spoolDir absolute for robustness and select the data type dir.
 	spoolDir, err := env.Abs(spoolDir)
 	if err != nil {
 		logger.Error("env.Abs", slog.Any("err", err))
 		env.Exit(1)
 	}
+	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
 
 	// Select the transport.
 	//
@@ -140,7 +150,7 @@ func mainMain(ctx context.Context, args []string) error {
 	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(nil, maxLineSize)
 	for scanner.Scan() {
-		resp := serveLine(ctx, env, logger, scanner.Bytes(), spoolDir, peer)
+		resp := serveLine(ctx, env, logger, scanner.Bytes(), ptnopSpoolDir, peer)
 		respData := runtimex.PanicOnError1(json.Marshal(resp)) // always serializable
 		respData = append(respData, '\n')
 		if _, err := writer.Write(respData); err != nil {
