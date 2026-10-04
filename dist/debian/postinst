@@ -13,10 +13,10 @@ case "$1" in
         fi
 
         # Ensure the spool directory exists with correct ownership.
-        install -d -o _sonda -g adm -m 2750 /var/spool/sonda
+        install -d -o _sonda -g _sonda -m 2750 /var/spool/sonda
 
         # Ensure the metrics directory exists with correct ownership.
-        install -d -o _sonda -g adm -m 2750 /var/lib/sonda/metrics
+        install -d -o _sonda -g _sonda -m 2750 /var/lib/sonda/metrics
         ;;
 esac
 

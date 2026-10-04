@@ -106,8 +106,8 @@ func runMain(ctx context.Context, args []string) error {
 
 	// Create the temporary spool directory.
 	//
-	// Note that `/var/spool/sonda` is `02750 _sonda:adm` so we use `0750` when creating
-	// directories and `0640` when creating files to allow `adm` to read.
+	// Note that `/var/spool/sonda` is `02750 _sonda:_sonda` so we use `0750` when creating
+	// directories and `0640` when creating files to allow `_sonda` to read.
 	if err := env.MkdirAll(tmpDir, 0750); err != nil {
 		logger.Error("failed to create spool directory", slog.Any("err", err))
 		env.Exit(1)

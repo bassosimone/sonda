@@ -422,7 +422,7 @@ func newPipelineInput(ctx context.Context,
 
 	// 5. Open the body file, if needed
 	//
-	// Using `0640` because `/var/spool/sonda` is `_sonda:adm` and `adm` must be
+	// Using `0640` because `/var/spool/sonda` is `_sonda:_sonda` and `_sonda` must be
 	// able to read the spool without going through `sudo`.
 	switch opts.pipeline {
 	case "http", "https":

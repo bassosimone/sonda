@@ -142,7 +142,7 @@ that `sonda etl-ptnop-qoe` sees are `/var/lib/sonda/metrics/$dataType`
 and `/var/spool/sonda/$dataType`.
 
 The metrics directory is created by the Debian `postinst`
-with `_sonda:adm` ownership and `2750` permissions, matching
+with `_sonda:_sonda` ownership and `2750` permissions, matching
 the spool directory. The systemd unit's `ReadWritePaths`
 includes both directories.
 

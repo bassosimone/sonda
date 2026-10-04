@@ -38,11 +38,17 @@ Steps executed by the periodic scan.
 Spool with one directory per measurement, containing the request,
 stdout, stderr, and exit code.
 The default steps remove entries older than six hours.
+Members of the
+.B _sonda
+group can read it.
 .TP
 .I /var/lib/sonda/metrics/
 Daily QoE metrics, written as
 .IR qoe/YYYY/MM/DD/YYYY\-MM\-DD.parquet .
 Nothing removes these files.
+Members of the
+.B _sonda
+group can read them.
 .TP
 .I /run/sonda/inetd\-ptnop.sock
 Socket served by

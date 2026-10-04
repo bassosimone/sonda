@@ -89,22 +89,34 @@ and write access to the spool.
 
 ## Spool permissions
 
-The spool directory is owned by `_sonda:adm` with mode `2750`
-(setgid). The `adm` group is the Debian convention for users
-who can read monitoring and log data.
+The spool directory and the metrics directory are owned by
+`_sonda:_sonda` with mode `2750` (setgid).
 
-The setgid bit causes new files and subdirectories to inherit
-the `adm` group from the parent, even though the process runs
-as `_sonda:_sonda`. This avoids granting the sonda process
-`adm` group membership, which would give it read access to
-syslog and other sensitive files.
+We use the `_sonda` group because the `sonda-inetd-ptnop` socket
+is already `_sonda:_sonda` with mode `0660`. Therefore, a single
+group covers both connecting to the socket to run measurements
+and reading the results. Users who need either capability are
+added to `_sonda` (e.g., `usermod -aG _sonda $USER`).
+
+An earlier version used `_sonda:adm`, following the Debian
+convention that `adm` members can read monitoring and log data.
+We moved away from it because it required two different groups
+for two closely related capabilities. Installations created
+before this change need a manual `chgrp -R _sonda` of both
+directories: `postinst` only fixes the top-level directories,
+and existing subdirectories keep propagating `adm`.
+
+The sonda processes run as `_sonda:_sonda`, so for them the
+setgid bit is redundant. We keep it so that files created by
+other users (e.g., root running `sonda` manually) still belong
+to the `_sonda` group and remain readable by its members.
 
 Files are created with mode `0640` and directories with `0750`.
 The kernel propagates the setgid bit to subdirectories
 automatically. The resulting permission model:
 
 - `_sonda` can read and write everything.
-- Members of `adm` can read everything.
+- Members of the `_sonda` group can read everything.
 - Other users have no access.
 
 ## Package lifecycle
@@ -121,7 +133,7 @@ interaction is skipped when systemd is not running (chroots).
 
 1. Creates the `_sonda` system user and group if absent.
 2. Creates `/var/spool/sonda` and `/var/lib/sonda/metrics`
-   with `2750 _sonda:adm`.
+   with `2750 _sonda:_sonda`.
 3. Reloads systemd and enables/starts the timer as above.
 
 `prerm` (runs on remove): stops the timer.
