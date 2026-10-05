@@ -1,0 +1,282 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# sonda-status checks whether an installed sonda is working.
+#
+# It is read-only: it inspects systemd, the spool, and the metrics
+# directory, prints one line per check, and exits with `1` if any
+# check warns. It is a shell script because the checks are shell
+# commands anyway; we can port it to Go once the checks stabilize.
+#
+# Members of the `_sonda` group can read the spool and the metrics,
+# so they can run all the checks.
+
+set -uo pipefail
+
+# Defaults, matching `internal/config`.
+spool_dir=/var/spool/sonda
+metrics_dir=/var/lib/sonda/metrics
+
+# The scan timer fires 5 minutes after the previous scan finishes and a
+# scan takes well under a minute, so the newest span is normally less
+# than ~6 minutes old. We allow one slow or missed cycle on top of that.
+scan_max_age_ms=$((15 * 60 * 1000))
+
+# The ETL timer fires 1 hour after the previous run finishes. We allow
+# 30 minutes for the run itself and for scheduling slack.
+etl_max_age_ms=$((90 * 60 * 1000))
+
+# The window used to summarize the outcome of the latest scans: with
+# a scan every ~5 minutes, it covers one or two scans.
+recent_window_ms=$((10 * 60 * 1000))
+
+usage() {
+	cat <<'EOF'
+
+Usage
+
+    sonda-status [flags]
+
+Description
+
+    Check whether an installed sonda is working, by inspecting the
+    systemd units, the `<spool-dir>/ptnop` spool, and the
+    `<metrics-dir>/qoe` metrics. Print one line per check, starting
+    with `OK`, `WARN`, `INFO`, or `SKIP`, and exit with `1` if any
+    check prints `WARN`. Members of the `_sonda` group can run all
+    the checks.
+
+Flags
+
+    -h, --help
+
+        Show this help message and exit.
+
+    --metrics-dir DIR
+
+        Top-level metrics `DIR` containing the data type directories.
+
+        Default: `/var/lib/sonda/metrics`.
+
+    --spool-dir DIR
+
+        Top-level spool `DIR` containing the data type directories.
+
+        Default: `/var/spool/sonda`.
+
+EOF
+}
+
+# Parse command line flags.
+while [ $# -gt 0 ]; do
+	case "$1" in
+	-h | --help)
+		usage
+		exit 0
+		;;
+	--metrics-dir | --spool-dir)
+		if [ $# -lt 2 ]; then
+			echo "sonda-status: $1 requires an argument" >&2
+			exit 2
+		fi
+		if [ "$1" = --metrics-dir ]; then metrics_dir=$2; else spool_dir=$2; fi
+		shift 2
+		;;
+	--metrics-dir=*)
+		metrics_dir=${1#*=}
+		shift
+		;;
+	--spool-dir=*)
+		spool_dir=${1#*=}
+		shift
+		;;
+	*)
+		echo "sonda-status: unknown argument: $1 (try --help)" >&2
+		exit 2
+		;;
+	esac
+done
+
+now_ms=$(date +%s%3N)
+warned=0
+
+# report LEVEL MESSAGE... prints a check result and remembers warnings.
+report() {
+	local level=$1
+	shift
+	printf '%-4s %s\n' "$level" "$*"
+	if [ "$level" = WARN ]; then
+		warned=1
+	fi
+}
+
+# fmt_age MS prints a duration in milliseconds as, e.g., `45s`, `3m`, `2h05m`.
+fmt_age() {
+	local s=$(($1 / 1000))
+	if [ "$s" -lt 60 ]; then
+		printf '%ds' "$s"
+	elif [ "$s" -lt 3600 ]; then
+		printf '%dm' $((s / 60))
+	else
+		printf '%dh%02dm' $((s / 3600)) $((s % 3600 / 60))
+	fi
+}
+
+# span_ms SPAN_PATH sets `ms` to the span's UUIDv7 timestamp in milliseconds
+# since the epoch: the first 48 bits, i.e., the first 12 hex digits ignoring
+# the dash (see RFC 9562 Section 5.7). We use it rather than the directory
+# mtime, which changes when the ETL adds files to the span. It sets a variable
+# rather than printing, so the loops below do not fork once per span.
+span_ms() {
+	local id=${1##*/}
+	ms=$((16#${id:0:8}${id:9:4}))
+}
+
+# 1. systemd units.
+#
+# We check that each timer is active and that the last run of its service
+# succeeded, and that the socket of `sonda-inetd-ptnop` is listening.
+if command -v systemctl >/dev/null && [ -d /run/systemd/system ]; then
+	if systemctl is-active --quiet sonda-inetd-ptnop.socket; then
+		report OK "sonda-inetd-ptnop.socket: active"
+	else
+		report WARN "sonda-inetd-ptnop.socket: not active"
+	fi
+
+	for unit in sonda-scan sonda-etl-ptnop-qoe sonda-spool-gc; do
+		if ! systemctl is-active --quiet "$unit.timer"; then
+			report WARN "$unit.timer: not active"
+			continue
+		fi
+		result=$(systemctl show -p Result --value "$unit.service")
+		exit_ts=$(systemctl show --timestamp=unix -p ExecMainExitTimestamp --value "$unit.service")
+		if [ -z "$exit_ts" ]; then
+			report OK "$unit.timer: active, no run finished yet"
+		elif [ "$result" = success ]; then
+			report OK "$unit.timer: active, last run succeeded $(fmt_age $((now_ms - ${exit_ts#@} * 1000))) ago"
+		else
+			report WARN "$unit.timer: active, last run failed ($result); see journalctl -u $unit.service"
+		fi
+	done
+else
+	report SKIP "systemd: not running"
+fi
+
+# 2. Spool.
+#
+# Span directories sort by time because the sharding directories are
+# prefixes of the UUIDv7, so the sorted list goes from oldest to newest.
+ptnop_dir=$spool_dir/ptnop
+if ! [ -d "$ptnop_dir" ]; then
+	report WARN "spool: $ptnop_dir does not exist"
+	spans=()
+elif ! [ -r "$ptnop_dir" ] || ! [ -x "$ptnop_dir" ]; then
+	report WARN "spool: cannot read $ptnop_dir (are you in the _sonda group?)"
+	spans=()
+else
+	spans=()
+	tmp_count=0
+	while IFS= read -r path; do
+		case "$path" in
+		*.tmp) tmp_count=$((tmp_count + 1)) ;;
+		*) spans+=("$path") ;;
+		esac
+	done < <(find "$ptnop_dir" -mindepth 4 -maxdepth 4 -type d | sort)
+
+	if [ ${#spans[@]} -le 0 ]; then
+		report WARN "spool: no spans in $ptnop_dir"
+	else
+		span_ms "${spans[-1]}"
+		newest_ms=$ms
+		span_ms "${spans[0]}"
+		oldest_ms=$ms
+		age_ms=$((now_ms - newest_ms))
+		if [ "$age_ms" -le "$scan_max_age_ms" ]; then
+			report OK "spool: newest span $(fmt_age "$age_ms") ago"
+		else
+			report WARN "spool: newest span $(fmt_age "$age_ms") ago (is sonda-scan running?)"
+		fi
+		report INFO "spool: ${#spans[@]} spans, oldest $(fmt_age $((now_ms - oldest_ms))) ago, $tmp_count incomplete"
+	fi
+fi
+
+# 3. Outcome of the latest scans.
+#
+# A measurement failure (exit code 1) is data, not a malfunction: e.g.,
+# IPv6 measurements fail on hosts without IPv6. So we only warn when
+# no measurement succeeded at all, which suggests a broken network.
+v4_ok=0 v4_fail=0 v6_ok=0 v6_fail=0
+for ((i = ${#spans[@]} - 1; i >= 0; i--)); do
+	path=${spans[i]}
+	span_ms "$path"
+	if [ $((now_ms - ms)) -gt "$recent_window_ms" ]; then
+		break # sorted from oldest to newest, so the rest is older
+	fi
+	{ code=$(<"$path/exitcode.txt"); } 2>/dev/null
+	if grep -q '"addrPort":"\[' "$path/request.json" 2>/dev/null; then
+		if [ "$code" = 0 ]; then v6_ok=$((v6_ok + 1)); else v6_fail=$((v6_fail + 1)); fi
+	else
+		if [ "$code" = 0 ]; then v4_ok=$((v4_ok + 1)); else v4_fail=$((v4_fail + 1)); fi
+	fi
+done
+recent_total=$((v4_ok + v4_fail + v6_ok + v6_fail))
+recent_summary="IPv4 $v4_ok ok, $v4_fail failed; IPv6 $v6_ok ok, $v6_fail failed"
+if [ ${#spans[@]} -le 0 ]; then
+	: # the spool check already warned
+elif [ "$recent_total" -le 0 ]; then
+	report WARN "measurements: none in the last $(fmt_age "$recent_window_ms")"
+elif [ $((v4_ok + v6_ok)) -le 0 ]; then
+	report WARN "measurements: all failed in the last $(fmt_age "$recent_window_ms") ($recent_summary)"
+else
+	report OK "measurements: last $(fmt_age "$recent_window_ms"): $recent_summary"
+fi
+
+# 4. ETL backlog.
+#
+# Spans older than one ETL interval should have been extracted and loaded.
+# Note that extract writes no `qoe.parquet` for a span without QoE rows,
+# so such spans also count as not extracted.
+not_extracted=0 not_loaded=0
+for path in "${spans[@]}"; do
+	span_ms "$path"
+	if [ $((now_ms - ms)) -le "$etl_max_age_ms" ]; then
+		break # sorted from oldest to newest, so the rest is newer
+	fi
+	if ! [ -e "$path/qoe.parquet" ]; then
+		not_extracted=$((not_extracted + 1))
+	elif ! [ -e "$path/qoe.loaded" ]; then
+		not_loaded=$((not_loaded + 1))
+	fi
+done
+if [ ${#spans[@]} -gt 0 ]; then
+	if [ $((not_extracted + not_loaded)) -le 0 ]; then
+		report OK "etl: all spans older than $(fmt_age "$etl_max_age_ms") are loaded"
+	else
+		report WARN "etl: spans older than $(fmt_age "$etl_max_age_ms"): $not_extracted not extracted, $not_loaded not loaded"
+	fi
+fi
+
+# 5. Metrics freshness.
+#
+# Daily file paths (`YYYY/MM/DD/YYYY-MM-DD.parquet`) sort by date, so the
+# last one is the newest day. We use its mtime, since load rewrites it.
+qoe_dir=$metrics_dir/qoe
+if ! [ -d "$qoe_dir" ]; then
+	report WARN "metrics: $qoe_dir does not exist"
+elif ! [ -r "$qoe_dir" ] || ! [ -x "$qoe_dir" ]; then
+	report WARN "metrics: cannot read $qoe_dir (are you in the _sonda group?)"
+else
+	daily=$(find "$qoe_dir" -mindepth 4 -maxdepth 4 -type f -name '*.parquet' | sort | tail -n 1)
+	if [ -z "$daily" ]; then
+		report WARN "metrics: no daily files in $qoe_dir"
+	else
+		age_ms=$((now_ms - $(stat -c %Y "$daily") * 1000))
+		if [ "$age_ms" -le "$etl_max_age_ms" ]; then
+			report OK "metrics: $(basename "$daily") updated $(fmt_age "$age_ms") ago"
+		else
+			report WARN "metrics: $(basename "$daily") updated $(fmt_age "$age_ms") ago (is the ETL running?)"
+		fi
+	fi
+fi
+
+exit "$warned"
