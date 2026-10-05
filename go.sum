@@ -6,8 +6,8 @@ github.com/alecthomas/assert/v2 v2.11.0 h1:2Q9r3ki8+JYXvGsDyBXwH3LcJ+WK5D0gc5E8v
 github.com/alecthomas/assert/v2 v2.11.0/go.mod h1:Bze95FyfUr7x34QZrjL+XP+0qgp/zg8yS+TtBj1WA3k=
 github.com/alecthomas/repr v0.5.4 h1:OVP7JEcuzU9CCDsT6STCr3rg17oQfWILtPWd2EG0uN4=
 github.com/alecthomas/repr v0.5.4/go.mod h1:Fr0507jx4eOXV7AlPV6AVZLYrLIuIeSOWtW57eE/O/4=
-github.com/andybalholm/brotli v1.2.5 h1:BSI8V4zmx/3BAn6OKjF1PmfVq7Aoi52AdFsi6bpCx+s=
-github.com/andybalholm/brotli v1.2.5/go.mod h1:rzTDkvFWvIrjDXZHkuS16NPggd91W3kUSvPlQ1pLaKY=
+github.com/andybalholm/brotli v1.2.6 h1:ftYnfj6usCp+UGV5kSJ3+chpMQgU+gJf/AxsUQ52REI=
+github.com/andybalholm/brotli v1.2.6/go.mod h1:rzTDkvFWvIrjDXZHkuS16NPggd91W3kUSvPlQ1pLaKY=
 github.com/bassosimone/closepool v0.0.0-20260928111144-9eef701bea99 h1:602Jok5MhFzF2JdFduZ5InyXaob64gOC16B3Bf8rLV8=
 github.com/bassosimone/closepool v0.0.0-20260928111144-9eef701bea99/go.mod h1:pTm4iP9igekKou5VsOwzdZcl7kwerWHVqw/cwdPBLKE=
 github.com/bassosimone/deferexit v0.0.0-20260928111243-1ceec2208869 h1:wT/SbRJjyTOJvY5EnUf/MHsWcx9NCzFlRB7LcwL1lo0=
@@ -40,8 +40,8 @@ github.com/bassosimone/netstub v0.0.0-20260928112048-621fd84591bd h1:vAoIMc8ElFV
 github.com/bassosimone/netstub v0.0.0-20260928112048-621fd84591bd/go.mod h1:6b7sfD5MznDaY0CxJXQ52OhuqG+yWDvjoN7A9+wKLLs=
 github.com/bassosimone/pkitest v0.0.0-20260928112139-c2ca7e68520a h1:4GH9qDsexyElM8jPHVVWoYj1NJJJ/hR1LDqFk15ziNo=
 github.com/bassosimone/pkitest v0.0.0-20260928112139-c2ca7e68520a/go.mod h1:8yycIHyEq14IvdJOEhj4/GK1+hM+VTF0rhtmkCCi7FA=
-github.com/bassosimone/ptnop v0.0.0-20261003115834-467885d02847 h1:t0aG9KwX03DpZyg5J//NxW9SRdvKpp4/TV7Ty9avK/U=
-github.com/bassosimone/ptnop v0.0.0-20261003115834-467885d02847/go.mod h1:9p8CzlmGH/PJZEY1/4iamdCODDz6RuHbwxRC9hLwRm0=
+github.com/bassosimone/ptnop v0.0.0-20261003121033-4893f8562860 h1:i4NNjHKpRr1a2VwvFIP0rN8D6qC8wEorOqee9FCKjmc=
+github.com/bassosimone/ptnop v0.0.0-20261003121033-4893f8562860/go.mod h1:9p8CzlmGH/PJZEY1/4iamdCODDz6RuHbwxRC9hLwRm0=
 github.com/bassosimone/runtimex v0.0.0-20260928111457-f2fe934d5065 h1:kTLEe+4NAR6bH3XZHNxegfwUKKDArQHoJCQhrFQNZOU=
 github.com/bassosimone/runtimex v0.0.0-20260928111457-f2fe934d5065/go.mod h1:2aW76skIZNS7ljOpIqU3eARVLmtb0AG/Gab4aegSkTA=
 github.com/bassosimone/safeconn v0.0.0-20260928112542-9eef1e681eca h1:RwPT/kd004Jj+tKPLWJEQTFct8hAJZVn3JvvFUaiDVw=
@@ -52,10 +52,10 @@ github.com/bassosimone/textwrap v0.0.0-20260928111620-10df61158669 h1:utgi154TR8
 github.com/bassosimone/textwrap v0.0.0-20260928111620-10df61158669/go.mod h1:Abw4PaN0ny+I6/HT5tZV9NwTOz2qqT9MzWWom8g6veo=
 github.com/bassosimone/tlsstub v0.0.0-20260928112923-3133e9faeca3 h1:qNM+Ur63SSJ+/qOFHKpo4voaUMlx+QP+Yoroi29FmrU=
 github.com/bassosimone/tlsstub v0.0.0-20260928112923-3133e9faeca3/go.mod h1:h9RMn4XDZttpnyWoRRNlT9gzxneg/1z4l5AskJREfEg=
-github.com/bassosimone/vclip v0.0.0-20260928114705-86887ca1c7df h1:NjNtWcJmpyC9rS+Jh6kNXiWQk3XHqcF0RkGF0LdSabs=
-github.com/bassosimone/vclip v0.0.0-20260928114705-86887ca1c7df/go.mod h1:B9sokmkOqg110rf4vWJckjSiJaU/pIQFtlg6u/mbhHM=
-github.com/bassosimone/vflag v0.0.0-20260928113542-10198c4d0a30 h1:oMzZTw3qxx6QlClucGecLsyh9nMg1A+E9U9gH/PGTt0=
-github.com/bassosimone/vflag v0.0.0-20260928113542-10198c4d0a30/go.mod h1:1sdjCmDqic4UnClt2ZC0rxQ5eBzHQmYaFhP3ZsrL4Vg=
+github.com/bassosimone/vclip v0.0.0-20261005053301-a4fe6d3e2269 h1:A4zodbefqV+EkvctmCJi66x/FN/jBVDLRvK6wDa5SDw=
+github.com/bassosimone/vclip v0.0.0-20261005053301-a4fe6d3e2269/go.mod h1:uCHEH4eNM9weObnXCAKtkDGLVaFLqzh/l9K4aDIDb0E=
+github.com/bassosimone/vflag v0.0.0-20261001050637-5cd81148840b h1:khCJAvyIbBrAEe4h83P+GaXxDU6kFa41m9EZMP/9kbs=
+github.com/bassosimone/vflag v0.0.0-20261001050637-5cd81148840b/go.mod h1:1sdjCmDqic4UnClt2ZC0rxQ5eBzHQmYaFhP3ZsrL4Vg=
 github.com/goccy/go-yaml v1.19.2 h1:PmFC1S6h8ljIz6gMRBopkjP1TVT7xuwrButHID66PoM=
 github.com/goccy/go-yaml v1.19.2/go.mod h1:XBurs7gK8ATbW4ZPGKgcbrY1Br56PdM69F7LkFRi1kA=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
@@ -74,8 +74,8 @@ github.com/parquet-go/jsonlite v1.5.5 h1:TIqJ+b+mYoTvvEt1/ICS4fBacQO0xWwAbvtcrKj
 github.com/parquet-go/jsonlite v1.5.5/go.mod h1:hN57TVzxtr04kaax5XwNgCCsh1KE7BT6dvY6X/zNH90=
 github.com/parquet-go/parquet-go v0.32.0 h1:NWDqTUHfrCS4cJP/Fj2HlxvqsrVedWG3sayMkf+znzM=
 github.com/parquet-go/parquet-go v0.32.0/go.mod h1:navtkAYr2LGoJVp141oXPlO/sxLvaOe3la2JEoD8+rg=
-github.com/pierrec/lz4/v4 v4.1.31 h1:TI8ck6XSudzSzotzAmy0+kh/KpRHaVsKLPzS97gRyNg=
-github.com/pierrec/lz4/v4 v4.1.31/go.mod h1:7SE9MC2STkNtL4PIwGhjmyVwvILaGI9/COYQNBhKM/c=
+github.com/pierrec/lz4/v4 v4.1.33 h1:GjG1TJ1V4IzKP8L96muuuDNpTwd7D+l2ccXrjAbe014=
+github.com/pierrec/lz4/v4 v4.1.33/go.mod h1:7SE9MC2STkNtL4PIwGhjmyVwvILaGI9/COYQNBhKM/c=
 github.com/pion/dtls/v3 v3.1.10 h1:HWC+QCZitP/ApADS/6+g7UIw2YmLgoK3CsynnjPJgMo=
 github.com/pion/dtls/v3 v3.1.10/go.mod h1:iKFQNYrjsN2TiA2YKKMqB9MOZaFpjFULBI/A4sW0eyc=
 github.com/pion/logging v0.2.4 h1:tTew+7cmQ+Mc1pTBLKH2puKsOvhm32dROumOZ655zB8=

@@ -7,10 +7,10 @@ require (
 	github.com/bassosimone/closepool v0.0.0-20260928111144-9eef701bea99
 	github.com/bassosimone/deferexit v0.0.0-20260928111243-1ceec2208869
 	github.com/bassosimone/dnscodec v0.0.0-20260928111729-777d57044539
-	github.com/bassosimone/ptnop v0.0.0-20261003115834-467885d02847
+	github.com/bassosimone/ptnop v0.0.0-20261003121033-4893f8562860
 	github.com/bassosimone/runtimex v0.0.0-20260928111457-f2fe934d5065
-	github.com/bassosimone/vclip v0.0.0-20260928114705-86887ca1c7df
-	github.com/bassosimone/vflag v0.0.0-20260928113542-10198c4d0a30
+	github.com/bassosimone/vclip v0.0.0-20261005053301-a4fe6d3e2269
+	github.com/bassosimone/vflag v0.0.0-20261001050637-5cd81148840b
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/uuid v1.6.0
 	github.com/miekg/dns v1.1.73
@@ -20,7 +20,7 @@ require (
 )
 
 require (
-	github.com/andybalholm/brotli v1.2.5 // indirect
+	github.com/andybalholm/brotli v1.2.6 // indirect
 	github.com/bassosimone/dnsoverhttps v0.0.0-20260928113301-bc7943ece3e5 // indirect
 	github.com/bassosimone/dnsoverstream v0.0.0-20260928113353-e5a245131280 // indirect
 	github.com/bassosimone/errclass v0.0.0-20260928111330-ca73f36d2c92 // indirect
@@ -35,7 +35,7 @@ require (
 	github.com/klauspost/compress v1.20.1 // indirect
 	github.com/parquet-go/bitpack v1.1.0 // indirect
 	github.com/parquet-go/jsonlite v1.5.5 // indirect
-	github.com/pierrec/lz4/v4 v4.1.31 // indirect
+	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/pion/dtls/v3 v3.1.10 // indirect
 	github.com/pion/logging v0.2.4 // indirect
 	github.com/pion/transport/v4 v4.1.1 // indirect
