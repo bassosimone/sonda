@@ -2,3 +2,7 @@
 # ad hoc from git, where the history lives; a changelog would just
 # duplicate `git log` at build time.
 sonda: no-changelog
+
+# Our CGO_ENABLED=0 PIEs have no NEEDED entries, which lintian
+# mistakes for a broken shared library.
+sonda: shared-library-lacks-prerequisites

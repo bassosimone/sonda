@@ -1,6 +1,5 @@
 #!/bin/bash
-# Build deps: git, go, objdump (computes the libc6 dependency),
-# dpkg-deb, lintian.
+# Build deps: git, go, dpkg-deb, lintian.
 set -euo pipefail
 
 # Debian policy wants 0755 directories; `install -d` applies the build
@@ -22,6 +21,9 @@ set -x
 # -buildmode=pie yields a PIE so the kernel can randomize the load
 # address (ASLR); sonda runs unattended as a network client, so opt
 # into hardening.
+#
+# CGO_ENABLED=0 keeps libc out (see the Debian packaging design doc).
+export CGO_ENABLED=0
 install -d "$stage/usr/bin"
 install -m755 ./dist/unix/bin/sonda "$stage/usr/bin/sonda"
 
@@ -51,15 +53,6 @@ chmod 755 "$stage/usr/libexec/sonda/sonda-scan"
 go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 	-o "$stage/usr/libexec/sonda/sonda-spool" ./cmd/sonda-spool
 chmod 755 "$stage/usr/libexec/sonda/sonda-spool"
-
-# Compute the libc6 version the binary actually requires: the highest
-# GLIBC_x.y symbol version it references. This mirrors what
-# dpkg-shlibdeps derives for real Debian packages.
-#
-# TODO(bassosimone): here we should take the maximum of the above
-# binaries rather than trusting just `sonda`.
-libc_ver="$(objdump -T "$stage/usr/libexec/sonda/sonda" \
-    | grep -oE 'GLIBC_[0-9.]+' | sed 's/^GLIBC_//' | sort -uV | tail -1)"
 
 # Install manpage.
 install -d "$stage/usr/share/man/man1"
@@ -103,8 +96,7 @@ done
 #
 # Note: binary control files do not allow comments: strip them.
 install -d "$stage/DEBIAN"
-sed -e "s/@VERSION@/$ver/g" -e "s/@ARCH@/$arch/g" \
-    -e "s/@LIBC@/$libc_ver/g" -e '/^#/d' \
+sed -e "s/@VERSION@/$ver/g" -e "s/@ARCH@/$arch/g" -e '/^#/d' \
     dist/debian/control > "$stage/DEBIAN/control"
 
 # Install maintainer scripts.

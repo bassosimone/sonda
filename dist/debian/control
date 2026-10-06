@@ -12,9 +12,8 @@ Homepage: https://github.com/bassosimone/sonda
 # postrm removes it with deluser; both live in the adduser package,
 # which is not essential, so we must declare it.
 #
-# @LIBC@ is the highest GLIBC_x.y symbol version referenced by the
-# sonda binary, computed by makedeb.bash at build time.
-Depends: adduser, libc6 (>= @LIBC@), systemd
+# libc6: our PIEs link no shared library but need ld.so.
+Depends: adduser, libc6, systemd
 Description: Network quality of experience probe
  Experimental network probe that periodically measures STUN, DNS over
  UDP, DNS over HTTPS, and HTTPS, and stores the raw results in a local

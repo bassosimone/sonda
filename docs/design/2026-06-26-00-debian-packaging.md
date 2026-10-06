@@ -19,9 +19,11 @@ Packaging artifacts live under `dist/`:
 - `dist/debian/` — Debian control file (templated), copyright,
   lintian overrides, and maintainer scripts (`postinst`,
   `postrm`, `prerm`).
+
 - `dist/unix/` — static files (systemd units, manpage,
   `/etc/sonda/config.toml`, default scan config) laid out mirroring their install paths on a
   modern Unix (e.g. `dist/unix/usr/share/man/man1/sonda.1`).
+
 - `scripts/makedeb.bash` — builds the Go binary, substitutes
   templates, assembles the staging tree, calls `dpkg-deb`, and
   runs `lintian` on the result (errors fail the build).
@@ -41,6 +43,28 @@ variables if they are not already set:
 
 2. `SONDA_SHARE_PATH` to `/usr/share/sonda` so that
    plugins may describe themselves
+
+## Linking
+
+We build with `CGO_ENABLED=0 -buildmode=pie`:
+
+- PIE lets the kernel randomize the load address (ASLR).
+
+- Without cgo, the binaries link no shared library, so we
+  depend on `libc6` only for `ld.so`.
+
+- Without cgo, we use the `netgo` resolver, which is fine
+  since our codebase does not use `net.Resolver`.
+
+- Costs: a lintian override (`shared-library-lacks-prerequisites`),
+  and the internal linker emits PIEs only on amd64 and arm64.
+
+- Rejected alternative: Fedora style: `CGO_ENABLED=1` with the system
+  linker, full RELRO and no lazy symbols binding:
+
+```
+-buildmode=pie -ldflags='-linkmode=external -extldflags=-Wl,-z,relro,-z,now'
+```
 
 ## Scheduling
 
