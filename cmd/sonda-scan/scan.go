@@ -4,14 +4,20 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
+	"github.com/bassosimone/sonda/internal/ptnopspool"
 	"github.com/bassosimone/sonda/internal/testable"
+	"github.com/bassosimone/sonda/internal/triggers"
 	"github.com/bassosimone/vflag"
+	"github.com/google/uuid"
 )
 
 // scanMain is the main function of the `sonda scan` subcommand.
@@ -74,7 +80,7 @@ func scanMain(ctx context.Context, args []string) error {
 		logger.Error("no `--workflow-file` specified; nothing to do.")
 		env.Exit(2)
 	}
-	steps, err := loadWorkflowFile(workflowFile)
+	wff, err := loadWorkflowFile(workflowFile)
 	if err != nil {
 		logger.Error("loading workflow", slog.Any("err", err))
 		env.Exit(2)
@@ -100,7 +106,7 @@ func scanMain(ctx context.Context, args []string) error {
 	}
 
 	// Execute each step in order.
-	for _, step := range steps {
+	for _, step := range wff.Steps {
 		runner, ok := runners[step.Run]
 		if !ok {
 			logger.Warn("unknown step", slog.String("run", step.Run))
@@ -114,7 +120,69 @@ func scanMain(ctx context.Context, args []string) error {
 		}
 	}
 
+	// Execute triggers for the created spans.
+	scanMustWriteTriggers(env, logger, state, wff.Triggers)
 	return nil
+}
+
+// scanMustWriteTriggers writes triggers if necessary and exits on failure.
+func scanMustWriteTriggers(
+	env *testable.Environ, logger *slog.Logger, state *sharedState, triggerNames []string) {
+	// 1. Determine whether we actually need to write triggers.
+	if len(triggerNames) <= 0 {
+		return
+	}
+	created := state.CreatedSpans()
+	if len(created) <= 0 {
+		return
+	}
+
+	// 2. Determine the work unit ID.
+	workUnitID := uuid.Must(uuid.NewV7()).String()
+
+	// 3. Write the work unit inside the `/run/sonda/scan` directory.
+	workUnitPath := filepath.Join(config.RunDir, "scan", workUnitID+".jsonl")
+	filep, err := env.OpenFile(workUnitPath, os.O_CREATE|os.O_WRONLY, 0640)
+	if err != nil {
+		logger.Error("env.OpenFile", slog.Any("err", err))
+		env.Exit(1)
+	}
+	for _, entry := range created {
+		data := runtimex.PanicOnError1(json.Marshal(entry))
+		data = append(data, '\n')
+		if _, err := filep.Write(data); err != nil {
+			logger.Error("filep.Write", slog.Any("err", err))
+			env.Exit(1)
+		}
+	}
+	if err := filep.Close(); err != nil {
+		logger.Error("filep.Close", slog.Any("err", err))
+		env.Exit(1)
+	}
+
+	// 4. Create hard links to trigger the pipelines.
+	for _, tname := range triggerNames {
+		if !triggers.ValidName[tname] {
+			logger.Warn(
+				"trigger.ValidName",
+				slog.String("err", "invalid trigger name"),
+				slog.String("name", tname),
+			)
+			continue
+		}
+		tdirpath := triggers.Directory(tname)
+		tfilepath := filepath.Join(tdirpath, workUnitID+".jsonl")
+		if err := env.Link(workUnitPath, tfilepath); err != nil {
+			logger.Error("env.Link", slog.Any("err", err))
+			env.Exit(1)
+		}
+	}
+
+	// 5. Unlink the `scan` file.
+	if err := env.Remove(workUnitPath); err != nil {
+		logger.Error("env.Remove", slog.Any("err", err))
+		env.Exit(1)
+	}
 }
 
 // singleStep describes a single operation in a scan workflow.
@@ -138,8 +206,9 @@ type stepRunner interface {
 
 // sharedState holds state that steps can read and write during a scan.
 type sharedState struct {
-	mu   sync.Mutex
-	tags map[string]string
+	mu    sync.Mutex
+	spans []triggers.CreatedSpan
+	tags  map[string]string
 }
 
 // SetTag sets a tag by key, overwriting any previous value.
@@ -161,4 +230,34 @@ func (s *sharedState) Tags() []string {
 		result = append(result, k+"="+v)
 	}
 	return result
+}
+
+// RunAndSave runs the req request with the given client and saves a [triggers.CreatedSpan]
+// entry inside the [*sharedState] so that, at the end of the scan, we can write trigger
+// files for the ETL processing pipeline according to the registered triggers.
+func (s *sharedState) RunAndSave(ctx context.Context,
+	client *ptnoprpc.Client, req *ptnoprpc.Request) (*ptnopspool.SpanDir, error) {
+	spanDir, err := client.Run(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	cs := triggers.CreatedSpan{
+		DataType: "ptnop",
+		SpanDir:  spanDir.Path,
+		SpanID:   spanDir.SpanID,
+	}
+
+	s.mu.Lock()
+	s.spans = append(s.spans, cs)
+	s.mu.Unlock()
+
+	return spanDir, nil
+}
+
+// CreatedSpans returns the [trigger.CreatedSpan] that were added.
+func (s *sharedState) CreatedSpans() []triggers.CreatedSpan {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]triggers.CreatedSpan{}, s.spans...)
 }

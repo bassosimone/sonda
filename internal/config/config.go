@@ -34,6 +34,11 @@ const MetricsDir = "/var/lib/sonda/metrics"
 // a symlink.
 const SpoolDir = "/var/spool/sonda"
 
+// RunDir is the top-level run directory.
+//
+// Not configurable: it is hardcoded in the `tmpfiles.d` config.
+const RunDir = "/run/sonda"
+
 // Duration is the type used to parse [time.Duration] safely. The decoder we use
 // allows representing [time.Duration] as either integer or string, which leads to
 // ambiguity and surprises; e.g., "6" meaning 6 nanoseconds not 6 hours. So, we

@@ -11,11 +11,12 @@ import (
 
 // workflowFile is the top-level structure of a scan workflow file.
 type workflowFile struct {
-	Steps []singleStep `yaml:"steps"`
+	Steps    []singleStep `yaml:"steps"`
+	Triggers []string     `yaml:"triggers"`
 }
 
 // loadWorkflowFile reads and parses a scan workflow file.
-func loadWorkflowFile(path string) ([]singleStep, error) {
+func loadWorkflowFile(path string) (*workflowFile, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading workflow: %w", err)
@@ -27,5 +28,5 @@ func loadWorkflowFile(path string) ([]singleStep, error) {
 	if len(wf.Steps) <= 0 {
 		return nil, fmt.Errorf("workflow file contains no steps")
 	}
-	return wf.Steps, nil
+	return &wf, nil
 }

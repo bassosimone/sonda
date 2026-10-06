@@ -55,7 +55,7 @@ func (r *dnsOverHTTPSRunner) RunStep(ctx context.Context, with map[string]string
 			Timeout:      5 * time.Second,
 			URLPath:      "/dns-query",
 		}
-		if _, err := r.Client.Run(ctx, req); err != nil {
+		if _, err := r.State.RunAndSave(ctx, r.Client, req); err != nil {
 			return fmt.Errorf("dns-over-https: %w", err)
 		}
 	}

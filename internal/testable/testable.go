@@ -43,10 +43,12 @@ type Environ struct {
 	Exit             func(code int)
 	FileConn         func(f *os.File) (net.Conn, error)
 	Getenv           func(key string) string
+	Link             func(oldname, newname string) error
 	LogFatalOnError0 func(err error)
 	MkdirAll         func(path string, perm os.FileMode) error
 	ReadDir          func(path string) ([]os.DirEntry, error)
 	ReadFile         func(path string) ([]byte, error)
+	Remove           func(path string) error
 	Rename           func(oldpath, newpath string) error
 	RunCommand       func(cmd *exec.Cmd) error
 	SignalProcess    func(proc *os.Process, sig os.Signal) error
@@ -93,6 +95,7 @@ func NewEnvironOS() *Environ {
 		Exit:       deferexit.Panic,
 		FileConn:   net.FileConn,
 		Getenv:     os.Getenv,
+		Link:       os.Link,
 		LogFatalOnError0: func(err error) {
 			if err != nil {
 				log.Print(err)
@@ -102,6 +105,7 @@ func NewEnvironOS() *Environ {
 		MkdirAll: os.MkdirAll,
 		ReadDir:  os.ReadDir,
 		ReadFile: os.ReadFile,
+		Remove:   os.Remove,
 		Rename:   os.Rename,
 		RunCommand: func(cmd *exec.Cmd) error {
 			return cmd.Run()
@@ -136,10 +140,12 @@ func (e *Environ) Clone() *Environ {
 		Exit:             e.Exit,
 		FileConn:         e.FileConn,
 		Getenv:           e.Getenv,
+		Link:             e.Link,
 		LogFatalOnError0: e.LogFatalOnError0,
 		MkdirAll:         e.MkdirAll,
 		ReadFile:         e.ReadFile,
 		ReadDir:          e.ReadDir,
+		Remove:           e.Remove,
 		Rename:           e.Rename,
 		RunCommand:       e.RunCommand,
 		SignalProcess:    e.SignalProcess,

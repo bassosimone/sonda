@@ -48,7 +48,7 @@ func (r *stunRunner) RunStep(ctx context.Context, with map[string]string) error 
 			Tags:     r.State.Tags(),
 			Timeout:  5 * time.Second,
 		}
-		spanDir, err := r.Client.Run(ctx, req)
+		spanDir, err := r.State.RunAndSave(ctx, r.Client, req)
 		if err != nil {
 			return fmt.Errorf("stun: %w", err)
 		}

@@ -8,6 +8,7 @@ Requires=sonda-inetd-ptnop.socket
 Slice=system-sonda.slice
 Type=oneshot
 ExecStart=/usr/bin/sonda scan --workflow-file /etc/sonda/scan/default.yml
+ReadWritePaths=/run/sonda
 User=_sonda
 Group=_sonda
 

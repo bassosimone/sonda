@@ -54,7 +54,7 @@ func (r *httpsRunner) RunStep(ctx context.Context, with map[string]string) error
 			Timeout:      30 * time.Second,
 			URLPath:      urlPath,
 		}
-		if _, err := r.Client.Run(ctx, req); err != nil {
+		if _, err := r.State.RunAndSave(ctx, r.Client, req); err != nil {
 			return fmt.Errorf("https: %w", err)
 		}
 	}

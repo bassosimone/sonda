@@ -38,7 +38,7 @@ func newLookupRequest(state *sharedState, domain, queryType string) *ptnoprpc.Re
 // lookupA resolves a domain name to A using 8.8.8.8:53/udp.
 func lookupA(ctx context.Context, client *ptnoprpc.Client,
 	state *sharedState, domain string) ([]string, error) {
-	spanDir, err := client.Run(ctx, newLookupRequest(state, domain, "A"))
+	spanDir, err := state.RunAndSave(ctx, client, newLookupRequest(state, domain, "A"))
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func lookupA(ctx context.Context, client *ptnoprpc.Client,
 // lookupAAAA resolves a domain name to AAAA using 8.8.8.8:53/udp.
 func lookupAAAA(ctx context.Context, client *ptnoprpc.Client,
 	state *sharedState, domain string) ([]string, error) {
-	spanDir, err := client.Run(ctx, newLookupRequest(state, domain, "AAAA"))
+	spanDir, err := state.RunAndSave(ctx, client, newLookupRequest(state, domain, "AAAA"))
 	if err != nil {
 		return nil, err
 	}

@@ -49,7 +49,7 @@ func (r *dnsOverUDPRunner) RunStep(ctx context.Context, with map[string]string) 
 			Tags:         r.State.Tags(),
 			Timeout:      5 * time.Second,
 		}
-		if _, err := r.Client.Run(ctx, req); err != nil {
+		if _, err := r.State.RunAndSave(ctx, r.Client, req); err != nil {
 			return fmt.Errorf("dns-over-udp: %w", err)
 		}
 	}
