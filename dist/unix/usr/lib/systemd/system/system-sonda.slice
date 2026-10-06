@@ -1,2 +1,6 @@
 [Unit]
 Description=Slice for the sonda units
+
+[Slice]
+# Measure the I/O impact of sonda.
+IOAccounting=yes
