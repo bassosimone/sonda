@@ -4,13 +4,13 @@ go 1.27.1
 
 require (
 	github.com/BurntSushi/toml v1.6.0
-	github.com/bassosimone/closepool v0.0.0-20260928111144-9eef701bea99
-	github.com/bassosimone/deferexit v0.0.0-20260928111243-1ceec2208869
-	github.com/bassosimone/dnscodec v0.0.0-20260928111729-777d57044539
-	github.com/bassosimone/ptnop v0.0.0-20261003121033-4893f8562860
-	github.com/bassosimone/runtimex v0.0.0-20260928111457-f2fe934d5065
-	github.com/bassosimone/vclip v0.0.0-20261005053301-a4fe6d3e2269
-	github.com/bassosimone/vflag v0.0.0-20261001050637-5cd81148840b
+	github.com/bassosimone/closepool v0.0.0-20261005144423-6328e0244d72
+	github.com/bassosimone/deferexit v0.0.0-20261005144642-cbfbd3aa5dc7
+	github.com/bassosimone/dnscodec v0.0.0-20261005145128-388641c61fb4
+	github.com/bassosimone/ptnop v0.0.0-20261006070702-517c209392d9
+	github.com/bassosimone/runtimex v0.0.0-20261005144844-77dc639b0e90
+	github.com/bassosimone/vclip v0.0.0-20261006070757-1ed765ad0339
+	github.com/bassosimone/vflag v0.0.0-20261006065510-ce05c7d76a28
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/uuid v1.6.0
 	github.com/miekg/dns v1.1.73
@@ -21,17 +21,17 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.2.6 // indirect
-	github.com/bassosimone/dnsoverhttps v0.0.0-20260928113301-bc7943ece3e5 // indirect
-	github.com/bassosimone/dnsoverstream v0.0.0-20260928113353-e5a245131280 // indirect
-	github.com/bassosimone/errclass v0.0.0-20260928111330-ca73f36d2c92 // indirect
-	github.com/bassosimone/flagparser v0.0.0-20260928111833-44e028b025f9 // indirect
-	github.com/bassosimone/flagscanner v0.0.0-20260928111414-ec0ac9195577 // indirect
-	github.com/bassosimone/iox v0.0.0-20260928112414-6699b8367e72 // indirect
-	github.com/bassosimone/minest v0.0.0-20260928113439-6dc61c09965e // indirect
-	github.com/bassosimone/must v0.0.0-20260928112453-2a38e7bb20e8 // indirect
-	github.com/bassosimone/safeconn v0.0.0-20260928112542-9eef1e681eca // indirect
-	github.com/bassosimone/sud v0.0.0-20260928111541-4be641f562ce // indirect
-	github.com/bassosimone/textwrap v0.0.0-20260928111620-10df61158669 // indirect
+	github.com/bassosimone/dnsoverhttps v0.0.0-20261006065313-d3b927428e25 // indirect
+	github.com/bassosimone/dnsoverstream v0.0.0-20261006065349-d8d1d8b12cae // indirect
+	github.com/bassosimone/errclass v0.0.0-20261005144716-2d461da39b74 // indirect
+	github.com/bassosimone/flagparser v0.0.0-20261005145229-03254f4ff6fc // indirect
+	github.com/bassosimone/flagscanner v0.0.0-20261005144756-a1383349131b // indirect
+	github.com/bassosimone/iox v0.0.0-20261005145813-ba7aa6d554ea // indirect
+	github.com/bassosimone/minest v0.0.0-20261006065427-c31e3377405b // indirect
+	github.com/bassosimone/must v0.0.0-20261005145849-34793a0e24f8 // indirect
+	github.com/bassosimone/safeconn v0.0.0-20261005145944-9035df85f071 // indirect
+	github.com/bassosimone/sud v0.0.0-20261005144921-ab7834eb8950 // indirect
+	github.com/bassosimone/textwrap v0.0.0-20261005145027-6e50b1e009a9 // indirect
 	github.com/klauspost/compress v1.20.1 // indirect
 	github.com/parquet-go/bitpack v1.1.0 // indirect
 	github.com/parquet-go/jsonlite v1.5.5 // indirect
