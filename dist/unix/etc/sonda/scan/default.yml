@@ -72,3 +72,6 @@ steps:
     with:
       host: www.cloudflare.com
       url_path: /cdn-cgi/trace
+
+triggers:
+  - "etl-ptnop-qoe"
