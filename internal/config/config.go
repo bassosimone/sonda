@@ -19,7 +19,7 @@ const DefaultConfigFilePath = "/etc/sonda/config.toml"
 // PtnopSocketPath is the `sonda-inetd-ptnop` socket path.
 //
 // Not configurable: it must match `ListenStream=` in `sonda-inetd-ptnop.socket`.
-const PtnopSocketPath = "/run/sonda/inetd-ptnop.sock"
+const PtnopSocketPath = "/run/sonda/inetd-ptnop/sock"
 
 // MetricsDir is the top-level metrics directory.
 //

@@ -17,6 +17,11 @@ case "$1" in
 
         # Ensure the metrics directory exists with correct ownership.
         install -d -o _sonda -g _sonda -m 2750 /var/lib/sonda/metrics
+
+        # Ensure the run directory exists with correct ownership.
+        if [ -x "$(command -v systemd-tmpfiles)" ]; then
+            systemd-tmpfiles ${DPKG_ROOT:+--root="$DPKG_ROOT"} --create sonda.conf || true
+        fi
         ;;
 esac
 

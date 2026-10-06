@@ -92,6 +92,10 @@ for p in dist/unix/usr/share/sonda/plugins/*.txt; do
 	install -m 644 "$p" "$stage/usr/share/sonda/plugins"
 done
 
+# Install `tmpfiles.d` files configuration.
+install -d "$stage/usr/lib/tmpfiles.d"
+install -m 644 dist/unix/usr/lib/tmpfiles.d/sonda.conf "$stage/usr/lib/tmpfiles.d"
+
 # Install control file with substitutions.
 #
 # Note: binary control files do not allow comments: strip them.
