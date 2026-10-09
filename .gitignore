@@ -5,6 +5,8 @@ __pycache__/
 /sonda.exe
 /sonda-etl-ptnop-qoe
 /sonda-etl-ptnop-qoe.exe
+/sonda-etl-ptnop-obs
+/sonda-etl-ptnop-obs.exe
 /sonda-inetd-ptnop
 /sonda-inetd-ptnop.exe
 /sonda-measure-ptnop
