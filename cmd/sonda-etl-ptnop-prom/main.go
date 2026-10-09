@@ -43,6 +43,7 @@ func realMain(ctx context.Context, args []string) error {
 	var (
 		httpEpnt   = "127.0.0.1:9774"
 		maxSpanAge = 24 * time.Hour
+		sliceDir   = cgroupDefaultSliceDir
 		spoolDir   = config.SpoolDir
 		runDir     = config.RunDir
 	)
@@ -68,6 +69,9 @@ func realMain(ctx context.Context, args []string) error {
 		"Default: `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&maxSpanAge, 0, "max-span-age",
 		"Ignore spans older than `DURATION`.")
+	fset.StringVar(&sliceDir, 0, "slice-dir",
+		"Read the slice resource usage from the cgroup v2 `DIR`.",
+		"Default: `@DEFAULT_VALUE@`.")
 	fset.StringVar(&spoolDir, 0, "spool-dir",
 		"Top-level spool `DIR` containing the data type directories.",
 		"Default: `@DEFAULT_VALUE@`.")
@@ -85,6 +89,7 @@ func realMain(ctx context.Context, args []string) error {
 	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
 	reg := prometheus.NewRegistry()
 	metrics := newMetricsSet(reg)
+	reg.MustRegister(newCgroupCollector(env, logger, sliceDir))
 	wg := &sync.WaitGroup{}
 	wg.Go(func() {
 		logger.Info("started background goroutine to monitor triggers")
