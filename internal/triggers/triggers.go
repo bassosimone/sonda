@@ -12,7 +12,6 @@ import (
 
 // ValidName contains the valid trigger names.
 var ValidName = map[string]bool{
-	"etl-ptnop-qoe": true,
 	"etl-ptnop-obs": true,
 }
 
