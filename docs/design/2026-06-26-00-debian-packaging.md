@@ -101,6 +101,10 @@ so the ETL does not compete with the measurements, and
 must stay well below `spool.gc.max-age` (`6h` by default), otherwise
 GC may remove spans before the ETL processes them.
 
+`sonda-etl-ptnop-obs.path` has no timer: it starts
+`sonda-etl-ptnop-obs.service` when the scan leaves work units in
+`/run/sonda/etl-ptnop-obs` (see `2026-10-09-00-triggers.md`).
+
 ## Security
 
 The service runs as `User=_sonda`, `Group=_sonda` — a
