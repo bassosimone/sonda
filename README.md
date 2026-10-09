@@ -60,6 +60,8 @@ sonda scan --help         # scan-specific help
 
 - `etl-ptnop-obs` — copy selected ptnop events into daily JSONL files (path-activated after each scan).
 
+- `etl-ptnop-prom` — export ptnop spans as Prometheus metrics.
+
 - `measure-ptnop` — run a measurement pipeline using the ptnop engine.
 
 - `scan` — scan network endpoints and generate metrics.

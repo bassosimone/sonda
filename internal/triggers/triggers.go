@@ -12,7 +12,8 @@ import (
 
 // ValidName contains the valid trigger names.
 var ValidName = map[string]bool{
-	"etl-ptnop-obs": true,
+	"etl-ptnop-obs":  true,
+	"etl-ptnop-prom": true,
 }
 
 // CreatedSpan models a newly created span.

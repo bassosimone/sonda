@@ -43,6 +43,10 @@ go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 chmod 755 "$stage/usr/libexec/sonda/sonda-etl-ptnop-obs"
 
 go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
+	-o "$stage/usr/libexec/sonda/sonda-etl-ptnop-prom" ./cmd/sonda-etl-ptnop-prom
+chmod 755 "$stage/usr/libexec/sonda/sonda-etl-ptnop-prom"
+
+go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 	-o "$stage/usr/libexec/sonda/sonda-inetd-ptnop" ./cmd/sonda-inetd-ptnop
 chmod 755 "$stage/usr/libexec/sonda/sonda-inetd-ptnop"
 
@@ -71,6 +75,7 @@ install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-qoe.service "$st
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-qoe.timer "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-obs.service "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-obs.path "$stage/usr/lib/systemd/system/"
+install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-prom.service "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-inetd-ptnop.socket "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-inetd-ptnop@.service "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-scan.service "$stage/usr/lib/systemd/system/"
