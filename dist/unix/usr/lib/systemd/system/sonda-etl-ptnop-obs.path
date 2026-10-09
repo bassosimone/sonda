@@ -1,0 +1,8 @@
+[Unit]
+Description=Extract sonda observations when scan leaves work units
+
+[Path]
+DirectoryNotEmpty=/run/sonda/etl-ptnop-obs
+
+[Install]
+WantedBy=paths.target

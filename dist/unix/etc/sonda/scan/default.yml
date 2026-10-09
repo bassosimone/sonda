@@ -75,3 +75,4 @@ steps:
 
 triggers:
   - "etl-ptnop-qoe"
+  - "etl-ptnop-obs"
