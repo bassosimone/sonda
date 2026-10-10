@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/bassosimone/runtimex"
+	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/bassosimone/sonda/internal/ptnopspool"
@@ -19,6 +20,10 @@ import (
 	"github.com/bassosimone/vflag"
 	"github.com/google/uuid"
 )
+
+func main() {
+	plugincommand.Main(0, scanMain)
+}
 
 // scanMain is the main function of the `sonda scan` subcommand.
 func scanMain(ctx context.Context, args []string) error {
