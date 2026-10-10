@@ -131,10 +131,7 @@ func serveLine(
 		return serverFailure("env.WriteFile", err)
 	}
 
-	// 7. Open stdout and stderr files in the spool directory.
-	//
-	// We do not write to stderr.txt but we create it anyway such that the span
-	// layout is the same as the one created by `sonda spool run`.
+	// 7. Open stdout in the spool directory.
 	closers := &closepool.Pool{}
 	defer closers.Close() // idempotent
 
@@ -144,12 +141,6 @@ func serveLine(
 		return serverFailure("env.OpenFile", err)
 	}
 	closers.Add(stdoutFile)
-
-	stderrFile, err := env.OpenFile(ptnoppaths.SpanStderr(tmpDir), openFlags, 0640)
-	if err != nil {
-		return serverFailure("env.OpenFile", err)
-	}
-	closers.Add(stderrFile)
 
 	// 8. Open the body file, if needed.
 	switch req.Pipeline {
