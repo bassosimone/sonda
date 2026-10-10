@@ -84,10 +84,11 @@ func realMain(ctx context.Context, args []string) error {
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
 	reg := prometheus.NewRegistry()
+	metrics := newMetricsSet(reg)
 	wg := &sync.WaitGroup{}
 	wg.Go(func() {
 		logger.Info("started background goroutine to monitor triggers")
-		processTriggersLoop(ctx, env, etlPtnopPromRunDir, logger, maxSpanAge, ptnopSpoolDir)
+		processTriggersLoop(ctx, env, etlPtnopPromRunDir, logger, maxSpanAge, metrics, ptnopSpoolDir)
 	})
 
 	// Create the listener for HTTP
@@ -139,6 +140,7 @@ func processTriggersLoop(
 	etlPtnopPromRunDir string,
 	logger *slog.Logger,
 	maxSpanAge time.Duration,
+	metrics *metricsSet,
 	ptnopSpoolDir string,
 ) {
 	ticker := time.NewTicker(30 * time.Second)
@@ -149,7 +151,7 @@ func processTriggersLoop(
 			return
 		case now := <-ticker.C:
 			cutoff := now.Add(-maxSpanAge)
-			_ = processTriggersDir(cutoff, env, etlPtnopPromRunDir, logger, ptnopSpoolDir)
+			_ = processTriggersDir(cutoff, env, etlPtnopPromRunDir, logger, metrics, ptnopSpoolDir)
 		}
 	}
 }
@@ -161,6 +163,7 @@ func processTriggersDir(
 	env *testable.Environ,
 	etlPtnopPromRunDir string,
 	logger *slog.Logger,
+	metrics *metricsSet,
 	ptnopSpoolDir string,
 ) error {
 	logger.Info("processing triggers dir", slog.String("dir", etlPtnopPromRunDir))
@@ -179,6 +182,7 @@ func processTriggersDir(
 			env,
 			etlPtnopPromRunDir,
 			logger,
+			metrics,
 			ptnopSpoolDir,
 		)
 		if err != nil {
@@ -198,6 +202,7 @@ func processDentry(
 	env *testable.Environ,
 	etlPtnopPromRunDir string,
 	logger *slog.Logger,
+	metrics *metricsSet,
 	ptnopSpoolDir string,
 ) error {
 	// 1. The dentry must be a regular `<UUIDv7>.jsonl` file.
@@ -246,7 +251,7 @@ func processDentry(
 
 		// 4.2. Otherwise process each span and collect errors to be
 		// reported all together at the end of the processing.
-		err := processSpanTrigger(cutoff, env, &info, logger, ptnopSpoolDir)
+		err := processSpanTrigger(cutoff, env, &info, logger, metrics, ptnopSpoolDir)
 		if err != nil {
 			logger.Warn("cannot process span", slog.Any("err", err))
 			errv = append(errv, err)
@@ -270,6 +275,7 @@ func processSpanTrigger(
 	env *testable.Environ,
 	info *triggers.CreatedSpan,
 	logger *slog.Logger,
+	metrics *metricsSet,
 	ptnopSpoolDir string,
 ) error {
 	// 1. Make sure the spanID is valid.
@@ -303,7 +309,7 @@ func processSpanTrigger(
 	}
 
 	// 5. Update Prometheus metrics using the spanDir `stdout.txt` file content.
-	numProcessed, err := updateMetrics(env, logger, info.SpanDir)
+	numProcessed, err := updateMetrics(env, logger, metrics, info.SpanDir)
 	if err != nil {
 		return fmt.Errorf("updateMetrics: %s: %w", info.SpanDir, err)
 	}

@@ -139,6 +139,7 @@ func (uue *updateUnifiedEvent) Update(ev *ptnopdata.Event) {
 func updateMetrics(
 	env *testable.Environ,
 	logger *slog.Logger,
+	metrics *metricsSet,
 	spanDir string,
 ) (int64, error) {
 	// Open the source file: `stdout.txt` inside the current span dir.
@@ -187,6 +188,8 @@ func updateMetrics(
 	}
 
 	// Update Prometheus metrics and return.
-	// TODO(bassosimone): implement
+	if numProcessed > 0 {
+		metrics.Observe(unified)
+	}
 	return numProcessed, nil
 }
