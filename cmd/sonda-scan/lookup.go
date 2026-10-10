@@ -49,6 +49,10 @@ func lookupA(ctx context.Context, client *ptnoprpc.Client,
 // lookupAAAA resolves a domain name to AAAA using 8.8.8.8:53/udp.
 func lookupAAAA(ctx context.Context, client *ptnoprpc.Client,
 	state *sharedState, domain string) ([]string, error) {
+	v6sup := state.SupportsV6()
+	if v6sup != nil && !*v6sup {
+		return nil, errors.New("no answer") // same suffix as the stdlib error for EAI_NODATA
+	}
 	spanDir, err := state.RunAndSave(ctx, client, newLookupRequest(state, domain, "AAAA"))
 	if err != nil {
 		return nil, err

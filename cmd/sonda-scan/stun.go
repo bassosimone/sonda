@@ -67,6 +67,7 @@ func (r *stunRunner) RunStep(ctx context.Context, with map[string]string) error 
 	}
 
 	// Write reflexive addresses into the shared state.
+	v6Sup := false
 	for _, addr := range reflexives {
 		parsed, err := netip.ParseAddr(addr)
 		if err != nil {
@@ -76,7 +77,9 @@ func (r *stunRunner) RunStep(ctx context.Context, with map[string]string) error 
 			r.State.SetTag("reflexiveAddrV4", addr)
 		} else {
 			r.State.SetTag("reflexiveAddrV6", addr)
+			v6Sup = true
 		}
 	}
+	r.State.SetSupportsV6(v6Sup)
 	return nil
 }

@@ -214,6 +214,25 @@ type sharedState struct {
 	mu    sync.Mutex
 	spans []triggers.CreatedSpan
 	tags  map[string]string
+	v6sup *bool
+}
+
+// SetSupportsV6 sets the value of the "supportsV6" internal variable.
+func (s *sharedState) SetSupportsV6(value bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.v6sup = &value
+}
+
+// SupportsV6 returns whether we support IPv6 or nil if unknown.
+func (s *sharedState) SupportsV6() *bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.v6sup == nil {
+		return nil
+	}
+	value := *s.v6sup
+	return &value
 }
 
 // SetTag sets a tag by key, overwriting any previous value.
