@@ -16,6 +16,7 @@ require (
 	github.com/miekg/dns v1.1.73
 	github.com/parquet-go/parquet-go v0.32.0
 	github.com/pion/stun/v3 v3.1.7
+	github.com/prometheus/client_golang v1.24.1
 	github.com/rogpeppe/go-internal v1.16.0
 )
 
@@ -32,7 +33,10 @@ require (
 	github.com/bassosimone/safeconn v0.0.0-20261005145944-9035df85f071 // indirect
 	github.com/bassosimone/sud v0.0.0-20261005144921-ab7834eb8950 // indirect
 	github.com/bassosimone/textwrap v0.0.0-20261005145027-6e50b1e009a9 // indirect
+	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/klauspost/compress v1.20.1 // indirect
+	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/parquet-go/bitpack v1.1.0 // indirect
 	github.com/parquet-go/jsonlite v1.5.5 // indirect
 	github.com/pierrec/lz4/v4 v4.1.33 // indirect
@@ -40,6 +44,9 @@ require (
 	github.com/pion/logging v0.2.4 // indirect
 	github.com/pion/transport/v4 v4.1.1 // indirect
 	github.com/pion/transport/v5 v5.1.1 // indirect
+	github.com/prometheus/client_model v0.6.2 // indirect
+	github.com/prometheus/common v0.70.1 // indirect
+	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/quic-go/quic-go v0.63.0 // indirect
 	github.com/twpayne/go-geom v1.7.0 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect

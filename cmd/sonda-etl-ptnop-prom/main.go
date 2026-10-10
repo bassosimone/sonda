@@ -24,6 +24,8 @@ import (
 	"github.com/bassosimone/sonda/internal/triggers"
 	"github.com/bassosimone/vflag"
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -81,6 +83,7 @@ func realMain(ctx context.Context, args []string) error {
 	etlPtnopPromRunDir := filepath.Join(runDir, "etl-ptnop-prom")
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
+	reg := prometheus.NewRegistry()
 	wg := &sync.WaitGroup{}
 	wg.Go(func() {
 		logger.Info("started background goroutine to monitor triggers")
@@ -97,6 +100,7 @@ func realMain(ctx context.Context, args []string) error {
 
 	// Setup the HTTP mux exporting metrics and the server
 	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 	srvr := &http.Server{
 		Handler:             mux,
 		ReadTimeout:         30 * time.Second,
