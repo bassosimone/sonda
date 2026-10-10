@@ -99,11 +99,19 @@ minutes. The service also sets `Nice=10` and `IOSchedulingClass=idle`,
 so the ETL does not compete with the measurements, and
 `PrivateNetwork=yes`, since it needs no network. The hourly interval
 must stay well below `spool.gc.max-age` (`6h` by default), otherwise
-GC may remove spans before the ETL processes them.
+GC may remove spans before the ETL processes them. `postinst` no
+longer enables or starts this timer; existing installs need
+`systemctl disable --now sonda-etl-ptnop-qoe.timer`.
 
 `sonda-etl-ptnop-obs.path` has no timer: it starts
 `sonda-etl-ptnop-obs.service` when the scan leaves work units in
-`/run/sonda/etl-ptnop-obs` (see `2026-10-09-00-triggers.md`).
+`/run/sonda/etl-ptnop-obs` (see `2026-10-09-00-triggers.md`). It is
+still enabled, but no trigger currently feeds it.
+
+`sonda-etl-ptnop-prom.service` is long-running
+(`WantedBy=multi-user.target`, `Restart=on-failure`), so `postinst`
+restarts it to pick up a new binary on upgrade. It shares the ETL's
+`Nice=10` and `IOSchedulingClass=idle`, and may only reach localhost.
 
 ## Security
 
