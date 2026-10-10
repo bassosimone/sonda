@@ -165,7 +165,7 @@ func serveLine(
 	}
 
 	// 9. Create the structured logger writing the measurement events.
-	input.logger = newLogger(stdoutFile, spanID, req.Tags)
+	input.logger = newLogger(stdoutFile, spanID, req.Tags, req.Optimize)
 
 	// 10. Run the pipeline.
 	exitCode := ptnopRunPipeline(ctx, input)
@@ -192,13 +192,18 @@ func serveLine(
 	return resp
 }
 
-// newLogger creates the JSON logger writing to w and bound to tags.
+// newLogger creates the JSON logger writing to w and bound to tags. When optimize
+// is "size", we trim the emitted events as documented by [*ptnoprpc.Request].
 //
 // We omit the top-level time field: library events carry their own times.
-func newLogger(w io.Writer, spanID string, tags []string) *slog.Logger {
+func newLogger(w io.Writer, spanID string, tags []string, optimize string) *slog.Logger {
 	// Configure the JSON handler.
+	level := slog.LevelDebug
+	if optimize == "size" {
+		level = slog.LevelInfo
+	}
 	logger := slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
+		Level: level,
 		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
 			if attr.Key == slog.TimeKey && len(groups) <= 0 {
 				return slog.Attr{}

@@ -18,6 +18,27 @@ import (
 // can match responses to requests. A missing ID is echoed as a missing ID.
 //
 // A Timeout <= 0 means the server default.
+//
+// The Optimize field indicates what we should optimize for in terms of the
+// generated events. When Optimize is empty, the `inetd-ptnop` service collects
+// and emits all structured log events. Set to "size" to optimize for lean
+// output. Specifics may change in the future, and some sonda events may
+// be trimmed as well. What matters is that "size" guarantees that at least
+// the following events are present, with all their keys:
+//
+//   - closeDone
+//   - connectDone
+//   - dnsExchangeDone
+//   - dnsResponse
+//   - httpBodyStreamDone
+//   - httpRoundTripDone
+//   - stunBindingResult
+//   - tlsHandshakeDone
+//
+// With these events and their full keys, one should still be able to figure
+// out what happened, and yet the output file is leaner.
+//
+// Any unknown value is silently equal to empty and emits everything.
 type Request struct {
 	ID           json.RawMessage `json:"id,omitempty"`
 	ALPN         []string        `json:"alpn"`
@@ -29,6 +50,7 @@ type Request struct {
 	HTTPHost     string          `json:"httpHost"`
 	HTTPMethod   string          `json:"httpMethod"`
 	HTTPScheme   string          `json:"httpScheme"`
+	Optimize     string          `json:"optimize"`
 	Pipeline     string          `json:"pipeline"`
 	SNI          string          `json:"sni"`
 	Tags         []string        `json:"tags"`
