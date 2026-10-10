@@ -7,7 +7,7 @@ require (
 	github.com/bassosimone/closepool v0.0.0-20261005144423-6328e0244d72
 	github.com/bassosimone/deferexit v0.0.0-20261005144642-cbfbd3aa5dc7
 	github.com/bassosimone/dnscodec v0.0.0-20261005145128-388641c61fb4
-	github.com/bassosimone/ptnop v0.0.0-20261006070702-517c209392d9
+	github.com/bassosimone/ptnop v0.0.0-20261010085816-e096ed6a473c
 	github.com/bassosimone/runtimex v0.0.0-20261005144844-77dc639b0e90
 	github.com/bassosimone/vclip v0.0.0-20261006070757-1ed765ad0339
 	github.com/bassosimone/vflag v0.0.0-20261006065510-ce05c7d76a28
@@ -43,9 +43,9 @@ require (
 	github.com/quic-go/quic-go v0.63.0 // indirect
 	github.com/twpayne/go-geom v1.7.0 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
-	golang.org/x/crypto v0.57.0 // indirect
-	golang.org/x/net v0.59.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
+	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )

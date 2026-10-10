@@ -38,6 +38,11 @@ type Event struct {
 	RemoteAddr string    `json:"remoteAddr,omitempty"`
 	Protocol   string    `json:"protocol,omitempty"`
 
+	// --- nop pipeline: closeDone fields ---
+	ConnLifetime        time.Duration `json:"connLifetime,omitempty"`
+	IOTotalBytesRead    int64         `json:"ioTotalBytesRead,omitempty"`
+	IOTotalBytesWritten int64         `json:"ioTotalBytesWritten,omitempty"`
+
 	// --- nop pipeline: error fields ---
 	// Used by: connectDone, closeDone, tlsHandshakeDone, httpRoundTripDone,
 	// httpBodyStreamDone, dnsExchangeDone, readDone, writeDone, sondaFailure
