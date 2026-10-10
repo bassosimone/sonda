@@ -26,6 +26,11 @@ type Dialer interface {
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)
 }
 
+// ListenConfig abstracts network listening.
+type ListenConfig interface {
+	Listen(ctx context.Context, network, address string) (net.Listener, error)
+}
+
 // File is an abstract [*os.File] as returned by [os.OpenFile].
 //
 // The type is wide enough to accommodate both readers and writers.
@@ -44,6 +49,7 @@ type Environ struct {
 	FileConn         func(f *os.File) (net.Conn, error)
 	Getenv           func(key string) string
 	Link             func(oldname, newname string) error
+	ListenConfig     ListenConfig
 	LogFatalOnError0 func(err error)
 	MkdirAll         func(path string, perm os.FileMode) error
 	ReadDir          func(path string) ([]os.DirEntry, error)
@@ -89,13 +95,14 @@ func NewEnvironOS() *Environ {
 			}
 			return 0
 		},
-		Dialer:     newDialer(),
-		Environ:    os.Environ,
-		Executable: os.Executable,
-		Exit:       deferexit.Panic,
-		FileConn:   net.FileConn,
-		Getenv:     os.Getenv,
-		Link:       os.Link,
+		Dialer:       newDialer(),
+		Environ:      os.Environ,
+		Executable:   os.Executable,
+		Exit:         deferexit.Panic,
+		FileConn:     net.FileConn,
+		Getenv:       os.Getenv,
+		Link:         os.Link,
+		ListenConfig: newListenConfig(),
 		LogFatalOnError0: func(err error) {
 			if err != nil {
 				log.Print(err)
@@ -141,6 +148,7 @@ func (e *Environ) Clone() *Environ {
 		FileConn:         e.FileConn,
 		Getenv:           e.Getenv,
 		Link:             e.Link,
+		ListenConfig:     e.ListenConfig,
 		LogFatalOnError0: e.LogFatalOnError0,
 		MkdirAll:         e.MkdirAll,
 		ReadFile:         e.ReadFile,
@@ -163,6 +171,12 @@ func newDialer() *net.Dialer {
 	d := &net.Dialer{}
 	d.SetMultipathTCP(false)
 	return d
+}
+
+func newListenConfig() *net.ListenConfig {
+	lc := &net.ListenConfig{}
+	lc.SetMultipathTCP(false)
+	return lc
 }
 
 // Env is the global [*Environ].
