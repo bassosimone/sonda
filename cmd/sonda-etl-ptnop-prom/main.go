@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -34,6 +35,29 @@ func main() {
 
 // drainMaxLineSize is the maximum accepted line size.
 const drainMaxLineSize = 1 << 19
+
+// validHost maps valid host names to true.
+var validHost = map[string]bool{
+	"localhost": true,
+	"127.0.0.1": true,
+	"::1":       true,
+}
+
+// validateHostHandler ensures that the host is localhost-adjacent so that a DNS rebinding
+// attack does not allow a browser to reach out to our service.
+func validateHostHandler(mux http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if !validHost[req.Host] {
+			addr, _, err := net.SplitHostPort(req.Host)
+			if err != nil || !validHost[addr] {
+				rw.WriteHeader(http.StatusMisdirectedRequest)
+				return
+			}
+			// fallthrough
+		}
+		mux.ServeHTTP(rw, req)
+	})
+}
 
 func realMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
@@ -108,7 +132,7 @@ func realMain(ctx context.Context, args []string) error {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 	srvr := &http.Server{
-		Handler:             mux,
+		Handler:             validateHostHandler(mux),
 		ReadTimeout:         30 * time.Second,
 		ReadHeaderTimeout:   30 * time.Second,
 		WriteTimeout:        30 * time.Second,

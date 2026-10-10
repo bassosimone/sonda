@@ -15,6 +15,9 @@ stats of `etl-ptnop-qoe` and adding failure and I/O counts.
 - Long-running service serving `http://127.0.0.1:9774/metrics`.
 Prometheus cannot scrape a Unix domain socket.
 
+- Requests whose `Host` is not `localhost`, `127.0.0.1`, or `::1`
+(with a port) get 421, to defeat DNS rebinding.
+
 - Every 30 s it drains the work units in `/run/sonda/etl-ptnop-prom`
 (see `2026-10-09-00-triggers.md`).
 
