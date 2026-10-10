@@ -84,5 +84,4 @@ steps:
       url_path: /cdn-cgi/trace
 
 triggers:
-  - "etl-ptnop-obs"
   - "etl-ptnop-prom"
