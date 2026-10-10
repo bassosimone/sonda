@@ -45,6 +45,7 @@ func (r *dnsOverUDPRunner) RunStep(ctx context.Context, with map[string]string) 
 			AddrPort:     net.JoinHostPort(addr, port),
 			DNSQueryName: query,
 			DNSQueryType: "A",
+			Optimize:     with["optimize"],
 			Pipeline:     "dns-over-udp",
 			Tags:         r.State.Tags(),
 			Timeout:      5 * time.Second,

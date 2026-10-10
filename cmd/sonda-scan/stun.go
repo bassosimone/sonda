@@ -44,6 +44,7 @@ func (r *stunRunner) RunStep(ctx context.Context, with map[string]string) error 
 	for _, addr := range addrs {
 		req := &ptnoprpc.Request{
 			AddrPort: net.JoinHostPort(addr, port),
+			Optimize: with["optimize"],
 			Pipeline: "stun",
 			Tags:     r.State.Tags(),
 			Timeout:  5 * time.Second,

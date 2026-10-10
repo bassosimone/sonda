@@ -32,6 +32,8 @@ import (
 //   - dnsResponse
 //   - httpBodyStreamDone
 //   - httpRoundTripDone
+//   - sondaDnsRecordsA
+//   - sondaDnsRecordsAAAA
 //   - stunBindingResult
 //   - tlsHandshakeDone
 //

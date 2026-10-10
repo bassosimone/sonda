@@ -9,6 +9,7 @@ steps:
   - name: "STUN lookup"
     run: stun
     with:
+      optimize: size
       server: stun.l.google.com
 
   #
@@ -17,20 +18,23 @@ steps:
   - name: "DNS over UDP via Google"
     run: dns-over-udp
     with:
-      server: dns.google
+      optimize: size
       query: www.example.com
+      server: dns.google
 
   - name: "DNS over UDP via Quad9"
     run: dns-over-udp
     with:
-      server: dns.quad9.net
+      optimize: size
       query: www.example.com
+      server: dns.quad9.net
 
   - name: "DNS over UDP via Cloudflare"
     run: dns-over-udp
     with:
-      server: one.one.one.one
+      optimize: size
       query: www.example.com
+      server: one.one.one.one
 
   #
   # DNS over HTTPS
@@ -38,20 +42,23 @@ steps:
   - name: "DNS over HTTPS via Google"
     run: dns-over-https
     with:
-      server: dns.google
+      optimize: size
       query: www.example.com
+      server: dns.google
 
   - name: "DNS over HTTPS via Quad9"
     run: dns-over-https
     with:
-      server: dns.quad9.net
+      optimize: size
       query: www.example.com
+      server: dns.quad9.net
 
   - name: "DNS over HTTPS via Cloudflare"
     run: dns-over-https
     with:
-      server: cloudflare-dns.com
+      optimize: size
       query: www.example.com
+      server: cloudflare-dns.com
 
   #
   # HTTPS
@@ -60,17 +67,20 @@ steps:
     run: https
     with:
       host: www.example.com
+      optimize: size
 
   - name: "HTTPS GET Google generate_204"
     run: https
     with:
       host: www.google.com
+      optimize: size
       url_path: /generate_204
 
   - name: "HTTPS GET Cloudflare cdn-cgi/trace"
     run: https
     with:
       host: www.cloudflare.com
+      optimize: size
       url_path: /cdn-cgi/trace
 
 triggers:

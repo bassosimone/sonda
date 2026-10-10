@@ -49,6 +49,7 @@ func (r *dnsOverHTTPSRunner) RunStep(ctx context.Context, with map[string]string
 			HTTPHost:     server,
 			HTTPMethod:   "POST",
 			HTTPScheme:   "https",
+			Optimize:     with["optimize"],
 			Pipeline:     "dns-over-https",
 			SNI:          server,
 			Tags:         r.State.Tags(),

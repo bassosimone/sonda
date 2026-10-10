@@ -48,6 +48,7 @@ func (r *httpsRunner) RunStep(ctx context.Context, with map[string]string) error
 			HTTPHost:     host,
 			HTTPMethod:   "GET",
 			HTTPScheme:   "https",
+			Optimize:     with["optimize"],
 			Pipeline:     "https",
 			SNI:          host,
 			Tags:         r.State.Tags(),

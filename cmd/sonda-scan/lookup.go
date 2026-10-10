@@ -29,6 +29,7 @@ func newLookupRequest(state *sharedState, domain, queryType string) *ptnoprpc.Re
 		AddrPort:     "8.8.8.8:53",
 		DNSQueryName: domain,
 		DNSQueryType: queryType,
+		Optimize:     "size", // avoid bloat for an internal lookup
 		Pipeline:     "dns-over-udp",
 		Tags:         state.Tags(),
 		Timeout:      5 * time.Second,
