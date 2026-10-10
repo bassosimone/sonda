@@ -34,6 +34,7 @@ import (
 //   - httpRoundTripDone
 //   - sondaDnsRecordsA
 //   - sondaDnsRecordsAAAA
+//   - sondaInetdRunContext
 //   - stunBindingResult
 //   - tlsHandshakeDone
 //

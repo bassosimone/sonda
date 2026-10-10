@@ -16,13 +16,11 @@ import (
 	"net/url"
 	"os"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/bassosimone/closepool"
 	"github.com/bassosimone/dnscodec"
-	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/ptnoppaths"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/bassosimone/sonda/internal/testable"
@@ -116,22 +114,7 @@ func serveLine(
 		return serverFailure("env.MkdirAll", err)
 	}
 
-	// 6. Record the request that will be executed and, if known, who sent it.
-	//
-	// We keep these separate because the request is what the client sent while
-	// the peer is what we observed.
-	reqData := runtimex.PanicOnError1(json.Marshal(req)) // always serializable
-	reqData = append(reqData, '\n')
-	if err := env.WriteFile(ptnoppaths.SpanRequestJSON(tmpDir), reqData, 0640); err != nil {
-		return serverFailure("env.WriteFile", err)
-	}
-	peerData := runtimex.PanicOnError1(json.Marshal(peer)) // always serializable
-	peerData = append(peerData, '\n')
-	if err := env.WriteFile(ptnoppaths.SpanPeerJSON(tmpDir), peerData, 0640); err != nil {
-		return serverFailure("env.WriteFile", err)
-	}
-
-	// 7. Open stdout in the spool directory.
+	// 6. Open stdout in the spool directory.
 	closers := &closepool.Pool{}
 	defer closers.Close() // idempotent
 
@@ -142,7 +125,7 @@ func serveLine(
 	}
 	closers.Add(stdoutFile)
 
-	// 8. Open the body file, if needed.
+	// 7. Open the body file, if needed.
 	switch req.Pipeline {
 	case "http", "https":
 		if req.HTTPBodyFile {
@@ -155,8 +138,11 @@ func serveLine(
 		}
 	}
 
-	// 9. Create the structured logger writing the measurement events.
+	// 8. Create the structured logger writing the measurement events.
 	input.logger = newLogger(stdoutFile, spanID, req.Tags, req.Optimize)
+
+	// 9. Write peer credentials and incoming request.
+	input.logger.Info("sondaInetdRunContext", slog.Any("peer", peer), slog.Any("request", req))
 
 	// 10. Run the pipeline.
 	exitCode := ptnopRunPipeline(ctx, input)
@@ -166,18 +152,12 @@ func serveLine(
 		return serverFailure("closers.Close", err)
 	}
 
-	// 12. Write the exit code to the spool directory.
-	exitCodeData := []byte(strconv.Itoa(exitCode) + "\n")
-	if err := env.WriteFile(ptnoppaths.SpanExitCode(tmpDir), exitCodeData, 0640); err != nil {
-		return serverFailure("env.WriteFile", err)
-	}
-
-	// 13. Atomically rename the temporary directory to the final path.
+	// 12. Atomically rename the temporary directory to the final path.
 	if err := env.Rename(tmpDir, spanDir); err != nil {
 		return serverFailure("env.Rename", err)
 	}
 
-	// 14. Tell the caller that we succeeded.
+	// 13. Tell the caller that we succeeded.
 	resp.SpanDir = spanDir
 	resp.ExitCode = &exitCode
 	return resp
