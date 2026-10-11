@@ -91,6 +91,7 @@ func realMain(ctx context.Context, args []string) error {
 		"        Requires: `--url-path <path>`",
 		"        Suggests: `--http-header <key:value> ...`",
 		"        Suggests: `--http-body-file <path>`",
+		"        Suggests: `--max-http-response-body-size <size>`",
 		"        Suggests: `--url-query <query>`",
 		"    https",
 		"        Requires: `--addr-port <addrport>`",
@@ -99,9 +100,10 @@ func realMain(ctx context.Context, args []string) error {
 		"        Requires: `--http-scheme https`",
 		"        Requires: `--http-host <host>`",
 		"        Requires: `--url-path <path>`",
+		"        Suggests: `--alpn h2 --alpn http/1.1`",
 		"        Suggests: `--http-header <key:value> ...`",
 		"        Suggests: `--http-body-file <path>`",
-		"        Suggests: `--alpn h2 --alpn http/1.1`",
+		"        Suggests: `--max-http-response-body-size <size>`",
 		"        Suggests: `--url-query <query>`",
 		"    tcp",
 		"        Requires: `--addr-port <addrport>`",
@@ -219,6 +221,12 @@ func realMain(ctx context.Context, args []string) error {
 
 	fset.StringVar(&opts.HTTPScheme, 0, "http-scheme",
 		"Use `SCHEME` as the URL scheme.")
+
+	fset.Int64Var(&opts.MaxHTTPResponseBodySize, 0, "max-http-response-body-size",
+		"Stop reading the HTTP response body after `N` bytes.",
+		"This setting only applies to the `http` and `https` pipelines.",
+		"A zero (or negative) value disables this functionality.",
+		"Default: `@DEFAULT_VALUE@`.")
 
 	fset.StringVar(&opts.Pipeline, 0, "pipeline",
 		"Use `PIPELINE` as the measurement pipeline.")

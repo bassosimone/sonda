@@ -42,24 +42,32 @@ import (
 // out what happened, and yet the output file is leaner.
 //
 // Any unknown value is silently equal to empty and emits everything.
+//
+// The MaxHTTPResponseBodySize optional setting controls whether we
+// should cap the maximum response body size. A zero (or negative) value
+// disables this functionality. Otherwise, we stop reading the response
+// body after the given number of bytes has been read. When scanning
+// multiple URLs that may have relatively large bodies, it is advisable
+// to use this functionality, to limit the overall network I/O.
 type Request struct {
-	ID           json.RawMessage `json:"id,omitempty"`
-	ALPN         []string        `json:"alpn"`
-	AddrPort     string          `json:"addrPort"`
-	DNSQueryName string          `json:"dnsQueryName"`
-	DNSQueryType string          `json:"dnsQueryType"`
-	HTTPBodyFile bool            `json:"httpBodyFile"`
-	HTTPHeaders  []string        `json:"httpHeaders"`
-	HTTPHost     string          `json:"httpHost"`
-	HTTPMethod   string          `json:"httpMethod"`
-	HTTPScheme   string          `json:"httpScheme"`
-	Optimize     string          `json:"optimize"`
-	Pipeline     string          `json:"pipeline"`
-	SNI          string          `json:"sni"`
-	Tags         []string        `json:"tags"`
-	Timeout      time.Duration   `json:"timeout"`
-	URLPath      string          `json:"urlPath"`
-	URLQuery     string          `json:"urlQuery"`
+	ID                      json.RawMessage `json:"id,omitempty"`
+	ALPN                    []string        `json:"alpn"`
+	AddrPort                string          `json:"addrPort"`
+	DNSQueryName            string          `json:"dnsQueryName"`
+	DNSQueryType            string          `json:"dnsQueryType"`
+	HTTPBodyFile            bool            `json:"httpBodyFile"`
+	HTTPHeaders             []string        `json:"httpHeaders"`
+	HTTPHost                string          `json:"httpHost"`
+	HTTPMethod              string          `json:"httpMethod"`
+	HTTPScheme              string          `json:"httpScheme"`
+	MaxHTTPResponseBodySize int64           `json:"maxHttpResponseBodySize"`
+	Optimize                string          `json:"optimize"`
+	Pipeline                string          `json:"pipeline"`
+	SNI                     string          `json:"sni"`
+	Tags                    []string        `json:"tags"`
+	Timeout                 time.Duration   `json:"timeout"`
+	URLPath                 string          `json:"urlPath"`
+	URLQuery                string          `json:"urlQuery"`
 }
 
 // Response is the response sent by the server.

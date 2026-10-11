@@ -223,6 +223,9 @@ type pipelineInput struct {
 	// logger emits the structured logs (nil until [serveLine] creates the span dir).
 	logger *slog.Logger
 
+	// maxResponseBodySize is the maximum response body size.
+	maxResponseBodySize int64
+
 	// name is the pipeline name.
 	name string
 
@@ -240,14 +243,15 @@ func newPipelineInput(
 	ctx context.Context, env *testable.Environ, req *ptnoprpc.Request) (*pipelineInput, error) {
 	// 0. Initialize with defaults
 	input := &pipelineInput{
-		addrPort:  netip.AddrPort{},
-		bodyFp:    io.Discard, // we are always able to "write"
-		env:       env,
-		httpReq:   nil,
-		logger:    nil,
-		name:      req.Pipeline,
-		query:     nil,
-		tlsConfig: nil,
+		addrPort:            netip.AddrPort{},
+		bodyFp:              io.Discard, // we are always able to "write"
+		env:                 env,
+		httpReq:             nil,
+		logger:              nil,
+		maxResponseBodySize: req.MaxHTTPResponseBodySize,
+		name:                req.Pipeline,
+		query:               nil,
+		tlsConfig:           nil,
 	}
 
 	// 1. Validate the pipeline name.

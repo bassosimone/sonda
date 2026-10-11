@@ -134,9 +134,26 @@ func ptnopRunHTTP(ctx context.Context, input *pipelineInput,
 	}
 	defer resp.Body.Close()
 
-	// 3. Drain the response body.
-	if _, err := io.Copy(input.bodyFp, resp.Body); err != nil {
+	// 3. Optionally cap the maximum response body size.
+	maxSize := input.maxResponseBodySize
+	reader := io.Reader(resp.Body)
+	if maxSize > 0 {
+		reader = io.LimitReader(reader, maxSize)
+	}
+
+	// 4. Drain the response body.
+	count, err := io.Copy(input.bodyFp, reader)
+	if err != nil {
 		return logFailure(input.logger, "httpReadResponseBody", err, 1)
+	}
+
+	// 5. Let the user know when the body was possibly truncated.
+	if maxSize > 0 && count == maxSize {
+		input.logger.Info(
+			"sondaHttpResponseBodyMaybeTruncated",
+			slog.Int64("bodySize", count),
+			slog.Int64("maxHttpResponseBodySize", maxSize),
+		)
 	}
 	return 0
 }
