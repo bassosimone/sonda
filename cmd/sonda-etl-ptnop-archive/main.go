@@ -38,7 +38,7 @@ func realMain(ctx context.Context, args []string) error {
 	// Parse command line flags.
 	var (
 		maxSpanAge = 24 * time.Hour
-		metricsDir = config.MetricsDir
+		archiveDir = config.ArchiveDir
 		spoolDir   = config.SpoolDir
 		runDir     = config.RunDir
 	)
@@ -55,14 +55,14 @@ func realMain(ctx context.Context, args []string) error {
 		"Archive selected events from ptnop logs.",
 		"Read triggers from `$runDir/etl-ptnop-archive`.",
 		"Read the corresponding ptnop data from `$spoolDir/ptnop`.",
-		"ETL ptnop data to `$metricsDir/obs`.",
+		"Archive ptnop data to `$archiveDir/ptnop`.",
 	)
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.DurationVar(&maxSpanAge, 0, "max-span-age",
 		"Ignore spans older than `DURATION`.")
-	fset.StringVar(&metricsDir, 0, "metrics-dir",
-		"Top-level metrics `DIR` containing the data type directories.",
+	fset.StringVar(&archiveDir, 0, "archive-dir",
+		"Top-level archive `DIR` containing the data type directories.",
 		"Default: `@DEFAULT_VALUE@`.")
 	fset.StringVar(&spoolDir, 0, "spool-dir",
 		"Top-level spool `DIR` containing the data type directories.",
@@ -75,13 +75,13 @@ func realMain(ctx context.Context, args []string) error {
 
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
-	// We read from the ptnop data type and write the obs data type.
+	// We read from and write to the ptnop data type.
 	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
 	etlPtnopArchiveRunDir := filepath.Join(runDir, "etl-ptnop-archive")
-	obsMetricsDir := filepath.Join(metricsDir, "obs")
+	ptnopArchiveDir := filepath.Join(archiveDir, "ptnop")
 
 	// Make sure the destination directory exists.
-	if err := env.MkdirAll(obsMetricsDir, 0750); err != nil {
+	if err := env.MkdirAll(ptnopArchiveDir, 0750); err != nil {
 		logger.Error("env.MkdirAll", slog.Any("err", err))
 		env.Exit(1)
 	}
@@ -102,7 +102,7 @@ func realMain(ctx context.Context, args []string) error {
 			env,
 			etlPtnopArchiveRunDir,
 			logger,
-			obsMetricsDir,
+			ptnopArchiveDir,
 			ptnopSpoolDir,
 		)
 		if err != nil {
@@ -129,7 +129,7 @@ func processDentry(
 	env *testable.Environ,
 	etlPtnopArchiveRunDir string,
 	logger *slog.Logger,
-	obsMetricsDir string,
+	ptnopArchiveDir string,
 	ptnopSpoolDir string,
 ) error {
 	// 1. The dentry must be a regular `<UUIDv7>.jsonl` file.
@@ -178,7 +178,7 @@ func processDentry(
 
 		// 4.2. Otherwise process each span and collect errors to be
 		// reported all together at the end of the processing.
-		err := processSpanTrigger(cutoff, env, &info, logger, obsMetricsDir, ptnopSpoolDir)
+		err := processSpanTrigger(cutoff, env, &info, logger, ptnopArchiveDir, ptnopSpoolDir)
 		if err != nil {
 			logger.Warn("cannot process span", slog.Any("err", err))
 			errv = append(errv, err)
@@ -202,7 +202,7 @@ func processSpanTrigger(
 	env *testable.Environ,
 	info *triggers.CreatedSpan,
 	logger *slog.Logger,
-	obsMetricsDir string,
+	ptnopArchiveDir string,
 	ptnopSpoolDir string,
 ) error {
 	// 1. Make sure the spanID is valid.
@@ -236,7 +236,7 @@ func processSpanTrigger(
 	}
 
 	// 5. Extract events from the spanDir `stdout.txt` file.
-	numWritten, err := extractSpanDir(env, logger, obsMetricsDir, info.SpanDir, ts)
+	numWritten, err := extractSpanDir(env, logger, ptnopArchiveDir, info.SpanDir, ts)
 	if err != nil {
 		return fmt.Errorf("extractSpanDir: %s: %w", info.SpanDir, err)
 	}

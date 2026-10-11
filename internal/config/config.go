@@ -21,6 +21,12 @@ const DefaultConfigFilePath = "/etc/sonda/config.toml"
 // Not configurable: it must match `ListenStream=` in `sonda-inetd-ptnop.socket`.
 const PtnopSocketPath = "/run/sonda/inetd-ptnop/sock"
 
+// ArchiveDir is the top-level archive directory.
+//
+// Not configurable: `postinst` creates it and `sonda-etl-ptnop-archive.service`
+// lists it in `ReadWritePaths=`. To relocate it, use a bind mount or a symlink.
+const ArchiveDir = "/var/lib/sonda/archive"
+
 // MetricsDir is the top-level metrics directory.
 //
 // Not configurable: `postinst` creates it and `sonda-etl-ptnop-qoe.service`

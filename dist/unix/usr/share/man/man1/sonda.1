@@ -53,6 +53,14 @@ Members of the
 .B _sonda
 group can read it.
 .TP
+.I /var/lib/sonda/archive/
+Daily archive of ptnop events, written as
+.IR \%ptnop/YYYYMMDDT000000Z.jsonl .
+Nothing removes these files.
+Members of the
+.B _sonda
+group can read them.
+.TP
 .I /var/lib/sonda/metrics/
 Daily QoE metrics, written as
 .IR qoe/YYYY/MM/DD/YYYY\-MM\-DD.parquet .

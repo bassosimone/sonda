@@ -31,7 +31,7 @@ not parse as events are logged and skipped.
 
 ## Output
 
-- `/var/lib/sonda/metrics/obs/YYYYMMDDT000000Z.jsonl`, one file per
+- `/var/lib/sonda/archive/ptnop/YYYYMMDDT000000Z.jsonl`, one file per
 UTC day of the span timestamp, opened with `O_APPEND`. Event `time`
 fields keep the local offset.
 

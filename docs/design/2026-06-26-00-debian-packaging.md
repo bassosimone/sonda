@@ -185,8 +185,8 @@ interaction is skipped when systemd is not running (chroots).
 `postinst` (runs on install and upgrade):
 
 1. Creates the `_sonda` system user and group if absent.
-2. Creates `/var/spool/sonda` and `/var/lib/sonda/metrics`
-   with `2750 _sonda:_sonda`.
+2. Creates `/var/spool/sonda`, `/var/lib/sonda/archive`, and
+   `/var/lib/sonda/metrics` with `2750 _sonda:_sonda`.
 3. Reloads systemd and enables/starts the socket and the
    timers as above.
 

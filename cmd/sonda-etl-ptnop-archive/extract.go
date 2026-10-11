@@ -25,13 +25,13 @@ var extractKeepEvent = map[string]bool{
 	"dnsExchangeDone":    true,
 }
 
-// extractSpanDir extracts the `spanDir` stdout into the `metricsDir`.
+// extractSpanDir extracts the `spanDir` stdout into the `ptnopArchiveDir`.
 //
 // Returns the number of lines written and/or an error.
 func extractSpanDir(
 	env *testable.Environ,
 	logger *slog.Logger,
-	obsMetricsDir,
+	ptnopArchiveDir,
 	spanDir string,
 	ts time.Time,
 ) (int64, error) {
@@ -45,7 +45,7 @@ func extractSpanDir(
 
 	// Open the destination file.
 	dateOnlyTimestampUTC := ts.UTC().Format("20060102") + "T000000Z"
-	outputPath := filepath.Join(obsMetricsDir, dateOnlyTimestampUTC+".jsonl")
+	outputPath := filepath.Join(ptnopArchiveDir, dateOnlyTimestampUTC+".jsonl")
 	dest, err := env.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0640)
 	if err != nil {
 		return 0, err

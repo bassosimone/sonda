@@ -15,6 +15,9 @@ case "$1" in
         # Ensure the spool directory exists with correct ownership.
         install -d -o _sonda -g _sonda -m 2750 /var/spool/sonda
 
+        # Ensure the archive directory exists with correct ownership.
+        install -d -o _sonda -g _sonda -m 2750 /var/lib/sonda/archive
+
         # Ensure the metrics directory exists with correct ownership.
         install -d -o _sonda -g _sonda -m 2750 /var/lib/sonda/metrics
 

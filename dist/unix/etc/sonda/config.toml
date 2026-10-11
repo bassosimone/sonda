@@ -4,7 +4,8 @@
 ## commented out. Uncomment and modify them to override.
 
 ## The spool directory (`/var/spool/sonda`), the metrics directory
-## (`/var/lib/sonda/metrics`), and the socket path are not configurable
+## (`/var/lib/sonda/metrics`), the archive directory
+## (`/var/lib/sonda/archive`), and the socket path are not configurable
 ## here, since the systemd units and the package scripts also depend
 ## on them. To relocate a directory, use a bind mount or a symlink.
 
