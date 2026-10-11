@@ -3,7 +3,7 @@ author: sbs
 status: active
 ---
 
-# Design: `sonda-etl-ptnop-obs`
+# Design: `sonda-etl-ptnop-archive`
 
 ## Purpose
 
@@ -16,9 +16,9 @@ analysis happens later, from the copy.
 
 ## How it works
 
-- Started by `sonda-etl-ptnop-obs.path` (see
+- Started by `sonda-etl-ptnop-archive.path` (see
 `2026-10-09-00-triggers.md`). It reads every work unit in
-`/run/sonda/etl-ptnop-obs` and removes it.
+`/run/sonda/etl-ptnop-archive` and removes it.
 
 - For each `ptnop` span younger than `--max-span-age` (24h), it
 checks that `spanDir` matches the path derived from `spanId`, then

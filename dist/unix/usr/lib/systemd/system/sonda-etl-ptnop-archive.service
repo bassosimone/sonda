@@ -1,10 +1,10 @@
 [Unit]
-Description=Extract sonda observations
+Description=Archive sonda ptnop events
 
 [Service]
 Slice=system-sonda.slice
 Type=oneshot
-ExecStart=/usr/libexec/sonda/sonda-etl-ptnop-obs
+ExecStart=/usr/libexec/sonda/sonda-etl-ptnop-archive
 User=_sonda
 Group=_sonda
 
@@ -14,7 +14,7 @@ IOSchedulingClass=idle
 
 NoNewPrivileges=yes
 ProtectSystem=strict
-ReadWritePaths=/run/sonda/etl-ptnop-obs /var/lib/sonda/metrics
+ReadWritePaths=/run/sonda/etl-ptnop-archive /var/lib/sonda/metrics
 ProtectHome=yes
 PrivateTmp=yes
 PrivateDevices=yes

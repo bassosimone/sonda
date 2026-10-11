@@ -43,7 +43,7 @@ func realMain(ctx context.Context, args []string) error {
 		runDir     = config.RunDir
 	)
 
-	fset := vflag.NewFlagSet("sonda-etl-ptnop-obs", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-etl-ptnop-archive", vflag.ExitOnError)
 
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr
@@ -52,8 +52,8 @@ func realMain(ctx context.Context, args []string) error {
 	upr := vflag.NewDefaultUsagePrinter()
 	fset.UsagePrinter = upr
 	upr.AddDescription(
-		"Extract observations from ptnop logs.",
-		"Read triggers from `$runDir/etl-ptnop-obs`.",
+		"Archive selected events from ptnop logs.",
+		"Read triggers from `$runDir/etl-ptnop-archive`.",
 		"Read the corresponding ptnop data from `$spoolDir/ptnop`.",
 		"ETL ptnop data to `$metricsDir/obs`.",
 	)
@@ -77,7 +77,7 @@ func realMain(ctx context.Context, args []string) error {
 
 	// We read from the ptnop data type and write the obs data type.
 	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
-	etlPtnopObsRunDir := filepath.Join(runDir, "etl-ptnop-obs")
+	etlPtnopArchiveRunDir := filepath.Join(runDir, "etl-ptnop-archive")
 	obsMetricsDir := filepath.Join(metricsDir, "obs")
 
 	// Make sure the destination directory exists.
@@ -88,7 +88,7 @@ func realMain(ctx context.Context, args []string) error {
 
 	// Process each trigger file in the triggers dir.
 	cutoff := time.Now().Add(-maxSpanAge)
-	dentries, err := env.ReadDir(etlPtnopObsRunDir)
+	dentries, err := env.ReadDir(etlPtnopArchiveRunDir)
 	if err != nil {
 		logger.Error("env.ReadDir", slog.Any("err", err))
 		env.Exit(1)
@@ -100,7 +100,7 @@ func realMain(ctx context.Context, args []string) error {
 			cutoff,
 			dentry,
 			env,
-			etlPtnopObsRunDir,
+			etlPtnopArchiveRunDir,
 			logger,
 			obsMetricsDir,
 			ptnopSpoolDir,
@@ -122,19 +122,19 @@ func realMain(ctx context.Context, args []string) error {
 	return nil
 }
 
-// processDentry drains a single dentry in the `/run/sonda/etl-ptnop-obs` dir.
+// processDentry drains a single dentry in the `/run/sonda/etl-ptnop-archive` dir.
 func processDentry(
 	cutoff time.Time,
 	dentry os.DirEntry,
 	env *testable.Environ,
-	etlPtnopObsRunDir string,
+	etlPtnopArchiveRunDir string,
 	logger *slog.Logger,
 	obsMetricsDir string,
 	ptnopSpoolDir string,
 ) error {
 	// 1. The dentry must be a regular `<UUIDv7>.jsonl` file.
 	name, mode := dentry.Name(), dentry.Type()
-	fullFilePath := filepath.Join(etlPtnopObsRunDir, name)
+	fullFilePath := filepath.Join(etlPtnopArchiveRunDir, name)
 	if !mode.IsRegular() {
 		return fmt.Errorf("not a regular file: %s", fullFilePath)
 	}

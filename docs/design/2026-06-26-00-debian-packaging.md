@@ -103,10 +103,9 @@ GC may remove spans before the ETL processes them. `postinst` no
 longer enables or starts this timer; existing installs need
 `systemctl disable --now sonda-etl-ptnop-qoe.timer`.
 
-`sonda-etl-ptnop-obs.path` has no timer: it starts
-`sonda-etl-ptnop-obs.service` when the scan leaves work units in
-`/run/sonda/etl-ptnop-obs` (see `2026-10-09-00-triggers.md`). It is
-still enabled, but no trigger currently feeds it.
+`sonda-etl-ptnop-archive.path` has no timer: it starts
+`sonda-etl-ptnop-archive.service` when the scan leaves work units in
+`/run/sonda/etl-ptnop-archive` (see `2026-10-09-00-triggers.md`).
 
 `sonda-etl-ptnop-prom.service` is long-running
 (`WantedBy=multi-user.target`, `Restart=on-failure`), so `postinst`

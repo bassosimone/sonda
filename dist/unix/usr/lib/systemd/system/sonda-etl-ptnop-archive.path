@@ -1,0 +1,8 @@
+[Unit]
+Description=Archive sonda ptnop events when scan leaves work units
+
+[Path]
+DirectoryNotEmpty=/run/sonda/etl-ptnop-archive
+
+[Install]
+WantedBy=paths.target
