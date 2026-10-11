@@ -1,6 +1,6 @@
 ---
 author: sbs
-status: active
+status: historical
 ---
 
 # Design: `sonda etl-ptnop-qoe load`

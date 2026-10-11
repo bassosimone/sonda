@@ -10,18 +10,17 @@ sonda \- network quality of experience probe
 is an experimental network probe.
 It measures STUN, DNS over UDP, DNS over HTTPS, and HTTPS, and
 stores the raw results in a local spool.
-It then extracts quality of experience (QoE) metrics from the spool
-into daily Parquet files for later analysis.
+It then archives the raw events into daily files for later analysis.
 .PP
 The Debian package installs a systemd timer that runs
 .B sonda scan
 five minutes after the previous scan finishes.
 Each scan runs the measurements listed in
 .IR /etc/sonda/scan/default.yml .
+After each scan, a path unit runs
+.B sonda etl\-ptnop\-archive
+to archive the events of the new spool entries.
 A second timer runs
-.B sonda etl\-ptnop\-qoe
-every hour to extract and load the QoE metrics.
-A third timer runs
 .B sonda spool gc
 every hour to remove old spool entries.
 .PP
@@ -60,14 +59,6 @@ and compressed as
 .IR \%ptnop/YYYYMMDDT000000Z.jsonl.zst
 once no more data can be appended.
 Files older than 90 days are removed by default.
-Members of the
-.B _sonda
-group can read them.
-.TP
-.I /var/lib/sonda/metrics/
-Daily QoE metrics, written as
-.IR qoe/YYYY/MM/DD/YYYY\-MM\-DD.parquet .
-Nothing removes these files.
 Members of the
 .B _sonda
 group can read them.

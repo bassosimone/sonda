@@ -56,8 +56,6 @@ sonda scan --help         # scan-specific help
 
 ## Subcommands
 
-- `etl-ptnop-qoe` — extract QoE metrics from ptnop spans and load them into daily files.
-
 - `etl-ptnop-archive` — archive ptnop events into daily zstd-compressed JSONL files (path-activated after each scan).
 
 - `etl-ptnop-prom` — export ptnop spans as Prometheus metrics.
@@ -103,9 +101,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 - [github.com/goccy/go-yaml](https://pkg.go.dev/github.com/goccy/go-yaml)
 - [github.com/google/uuid](https://pkg.go.dev/github.com/google/uuid)
 - [github.com/miekg/dns](https://pkg.go.dev/github.com/miekg/dns)
-- [github.com/parquet-go/parquet-go](https://pkg.go.dev/github.com/parquet-go/parquet-go)
 - [github.com/pion/stun/v3](https://pkg.go.dev/github.com/pion/stun/v3)
-- [github.com/rogpeppe/go-internal](https://pkg.go.dev/github.com/rogpeppe/go-internal)
 
 ### Python (research)
 

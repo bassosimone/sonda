@@ -35,10 +35,6 @@ go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 chmod 755 "$stage/usr/libexec/sonda/sonda"
 
 go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
-	-o "$stage/usr/libexec/sonda/sonda-etl-ptnop-qoe" ./cmd/sonda-etl-ptnop-qoe
-chmod 755 "$stage/usr/libexec/sonda/sonda-etl-ptnop-qoe"
-
-go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 	-o "$stage/usr/libexec/sonda/sonda-etl-ptnop-archive" ./cmd/sonda-etl-ptnop-archive
 chmod 755 "$stage/usr/libexec/sonda/sonda-etl-ptnop-archive"
 
@@ -71,8 +67,6 @@ chmod 644 "$stage/usr/share/man/man1/sonda.1.gz"
 
 # Install systemd units.
 install -d "$stage/usr/lib/systemd/system"
-install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-qoe.service "$stage/usr/lib/systemd/system/"
-install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-qoe.timer "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-archive.service "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-archive.path "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-prom.service "$stage/usr/lib/systemd/system/"

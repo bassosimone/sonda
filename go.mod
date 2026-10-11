@@ -15,14 +15,11 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/klauspost/compress v1.20.1
 	github.com/miekg/dns v1.1.73
-	github.com/parquet-go/parquet-go v0.32.0
 	github.com/pion/stun/v3 v3.1.7
 	github.com/prometheus/client_golang v1.24.1
-	github.com/rogpeppe/go-internal v1.16.0
 )
 
 require (
-	github.com/andybalholm/brotli v1.2.6 // indirect
 	github.com/bassosimone/dnsoverhttps v0.0.0-20261006065313-d3b927428e25 // indirect
 	github.com/bassosimone/dnsoverstream v0.0.0-20261006065349-d8d1d8b12cae // indirect
 	github.com/bassosimone/errclass v0.0.0-20261005144716-2d461da39b74 // indirect
@@ -37,9 +34,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/parquet-go/bitpack v1.1.0 // indirect
-	github.com/parquet-go/jsonlite v1.5.5 // indirect
-	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/pion/dtls/v3 v3.1.10 // indirect
 	github.com/pion/logging v0.2.4 // indirect
 	github.com/pion/transport/v4 v4.1.1 // indirect
@@ -48,7 +42,6 @@ require (
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/quic-go/quic-go v0.63.0 // indirect
-	github.com/twpayne/go-geom v1.7.0 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/net v0.61.0 // indirect

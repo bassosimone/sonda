@@ -43,8 +43,8 @@ func main() {
 	disp.AddDescription(
 		"Experimental network probe. It measures STUN, DNS over UDP, DNS " +
 			"over HTTPS, and HTTPS, and stores the raw results in a local " +
-			"spool. It then extracts quality of experience (QoE) metrics " +
-			"from the spool into daily Parquet files for later analysis.")
+			"spool. It then archives the raw events into daily files " +
+			"for later analysis.")
 
 	// Wire version reporting.
 	disp.AddVersionHandlers(buildcfg.Version)

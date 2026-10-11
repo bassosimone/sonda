@@ -27,12 +27,6 @@ const PtnopSocketPath = "/run/sonda/inetd-ptnop/sock"
 // lists it in `ReadWritePaths=`. To relocate it, use a bind mount or a symlink.
 const ArchiveDir = "/var/lib/sonda/archive"
 
-// MetricsDir is the top-level metrics directory.
-//
-// Not configurable: `postinst` creates it and `sonda-etl-ptnop-qoe.service`
-// lists it in `ReadWritePaths=`. To relocate it, use a bind mount or a symlink.
-const MetricsDir = "/var/lib/sonda/metrics"
-
 // SpoolDir is the top-level spool directory.
 //
 // Not configurable: `postinst` creates it, `postrm` removes it, and the

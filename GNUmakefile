@@ -1,7 +1,6 @@
 .PHONY: all
 all:
 	go build -v .
-	go build -v ./cmd/sonda-etl-ptnop-qoe
 	go build -v ./cmd/sonda-etl-ptnop-archive
 	go build -v ./cmd/sonda-etl-ptnop-prom
 	go build -v ./cmd/sonda-inetd-ptnop

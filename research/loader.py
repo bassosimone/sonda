@@ -3,7 +3,8 @@
 """Load sonda QoE rows from the ptnop archive and the historical qoe Parquet files.
 
 Both sources produce the same columns, matching the `metricsRow` schema that
-`sonda etl-ptnop-qoe` used to write: one row per Done event of the
+the removed `sonda etl-ptnop-qoe` command used to write (see `row.go` in
+`cmd/sonda-etl-ptnop-qoe` at commit 2edfb3d): one row per Done event of the
 connect, DNS exchange, TLS handshake, and HTTP round trip operations.
 """
 
@@ -93,7 +94,7 @@ def event_to_row(ev: dict) -> dict | None:
     """Map a ptnop event to a qoe row, or return None to skip it.
 
     Mirrors `extractParseSpan` and `extractEventToMetrics` in
-    `cmd/sonda-etl-ptnop-qoe/extract.go`: we keep the Done events,
+    `cmd/sonda-etl-ptnop-qoe/extract.go` at commit 2edfb3d: we keep the Done events,
     skip ESKIP, and map empty optional fields to None.
     """
     if ev.get("msg") not in DONE_EVENTS:
