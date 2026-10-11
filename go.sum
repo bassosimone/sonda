@@ -32,8 +32,8 @@ github.com/bassosimone/netstub v0.0.0-20261005145417-323ef9359fb2 h1:SBiWbtvLV5o
 github.com/bassosimone/netstub v0.0.0-20261005145417-323ef9359fb2/go.mod h1:G/2jKW1tkGBX3d2uJwm9LobcvdA8cquj4BP0eF4LAmI=
 github.com/bassosimone/pkitest v0.0.0-20261005145452-7b85881f912d h1:sSnMO31joutMWujPwqs+scoRN5twRObMkk2XZRN71aE=
 github.com/bassosimone/pkitest v0.0.0-20261005145452-7b85881f912d/go.mod h1:2KJWmQuaY/fn7rrufVu3EwbfqO5Py+oNj3ln9WknUmE=
-github.com/bassosimone/ptnop v0.0.0-20261011142807-fd41d26f3589 h1:R31oq1VutL12ciSOWHuxiDPmtx8bq7p2H0gCgUqO9+w=
-github.com/bassosimone/ptnop v0.0.0-20261011142807-fd41d26f3589/go.mod h1:nYAkw//YeY6eFwhtWQRs/LN7Nx+FH0gJYFXLDkgZXNA=
+github.com/bassosimone/ptnop v0.0.0-20261011171359-0cf0f6c2926a h1:9cHZQTt4eRH1v2hJ0dHXqW/3tWgjqTeqqonMS5MUsEU=
+github.com/bassosimone/ptnop v0.0.0-20261011171359-0cf0f6c2926a/go.mod h1:nYAkw//YeY6eFwhtWQRs/LN7Nx+FH0gJYFXLDkgZXNA=
 github.com/bassosimone/runtimex v0.0.0-20261005144844-77dc639b0e90 h1:crpeakr4bPQGTsV25nbtVXB72cwfk1wnZc2HF3fE1KE=
 github.com/bassosimone/runtimex v0.0.0-20261005144844-77dc639b0e90/go.mod h1:2aW76skIZNS7ljOpIqU3eARVLmtb0AG/Gab4aegSkTA=
 github.com/bassosimone/safeconn v0.0.0-20261005145944-9035df85f071 h1:DBbZo67LGRhlLGt3uV9so3E//UYOigi9A7cFLBfs8g8=
