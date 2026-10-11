@@ -14,7 +14,7 @@ IOSchedulingClass=idle
 
 NoNewPrivileges=yes
 ProtectSystem=strict
-ReadWritePaths=/run/sonda/etl-ptnop-archive /var/lib/sonda/archive
+ReadWritePaths=/run/sonda/etl-ptnop-archive /var/lib/sonda/archive/ptnop
 ProtectHome=yes
 PrivateTmp=yes
 PrivateDevices=yes

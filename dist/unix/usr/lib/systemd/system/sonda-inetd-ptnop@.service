@@ -11,7 +11,7 @@ Group=_sonda
 
 NoNewPrivileges=yes
 ProtectSystem=strict
-ReadWritePaths=/var/spool/sonda
+ReadWritePaths=/var/spool/sonda/ptnop
 ProtectHome=yes
 PrivateTmp=yes
 PrivateDevices=yes

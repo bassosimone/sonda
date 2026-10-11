@@ -23,13 +23,13 @@ const PtnopSocketPath = "/run/sonda/inetd-ptnop/sock"
 
 // ArchiveDir is the top-level archive directory.
 //
-// Not configurable: `postinst` creates it and `sonda-etl-ptnop-archive.service`
+// Not configurable: `tmpfiles.d` creates it and `sonda-etl-ptnop-archive.service`
 // lists it in `ReadWritePaths=`. To relocate it, use a bind mount or a symlink.
 const ArchiveDir = "/var/lib/sonda/archive"
 
 // SpoolDir is the top-level spool directory.
 //
-// Not configurable: `postinst` creates it, `postrm` removes it, and the
+// Not configurable: `tmpfiles.d` creates it, `postrm` removes it, and the
 // units list it in `ReadWritePaths=`. To relocate it, use a bind mount or
 // a symlink.
 const SpoolDir = "/var/spool/sonda"
