@@ -35,14 +35,18 @@ func realMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
 
-	// Parse command line flags.
+	// Set the command defaults.
+	presets := config.Defaults()
+	configErr := config.ReadInto(env, config.DefaultConfigFilePath, presets)
 	var (
+		maxDays    = presets.Archive.Ptnop.MaxDays
 		maxSpanAge = 24 * time.Hour
 		archiveDir = config.ArchiveDir
 		spoolDir   = config.SpoolDir
 		runDir     = config.RunDir
 	)
 
+	// Parse command line flags.
 	fset := vflag.NewFlagSet("sonda-etl-ptnop-archive", vflag.ExitOnError)
 
 	fset.Exit = env.Exit
@@ -59,6 +63,9 @@ func realMain(ctx context.Context, args []string) error {
 	)
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
+	fset.IntVar(&maxDays, 0, "max-days",
+		"Remove the daily files older than `DAYS`. Zero means never.",
+		"Default: `@DEFAULT_VALUE@`.")
 	fset.DurationVar(&maxSpanAge, 0, "max-span-age",
 		"Ignore spans older than `DURATION`.")
 	fset.StringVar(&archiveDir, 0, "archive-dir",
@@ -74,6 +81,16 @@ func realMain(ctx context.Context, args []string) error {
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using ExitOnError
 
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
+
+	// Defer reporting config errors after flag parsing to honor `-h/--help`.
+	if configErr != nil {
+		logger.Error("config.Read", slog.Any("err", configErr))
+		env.Exit(1)
+	}
+	if maxDays < 0 {
+		logger.Error("invalid --max-days", slog.Int("maxDays", maxDays))
+		env.Exit(2)
+	}
 
 	// We read from and write to the ptnop data type.
 	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
@@ -117,7 +134,13 @@ func realMain(ctx context.Context, args []string) error {
 		errv = append(errv, err)
 	}
 
-	// TODO(bassosimone): delete very old archive entries
+	// Remove the days older than the retention period.
+	if maxDays > 0 {
+		expireCutoff := time.Now().UTC().AddDate(0, 0, -maxDays)
+		if err := expireOldDays(env, logger, ptnopArchiveDir, expireCutoff); err != nil {
+			errv = append(errv, err)
+		}
+	}
 
 	// Determine the exit code and exit
 	if len(errv) >= 1 {

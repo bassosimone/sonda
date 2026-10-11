@@ -9,6 +9,10 @@
 ## here, since the systemd units and the package scripts also depend
 ## on them. To relocate a directory, use a bind mount or a symlink.
 
+[archive.ptnop]
+## Days after which daily archive files are removed. Zero means never.
+#max-days = 90
+
 [inetd.ptnop]
 ## Close idle client connections after this time.
 ##

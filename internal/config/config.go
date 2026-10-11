@@ -69,8 +69,20 @@ func (d *Duration) UnmarshalText(text []byte) error {
 
 // Settings contains `sonda` settings.
 type Settings struct {
-	Inetd Inetd `toml:"inetd"`
-	Spool Spool `toml:"spool"`
+	Archive Archive `toml:"archive"`
+	Inetd   Inetd   `toml:"inetd"`
+	Spool   Spool   `toml:"spool"`
+}
+
+// Archive contains the archive settings.
+type Archive struct {
+	Ptnop ArchivePtnop `toml:"ptnop"`
+}
+
+// ArchivePtnop contains `sonda-etl-ptnop-archive` settings.
+type ArchivePtnop struct {
+	// MaxDays is the number of days to keep. Zero means forever.
+	MaxDays int `toml:"max-days"`
 }
 
 // Inetd contains settings for the inetd-like servers.
@@ -96,6 +108,11 @@ type SpoolGC struct {
 // Defaults returns the default [*Settings].
 func Defaults() *Settings {
 	return &Settings{
+		Archive: Archive{
+			Ptnop: ArchivePtnop{
+				MaxDays: 90,
+			},
+		},
 		// The idle timeout is a guess: it should leave plenty of margin
 		// to a client sending requests back to back, such as `sonda scan`.
 		Inetd: Inetd{

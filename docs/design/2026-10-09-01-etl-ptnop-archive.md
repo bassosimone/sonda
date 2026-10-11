@@ -37,6 +37,10 @@ when it ended at least `--max-span-age` ago, since we skip older spans.
 1.5 MB), against about 6x for gzip on one hour of spans. DuckDB's
 `read_json` can read `.zst` files for later analysis.
 
+- It then removes the daily files older than `--max-days`
+(`archive.ptnop.max-days`, default 90, zero means never). Days,
+rather than a duration, since we remove whole daily files.
+
 - A line is at most 512 KiB (`extractMaxLineSize`), well below the
 16 MiB default `maximum_object_size` of DuckDB's `read_json`.
 
@@ -65,7 +69,4 @@ unparsable or too long lines, and drop duplicate lines.
 
 ## Open questions
 
-- Retention: nothing removes old files yet (see the TODO in
-`main.go`).
-
-- What to do with `etl-ptnop-qoe` once the above is clear.
+- What to do with `etl-ptnop-qoe`.
