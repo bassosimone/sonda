@@ -12,16 +12,8 @@ case "$1" in
                 --no-create-home --quiet _sonda
         fi
 
-        # Ensure the spool directory exists with correct ownership.
-        install -d -o _sonda -g _sonda -m 2750 /var/spool/sonda
-
-        # Ensure the archive directory exists with correct ownership.
-        install -d -o _sonda -g _sonda -m 2750 /var/lib/sonda/archive
-
-        # Ensure the run directory exists with correct ownership.
-        if [ -x "$(command -v systemd-tmpfiles)" ]; then
-            systemd-tmpfiles ${DPKG_ROOT:+--root="$DPKG_ROOT"} --create sonda.conf || true
-        fi
+        # Create the directories listed in tmpfiles.d/sonda.conf.
+        systemd-tmpfiles ${DPKG_ROOT:+--root="$DPKG_ROOT"} --create sonda.conf
         ;;
 esac
 
