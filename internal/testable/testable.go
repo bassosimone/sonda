@@ -33,8 +33,12 @@ type ListenConfig interface {
 
 // File is an abstract [*os.File] as returned by [os.OpenFile].
 //
-// The type is wide enough to accommodate both readers and writers.
-type File = io.ReadWriteCloser
+// The type is wide enough to accommodate both readers and writers,
+// and Sync allows flushing writes to stable storage.
+type File interface {
+	io.ReadWriteCloser
+	Sync() error
+}
 
 // Environ abstracts away side effects (I/O, exit) so that commands
 // can be tested without real I/O or process termination.
