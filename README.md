@@ -74,10 +74,13 @@ A [Streamlit](https://streamlit.io/) app for browsing collected metrics
 lives in `research/explorer.py`. To run it:
 
 ```bash
-uv run streamlit run research/explorer.py [/path/to/metrics]
+uv run streamlit run research/explorer.py [-- [--archive-dir DIR] [--qoe-dir DIR]]
 ```
 
-It defaults to reading from `/var/lib/sonda/metrics/qoe`.
+It reads the ptnop archive (default: `/var/lib/sonda/archive/ptnop`) and
+the historical qoe Parquet files (default: `/var/lib/sonda/metrics/qoe`).
+When both contain a span, it uses the archive. Pass an empty string to
+skip a source.
 
 ## License
 

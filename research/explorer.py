@@ -2,6 +2,7 @@
 
 """Streamlit app for exploring sonda metrics."""
 
+import argparse
 import datetime
 import sys
 from pathlib import Path
@@ -11,7 +12,10 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-DEFAULT_METRICS_DIR = Path("/var/lib/sonda/metrics/qoe")
+# `streamlit run` puts this directory on sys.path, while the tests import
+# us as `research.explorer`: make `loader` importable in both cases.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import loader
 
 # Well-known DNS resolver IPs → provider name
 DNS_PROVIDERS = {}
@@ -162,13 +166,14 @@ def classify_measurement(row) -> str:
 
 
 @st.cache_data
-def load_data(metrics_dir: str) -> pd.DataFrame:
-    path = Path(metrics_dir)
-    files = sorted(path.rglob("*.parquet"))
-    if not files:
-        st.error(f"No parquet files found in {metrics_dir}")
+def load_data(archive_dir: str, qoe_dir: str) -> pd.DataFrame:
+    df = loader.load(
+        Path(archive_dir) if archive_dir else None,
+        Path(qoe_dir) if qoe_dir else None,
+    )
+    if df.empty:
+        st.error(f"No data found in {archive_dir!r} or {qoe_dir!r}")
         st.stop()
-    df = pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
     df["duration_ms"] = df["duration_us"] / 1000.0
     df["provider"] = df.apply(classify_provider, axis=1)
     df["measurement"] = df.apply(classify_measurement, axis=1)
@@ -494,7 +499,7 @@ def render_overview_tab(df):
         " services (DNS resolvers, HTTPS endpoints). It has been running"
         " across several networks over time; this dashboard provides a"
         " continuously updated overview of the collected data"
-        " as read from `/var/lib/sonda/metrics`."
+        " as read from the ptnop archive and the historical qoe files."
     )
 
     st.divider()
@@ -980,12 +985,25 @@ def render_errors_tab(fdf):
     st.plotly_chart(fig, width="stretch")
 
 
+def parse_args(argv):
+    parser = argparse.ArgumentParser(prog="explorer.py")
+    parser.add_argument(
+        "--archive-dir", default=str(loader.DEFAULT_ARCHIVE_DIR),
+        help="ptnop archive directory; empty string to skip",
+    )
+    parser.add_argument(
+        "--qoe-dir", default=str(loader.DEFAULT_QOE_DIR),
+        help="historical qoe Parquet directory; empty string to skip",
+    )
+    return parser.parse_args(argv)
+
+
 def main():
     st.set_page_config(page_title="Sonda Metrics Explorer", layout="wide")
     st.title("Sonda Metrics Explorer")
 
-    metrics_dir = sys.argv[1] if len(sys.argv) > 1 else str(DEFAULT_METRICS_DIR)
-    df = load_data(metrics_dir)
+    args = parse_args(sys.argv[1:])
+    df = load_data(args.archive_dir, args.qoe_dir)
 
     st.sidebar.header("Filters")
 
