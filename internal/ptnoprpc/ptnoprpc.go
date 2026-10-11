@@ -59,6 +59,7 @@ type Request struct {
 	Tags         []string        `json:"tags"`
 	Timeout      time.Duration   `json:"timeout"`
 	URLPath      string          `json:"urlPath"`
+	URLQuery     string          `json:"urlQuery"`
 }
 
 // Response is the response sent by the server.

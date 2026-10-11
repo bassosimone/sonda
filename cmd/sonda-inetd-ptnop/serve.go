@@ -321,7 +321,12 @@ func newHTTPRequest(ctx context.Context, req *ptnoprpc.Request) (*http.Request, 
 	}
 
 	// 2. Create the request.
-	reqURL := (&url.URL{Scheme: req.HTTPScheme, Host: req.HTTPHost, Path: req.URLPath}).String()
+	reqURL := (&url.URL{
+		Scheme:   req.HTTPScheme,
+		Host:     req.HTTPHost,
+		Path:     req.URLPath,
+		RawQuery: req.URLQuery,
+	}).String()
 	httpReq, err := http.NewRequestWithContext(ctx, req.HTTPMethod, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err

@@ -68,6 +68,7 @@ func realMain(ctx context.Context, args []string) error {
 		"        Requires: `--dns-query-name <name>`",
 		"        Requires: `--dns-query-type <type>`",
 		"        Suggests: `--alpn h2 --alpn http/1.1`",
+		"        Suggests: `--url-query <query>`",
 		"    dns-over-tcp",
 		"        Requires: `--addr-port <addrport>`",
 		"        Requires: `--dns-query-name <name>`",
@@ -90,6 +91,7 @@ func realMain(ctx context.Context, args []string) error {
 		"        Requires: `--url-path <path>`",
 		"        Suggests: `--http-header <key:value> ...`",
 		"        Suggests: `--http-body-file <path>`",
+		"        Suggests: `--url-query <query>`",
 		"    https",
 		"        Requires: `--addr-port <addrport>`",
 		"        Requires: `--sni <host>`",
@@ -100,6 +102,7 @@ func realMain(ctx context.Context, args []string) error {
 		"        Suggests: `--http-header <key:value> ...`",
 		"        Suggests: `--http-body-file <path>`",
 		"        Suggests: `--alpn h2 --alpn http/1.1`",
+		"        Suggests: `--url-query <query>`",
 		"    tcp",
 		"        Requires: `--addr-port <addrport>`",
 		"    tls",
@@ -237,6 +240,9 @@ func realMain(ctx context.Context, args []string) error {
 
 	fset.StringVar(&opts.URLPath, 0, "url-path",
 		"Use the given `PATH` as the URL path.")
+
+	fset.StringVar(&opts.URLQuery, 0, "url-query",
+		"Use the given `RAW_QUERY` as the already-encoded URL query.")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
