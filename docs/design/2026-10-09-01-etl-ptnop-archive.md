@@ -66,7 +66,3 @@ having written the data (fsyncgate).
 
 - Readers should therefore skip empty lines, warn about and skip
 unparsable or too long lines, and drop duplicate lines.
-
-## Open questions
-
-- What to do with `etl-ptnop-qoe`.

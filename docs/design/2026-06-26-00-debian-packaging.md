@@ -90,27 +90,21 @@ triggers with `OnActiveSec=1min` and `OnUnitInactiveSec=1h`. Its
 service passes no flags, so its settings come from
 `/etc/sonda/config.toml` (see `2026-06-26-02-spool-gc.md`).
 
-The ETL timer (`sonda-etl-ptnop-qoe.timer`) uses the same two
-triggers with `OnActiveSec=2min` and `OnUnitInactiveSec=1h`. Its
-service runs `sonda etl-ptnop-qoe extract` and then `load`, with no
-flags. Running the ETL hourly rather than in every scan pays the
-daily Parquet rewrite once per hour instead of once every five
-minutes. The service also sets `Nice=10` and `IOSchedulingClass=idle`,
-so the ETL does not compete with the measurements, and
-`PrivateNetwork=yes`, since it needs no network. The hourly interval
-must stay well below `spool.gc.max-age` (`6h` by default), otherwise
-GC may remove spans before the ETL processes them. `postinst` no
-longer enables or starts this timer; existing installs need
-`systemctl disable --now sonda-etl-ptnop-qoe.timer`.
-
 `sonda-etl-ptnop-archive.path` has no timer: it starts
 `sonda-etl-ptnop-archive.service` when the scan leaves work units in
 `/run/sonda/etl-ptnop-archive` (see `2026-10-09-00-triggers.md`).
+The service sets `Nice=10` and `IOSchedulingClass=idle`, so the ETL
+does not compete with the measurements, and `PrivateNetwork=yes`,
+since it needs no network.
 
 `sonda-etl-ptnop-prom.service` is long-running
 (`WantedBy=multi-user.target`, `Restart=on-failure`), so `postinst`
-restarts it to pick up a new binary on upgrade. It shares the ETL's
-`Nice=10` and `IOSchedulingClass=idle`, and may only reach localhost.
+restarts it to pick up a new binary on upgrade. It shares the archive
+ETL's `Nice=10` and `IOSchedulingClass=idle`, and may only reach
+localhost.
+
+The removed `etl-ptnop-qoe` ETL had a timer; installs that still
+have it enabled need `systemctl disable --now sonda-etl-ptnop-qoe.timer`.
 
 ## Security
 
@@ -122,9 +116,11 @@ Systemd hardening directives are applied in three tiers:
 
 1. Filesystem isolation: `ProtectSystem=strict` (read-only
    root), `ProtectHome=yes`, `PrivateTmp=yes`, and
-   `ReadWritePaths=` only where a unit writes: the spool for
-   `sonda-inetd-ptnop` and GC, the spool and the metrics for
-   the ETL, and nothing for the scan.
+   `ReadWritePaths=` only where a unit writes: `spool/ptnop`
+   for `sonda-inetd-ptnop`, the whole spool for GC,
+   `archive/ptnop` and its run directory for the archive ETL,
+   its run directory for the prom ETL, and its run directory
+   plus the trigger directories for the scan.
 
 2. Kernel isolation: `PrivateDevices=yes`,
    `ProtectKernelTunables=yes`, `ProtectKernelModules=yes`,
@@ -142,7 +138,7 @@ and write access to the spool.
 
 ## Spool permissions
 
-The spool directory and the metrics directory are owned by
+The spool directory and the archive directory are owned by
 `_sonda:_sonda` with mode `2750` (setgid).
 
 We use the `_sonda` group because the `sonda-inetd-ptnop` socket
@@ -156,7 +152,7 @@ convention that `adm` members can read monitoring and log data.
 We moved away from it because it required two different groups
 for two closely related capabilities. Installations created
 before this change need a manual `chgrp -R _sonda` of both
-directories: `postinst` only fixes the top-level directories,
+directories: `tmpfiles.d` only fixes the directories it lists,
 and existing subdirectories keep propagating `adm`.
 
 The sonda processes run as `_sonda:_sonda`, so for them the
@@ -196,7 +192,7 @@ interaction is skipped when systemd is not running (chroots).
 `postrm` (runs on remove and purge):
 
 - On `remove`: reloads systemd to forget the removed units.
-- On `purge`: removes the spool and metrics directories, the
+- On `purge`: removes `/var/spool/sonda` and `/var/lib/sonda`, the
   enable symlinks with their helper state, and the `_sonda`
   user and group.
 
