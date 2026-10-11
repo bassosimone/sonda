@@ -93,15 +93,17 @@ SPDX-License-Identifier: GPL-3.0-or-later
 - [github.com/bassosimone/closepool](https://pkg.go.dev/github.com/bassosimone/closepool)
 - [github.com/bassosimone/deferexit](https://pkg.go.dev/github.com/bassosimone/deferexit)
 - [github.com/bassosimone/dnscodec](https://pkg.go.dev/github.com/bassosimone/dnscodec)
-- [github.com/bassosimone/iox](https://pkg.go.dev/github.com/bassosimone/iox)
 - [github.com/bassosimone/ptnop](https://pkg.go.dev/github.com/bassosimone/ptnop)
 - [github.com/bassosimone/runtimex](https://pkg.go.dev/github.com/bassosimone/runtimex)
 - [github.com/bassosimone/vclip](https://pkg.go.dev/github.com/bassosimone/vclip)
 - [github.com/bassosimone/vflag](https://pkg.go.dev/github.com/bassosimone/vflag)
+- [github.com/BurntSushi/toml](https://pkg.go.dev/github.com/BurntSushi/toml)
 - [github.com/goccy/go-yaml](https://pkg.go.dev/github.com/goccy/go-yaml)
 - [github.com/google/uuid](https://pkg.go.dev/github.com/google/uuid)
+- [github.com/klauspost/compress](https://pkg.go.dev/github.com/klauspost/compress)
 - [github.com/miekg/dns](https://pkg.go.dev/github.com/miekg/dns)
 - [github.com/pion/stun/v3](https://pkg.go.dev/github.com/pion/stun/v3)
+- [github.com/prometheus/client_golang](https://pkg.go.dev/github.com/prometheus/client_golang)
 
 ### Python (research)
 
