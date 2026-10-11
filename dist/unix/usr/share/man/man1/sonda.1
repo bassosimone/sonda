@@ -55,7 +55,10 @@ group can read it.
 .TP
 .I /var/lib/sonda/archive/
 Daily archive of ptnop events, written as
-.IR \%ptnop/YYYYMMDDT000000Z.jsonl .
+.IR \%ptnop/YYYYMMDDT000000Z.jsonl ,
+and compressed as
+.IR \%ptnop/YYYYMMDDT000000Z.jsonl.zst
+once no more data can be appended.
 Nothing removes these files.
 Members of the
 .B _sonda

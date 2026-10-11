@@ -13,6 +13,7 @@ require (
 	github.com/bassosimone/vflag v0.0.0-20261006065510-ce05c7d76a28
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/uuid v1.6.0
+	github.com/klauspost/compress v1.20.1
 	github.com/miekg/dns v1.1.73
 	github.com/parquet-go/parquet-go v0.32.0
 	github.com/pion/stun/v3 v3.1.7
@@ -35,7 +36,6 @@ require (
 	github.com/bassosimone/textwrap v0.0.0-20261005145027-6e50b1e009a9 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/klauspost/compress v1.20.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/parquet-go/bitpack v1.1.0 // indirect
 	github.com/parquet-go/jsonlite v1.5.5 // indirect

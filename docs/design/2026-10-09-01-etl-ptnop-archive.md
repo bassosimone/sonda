@@ -10,10 +10,6 @@ status: active
 Keep a long-lived copy of the ptnop events, so that we
 can analyze them after `sonda spool gc` has removed the spans.
 
-It is a second try after `etl-ptnop-qoe`, which still runs from
-its timer. It copies events rather than deriving metrics: the
-analysis happens later, from the copy.
-
 ## How it works
 
 - Started by `sonda-etl-ptnop-archive.path` (see
@@ -33,6 +29,14 @@ not parse as events are logged and skipped.
 UTC day of the span timestamp, opened with `O_APPEND`. Event `time`
 fields keep the local offset.
 
+- At the end of each run, it compresses the days no span can be
+appended to anymore into `YYYYMMDDT000000Z.jsonl.zst`. A day is closed
+when it ended at least `--max-span-age` ago, since we skip older spans.
+
+- We use zstd: on one day of data it gives about 19x (30 MB to
+1.5 MB), against about 6x for gzip on one hour of spans. DuckDB's
+`read_json` can read `.zst` files for later analysis.
+
 - A line is at most 512 KiB (`extractMaxLineSize`), well below the
 16 MiB default `maximum_object_size` of DuckDB's `read_json`.
 
@@ -49,16 +53,19 @@ affected spans are not retried.
 - If the process is killed after writing but before removing the
 work unit, the next run copies the same spans again.
 
+- Compression writes a temporary file, fsyncs it, renames it, and
+only then removes the uncompressed file, since a power loss could
+otherwise lose a whole day. A failed fsync is final: we keep the
+uncompressed file and try again from it on the next run, rather than
+retrying the fsync, since Linux may then report success without
+having written the data (fsyncgate).
+
 - Readers should therefore skip empty lines, warn about and skip
 unparsable or too long lines, and drop duplicate lines.
 
 ## Open questions
 
-- Size: a first scan produced about 202 KB, so about 58 MB/day at
-one scan every five minutes. After a few days of data, decide
-whether to compress closed days or convert them to Parquet.
-
-- Retention: nothing removes old files yet (see the TODOs in
+- Retention: nothing removes old files yet (see the TODO in
 `main.go`).
 
 - What to do with `etl-ptnop-qoe` once the above is clear.

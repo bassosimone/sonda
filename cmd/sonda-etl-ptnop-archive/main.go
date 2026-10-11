@@ -112,7 +112,11 @@ func realMain(ctx context.Context, args []string) error {
 		}
 	}
 
-	// TODO(bassosimone): compress old archive entries
+	// Compress the days no span can be appended to anymore.
+	if err := compressClosedDays(env, logger, ptnopArchiveDir, cutoff); err != nil {
+		errv = append(errv, err)
+	}
+
 	// TODO(bassosimone): delete very old archive entries
 
 	// Determine the exit code and exit
