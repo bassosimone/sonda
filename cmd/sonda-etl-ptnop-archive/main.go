@@ -52,7 +52,7 @@ func realMain(ctx context.Context, args []string) error {
 	upr := vflag.NewDefaultUsagePrinter()
 	fset.UsagePrinter = upr
 	upr.AddDescription(
-		"Archive selected events from ptnop logs.",
+		"Archive the events in ptnop logs.",
 		"Read triggers from `$runDir/etl-ptnop-archive`.",
 		"Read the corresponding ptnop data from `$spoolDir/ptnop`.",
 		"Archive ptnop data to `$archiveDir/ptnop`.",

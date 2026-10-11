@@ -7,7 +7,7 @@ status: active
 
 ## Purpose
 
-Keep a long-lived copy of the most useful ptnop events, so that we
+Keep a long-lived copy of the ptnop events, so that we
 can analyze them after `sonda spool gc` has removed the spans.
 
 It is a second try after `etl-ptnop-qoe`, which still runs from
@@ -22,9 +22,7 @@ analysis happens later, from the copy.
 
 - For each `ptnop` span younger than `--max-span-age` (24h), it
 checks that `spanDir` matches the path derived from `spanId`, then
-copies from `stdout.txt` the events whose `msg` is `connectDone`,
-`dnsExchangeDone`, `dnsResponse`, `httpBodyStreamDone`,
-`httpRoundTripDone`, or `tlsHandshakeDone`.
+copies every event from `stdout.txt`.
 
 - Lines are copied verbatim. Empty lines are skipped; lines that do
 not parse as events are logged and skipped.

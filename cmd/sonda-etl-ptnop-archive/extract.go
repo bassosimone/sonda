@@ -15,16 +15,6 @@ import (
 	"github.com/bassosimone/sonda/internal/testable"
 )
 
-// extractKeepEvent contains the name of the events to keep.
-var extractKeepEvent = map[string]bool{
-	"connectDone":        true,
-	"dnsResponse":        true,
-	"tlsHandshakeDone":   true,
-	"httpBodyStreamDone": true,
-	"httpRoundTripDone":  true,
-	"dnsExchangeDone":    true,
-}
-
 // extractSpanDir extracts the `spanDir` stdout into the `ptnopArchiveDir`.
 //
 // Returns the number of lines written and/or an error.
@@ -65,7 +55,7 @@ func extractSpanDir(
 // extractMaxLineSize is the maximum accepted line size.
 const extractMaxLineSize = 1 << 19
 
-// extractSpanLoop copies the selected lines from source to dest.
+// extractSpanLoop copies the lines that parse as events from source to dest.
 //
 // Returns the number of lines written and/or an error.
 func extractSpanLoop(
@@ -89,7 +79,7 @@ func extractSpanLoop(
 		if len(line) <= 0 {
 			continue
 		}
-		ev, err := ptnopdata.ParseEvent(line)
+		_, err := ptnopdata.ParseEvent(line)
 		if err != nil {
 			logger.Warn(
 				"ptnopdata.ParseEvent",
@@ -97,9 +87,6 @@ func extractSpanLoop(
 				slog.String("file", sourcePath),
 				slog.Int64("line", lineID),
 			)
-			continue
-		}
-		if !extractKeepEvent[ev.Msg] {
 			continue
 		}
 		if _, err := dest.Write(append(line, '\n')); err != nil {
