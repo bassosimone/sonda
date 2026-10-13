@@ -134,6 +134,7 @@ func gcMaybeRemoveSpan(logger *slog.Logger, parent, name string, cutoff time.Tim
 
 	// Remove the directory entry.
 	spanPath := filepath.Join(parent, name)
+	// TODO(bassosimone): we should use env.RemoveAll here
 	if err := os.RemoveAll(spanPath); err != nil {
 		logger.Warn("failed to remove span", slog.String("path", spanPath), slog.Any("err", err))
 	}
