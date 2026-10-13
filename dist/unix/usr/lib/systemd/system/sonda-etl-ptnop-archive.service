@@ -1,12 +1,17 @@
+# See docs/design/2026-10-04-01-config-file.md for the flags policy.
+
 [Unit]
 Description=Archive sonda ptnop events
 
 [Service]
 Slice=system-sonda.slice
 Type=oneshot
-ExecStart=/usr/libexec/sonda/sonda-etl-ptnop-archive
 User=_sonda
 Group=_sonda
+ExecStart=/usr/libexec/sonda/sonda-etl-ptnop-archive \
+	--archive-dir=/var/lib/sonda/archive \
+	--run-dir=/run/sonda \
+	--spool-dir=/var/spool/sonda
 
 # Keep the ETL from competing with the measurements for CPU and I/O.
 Nice=10

@@ -86,9 +86,7 @@ is already running. `AccuracySec=1s` prevents coalescing
 delays. `Persistent=true` fires a missed run on next boot.
 
 The spool GC timer (`sonda-spool-gc.timer`) uses the same two
-triggers with `OnActiveSec=1min` and `OnUnitInactiveSec=1h`. Its
-service passes no flags, so its settings come from
-`/etc/sonda/config.toml` (see `2026-06-26-02-spool-gc.md`).
+triggers with `OnActiveSec=1min` and `OnUnitInactiveSec=1h`.
 
 `sonda-etl-ptnop-archive.path` has no timer: it starts
 `sonda-etl-ptnop-archive.service` when the scan leaves work units in
