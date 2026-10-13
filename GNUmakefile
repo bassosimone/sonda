@@ -11,12 +11,12 @@ all: sonda $(sonda_plugins)
 
 .PHONY: clean
 clean:
-	rm -f sonda $(sonda_plugins)
+	cd ./dist/portable/usr/libexec/sonda && rm -f sonda $(sonda_plugins)
 
 .PHONY: sonda
 sonda:
-	go build -v .
+	CGO_ENABLED=0 go build -ldflags '-s -w' -o ./dist/portable/usr/libexec/sonda -v .
 
 .PHONY: $(sonda_plugins)
 $(sonda_plugins):
-	go build -v ./cmd/$@
+	CGO_ENABLED=0 go build -ldflags '-s -w' -o ./dist/portable/usr/libexec/sonda -v ./cmd/$@

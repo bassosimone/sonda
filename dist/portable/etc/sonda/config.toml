@@ -1,0 +1,25 @@
+## This is sonda's configuration file.
+
+## We specify options with their default value but leave them
+## commented out. Uncomment and modify them to override.
+##
+## Directories are not configurable through this configuration
+## file and are instead set by the launcher script.
+
+[archive.ptnop]
+## Days after which daily archive files are removed. Zero means never.
+#max-days = 90
+
+[inetd.ptnop]
+## Close idle client connections after this time.
+##
+## The value is a Go time duration string.
+#idle-timeout = "60s"
+
+[spool.gc]
+## Age after which measurements are removed from the spool.
+##
+## The value is a Go time duration string.
+##
+## With the default workflow, the spool grows by about 6 MB/hour.
+#max-age = "6h"
