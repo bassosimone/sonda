@@ -7,14 +7,24 @@ import (
 	"encoding"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/bassosimone/sonda/internal/testable"
 )
 
-// DefaultConfigFilePath contains the default config file path.
-const DefaultConfigFilePath = "/etc/sonda/config.toml"
+// DefaultConfigFilePath returns the default config file path.
+//
+// If `SONDA_ETC_PATH` is empty, we return the empty string; otherwise, we
+// return `$SONDA_ETC_PATH/config.toml` (or a portable equivalent).
+func DefaultConfigFilePath(env *testable.Environ) string {
+	etcPath := env.Getenv("SONDA_ETC_PATH")
+	if etcPath == "" {
+		return ""
+	}
+	return filepath.Join(etcPath, "config.toml")
+}
 
 // PtnopSocketPath is the `sonda-inetd-ptnop` socket path.
 //
@@ -149,4 +159,14 @@ func ReadInto(env *testable.Environ, path string, cfg *Settings) error {
 		return fmt.Errorf("config: validation error: unknown keys: %v", undecoded)
 	}
 	return nil
+}
+
+// ReadDefaultsInto is like [ReadInto] but reads from the path returned by
+// [DefaultConfigFilePath], if not empty, and otherwise does nothing.
+func ReadDefaultsInto(env *testable.Environ, cfg *Settings) error {
+	configPath := DefaultConfigFilePath(env)
+	if configPath == "" {
+		return nil
+	}
+	return ReadInto(env, configPath, cfg)
 }

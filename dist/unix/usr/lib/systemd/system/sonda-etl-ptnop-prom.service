@@ -9,6 +9,7 @@ Type=exec
 Restart=on-failure
 User=_sonda
 Group=_sonda
+Environment=SONDA_ETC_PATH=/etc/sonda
 ExecStart=/usr/libexec/sonda/sonda-etl-ptnop-prom \
 	--http=127.0.0.1:9774 \
 	--run-dir=/run/sonda \

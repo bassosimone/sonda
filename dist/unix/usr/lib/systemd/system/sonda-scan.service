@@ -9,6 +9,7 @@ Requires=sonda-inetd-ptnop.socket
 [Service]
 Slice=system-sonda.slice
 Type=oneshot
+Environment=SONDA_ETC_PATH=/etc/sonda
 ExecStart=/usr/libexec/sonda/sonda-scan \
 	--ptnop-socket=/run/sonda/inetd-ptnop/sock \
 	--run-dir=/run/sonda \

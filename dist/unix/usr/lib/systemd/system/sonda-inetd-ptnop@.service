@@ -9,6 +9,7 @@ StandardInput=socket
 StandardError=journal
 User=_sonda
 Group=_sonda
+Environment=SONDA_ETC_PATH=/etc/sonda
 ExecStart=/usr/libexec/sonda/sonda-inetd-ptnop --spool-dir=/var/spool/sonda
 
 NoNewPrivileges=yes

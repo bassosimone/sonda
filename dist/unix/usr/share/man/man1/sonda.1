@@ -81,6 +81,13 @@ Plugin descriptions shown by
 .BR "sonda \-\-help" .
 .SH ENVIRONMENT
 .TP
+.B SONDA_ETC_PATH
+Directory containing
+.I config.toml
+(default:
+.IR /etc/sonda ).
+When empty, no config file is read.
+.TP
 .B SONDA_EXEC_PATH
 Directory containing the executable and its plugins
 (default:
