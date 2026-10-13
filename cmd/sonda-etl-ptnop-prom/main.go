@@ -110,11 +110,18 @@ func realMain(ctx context.Context, args []string) error {
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using ExitOnError
 
+	// Make the spoolDir absolute to match the absolute span paths in triggers.
+	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
+	spoolDir, err := env.Abs(spoolDir)
+	if err != nil {
+		logger.Error("env.Abs", slog.Any("err", err))
+		env.Exit(1)
+	}
+
 	// Run in the background and monitor the triggers dir.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	etlPtnopPromRunDir := filepath.Join(runDir, "etl-ptnop-prom")
-	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
 	reg := prometheus.NewRegistry()
 	metrics := newMetricsSet(reg)

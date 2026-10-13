@@ -97,6 +97,13 @@ func realMain(ctx context.Context, args []string) error {
 		env.Exit(2)
 	}
 
+	// Make the spoolDir absolute to match the absolute span paths in triggers.
+	spoolDir, err := env.Abs(spoolDir)
+	if err != nil {
+		logger.Error("env.Abs", slog.Any("err", err))
+		env.Exit(1)
+	}
+
 	// We read from and write to the ptnop data type.
 	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
 	etlPtnopArchiveRunDir := filepath.Join(runDir, "etl-ptnop-archive")
