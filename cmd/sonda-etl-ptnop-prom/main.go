@@ -88,19 +88,24 @@ func realMain(ctx context.Context, args []string) error {
 	)
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
+
 	fset.StringVar(&httpEpnt, 0, "http",
 		"Export Prometheus metrics at the given `EPNT`.",
 		"Default: `@DEFAULT_VALUE@`.")
+
 	fset.DurationVar(&maxSpanAge, 0, "max-span-age",
 		"Ignore spans older than `DURATION`.")
-	fset.StringVar(&sliceDir, 0, "slice-dir",
-		"Read the slice resource usage from the cgroup v2 `DIR`.",
+
+	fset.StringVar(&runDir, 0, "run-dir",
+		"Top-level run `DIR` containing the trigger directories.",
 		"Default: `@DEFAULT_VALUE@`.")
+
 	fset.StringVar(&spoolDir, 0, "spool-dir",
 		"Top-level spool `DIR` containing the data type directories.",
 		"Default: `@DEFAULT_VALUE@`.")
-	fset.StringVar(&runDir, 0, "run-dir",
-		"Top-level run `DIR` containing the trigger directories.",
+
+	fset.StringVar(&sliceDir, 0, "slice-dir",
+		"Read the slice resource usage from the cgroup v2 `DIR`.",
 		"Default: `@DEFAULT_VALUE@`.")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using ExitOnError

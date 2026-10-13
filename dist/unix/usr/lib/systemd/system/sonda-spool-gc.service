@@ -1,17 +1,12 @@
-# Garbage collect the spool, independently of measurements and ETL.
-#
-# Settings (e.g., `max-age`) come from `/etc/sonda/config.toml`, so we
-# pass no flags here: command line flags would override the config.
-
 [Unit]
 Description=Garbage collect the sonda spool
 
 [Service]
 Slice=system-sonda.slice
 Type=oneshot
-ExecStart=/usr/libexec/sonda/sonda-spool gc
 User=_sonda
 Group=_sonda
+ExecStart=/usr/libexec/sonda/sonda-spool gc --spool-dir=/var/spool/sonda
 
 NoNewPrivileges=yes
 ProtectSystem=strict

@@ -63,19 +63,24 @@ func realMain(ctx context.Context, args []string) error {
 	)
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
-	fset.IntVar(&maxDays, 0, "max-days",
-		"Remove the daily files older than `DAYS`. Zero means never.",
-		"Default: `@DEFAULT_VALUE@`.")
-	fset.DurationVar(&maxSpanAge, 0, "max-span-age",
-		"Ignore spans older than `DURATION`.")
+
 	fset.StringVar(&archiveDir, 0, "archive-dir",
 		"Top-level archive `DIR` containing the data type directories.",
 		"Default: `@DEFAULT_VALUE@`.")
-	fset.StringVar(&spoolDir, 0, "spool-dir",
-		"Top-level spool `DIR` containing the data type directories.",
+
+	fset.IntVar(&maxDays, 0, "max-days",
+		"Remove the daily files older than `DAYS`. Zero means never.",
 		"Default: `@DEFAULT_VALUE@`.")
+
+	fset.DurationVar(&maxSpanAge, 0, "max-span-age",
+		"Ignore spans older than `DURATION`.")
+
 	fset.StringVar(&runDir, 0, "run-dir",
 		"Top-level run `DIR` containing the trigger directories.",
+		"Default: `@DEFAULT_VALUE@`.")
+
+	fset.StringVar(&spoolDir, 0, "spool-dir",
+		"Top-level spool `DIR` containing the data type directories.",
 		"Default: `@DEFAULT_VALUE@`.")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using ExitOnError

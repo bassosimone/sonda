@@ -7,7 +7,9 @@ Requires=sonda-inetd-ptnop.socket
 [Service]
 Slice=system-sonda.slice
 Type=oneshot
-ExecStart=/usr/libexec/sonda/sonda-scan --workflow-file /etc/sonda/scan/default.yml
+ExecStart=/usr/libexec/sonda/sonda-scan \
+	--ptnop-socket=/run/sonda/inetd-ptnop/sock \
+	--workflow-file=/etc/sonda/scan/default.yml
 
 # Must have access to the whole of `/run/sonda` otherwise it cannot
 # perform hard linking for ETL services.
