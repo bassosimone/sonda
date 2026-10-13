@@ -338,6 +338,10 @@ func processSpanTrigger(
 	// 4. The path must be the expected path. We use the string representation of the spanID
 	// here, instead of info.SpanID, because the former is the normalized representation.
 	expectedPath := ptnoppaths.SpanDir(ptnopSpoolDir, spanID.String())
+	expectedPath, err = env.Abs(expectedPath)
+	if err != nil {
+		return fmt.Errorf("cannot make path absolute: %w", err)
+	}
 	if expectedPath != info.SpanDir {
 		return fmt.Errorf("SpanDir mismatch: expected %s, got %s", expectedPath, info.SpanDir)
 	}
