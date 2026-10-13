@@ -34,6 +34,7 @@ func scanMain(ctx context.Context, args []string) error {
 	var (
 		fail         = false
 		ptnopSocket  = config.PtnopSocketPath
+		runDir       = config.RunDir
 		workflowFile = ""
 	)
 
@@ -53,10 +54,17 @@ func scanMain(ctx context.Context, args []string) error {
 			"A failed step does not stop the scan unless `--fail` is set.")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
+
 	fset.BoolVar(&fail, 0, "fail", "Exit with error on first failure.")
+
 	fset.StringVar(&ptnopSocket, 0, "ptnop-socket",
 		"Unix domain socket `PATH` of the `sonda-inetd-ptnop` server.",
 		"Default: `@DEFAULT_VALUE@`.")
+
+	fset.StringVar(&runDir, 0, "run-dir",
+		"Directory `PATH` in which to write trigger files.",
+		"Default: `@DEFAULT_VALUE@`.")
+
 	fset.StringVar(&workflowFile, 0, "workflow-file", "Load steps from `FILE` (required).")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
@@ -126,13 +134,14 @@ func scanMain(ctx context.Context, args []string) error {
 	}
 
 	// Execute triggers for the created spans.
-	scanMustWriteTriggers(env, logger, state, wff.Triggers)
+	scanMustWriteTriggers(env, logger, runDir, state, wff.Triggers)
 	return nil
 }
 
 // scanMustWriteTriggers writes triggers if necessary and exits on failure.
 func scanMustWriteTriggers(
-	env *testable.Environ, logger *slog.Logger, state *sharedState, triggerNames []string) {
+	env *testable.Environ, logger *slog.Logger, runDir string,
+	state *sharedState, triggerNames []string) {
 	// 1. Determine whether we actually need to write triggers.
 	if len(triggerNames) <= 0 {
 		return
@@ -145,8 +154,8 @@ func scanMustWriteTriggers(
 	// 2. Determine the work unit ID.
 	workUnitID := uuid.Must(uuid.NewV7()).String()
 
-	// 3. Write the work unit inside the `/run/sonda/scan` directory.
-	workUnitPath := filepath.Join(config.RunDir, "scan", workUnitID+".jsonl")
+	// 3. Write the work unit inside the `$runDir/scan` directory.
+	workUnitPath := filepath.Join(runDir, "scan", workUnitID+".jsonl")
 	filep, err := env.OpenFile(workUnitPath, os.O_CREATE|os.O_WRONLY, 0640)
 	if err != nil {
 		logger.Error("env.OpenFile", slog.Any("err", err))
@@ -175,7 +184,7 @@ func scanMustWriteTriggers(
 			)
 			continue
 		}
-		tdirpath := triggers.Directory(tname)
+		tdirpath := triggers.Directory(runDir, tname)
 		tfilepath := filepath.Join(tdirpath, workUnitID+".jsonl")
 		if err := env.Link(workUnitPath, tfilepath); err != nil {
 			logger.Error("env.Link", slog.Any("err", err))

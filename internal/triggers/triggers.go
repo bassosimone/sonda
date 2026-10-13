@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/bassosimone/runtimex"
-	"github.com/bassosimone/sonda/internal/config"
 )
 
 // ValidName contains the valid trigger names.
@@ -33,7 +32,7 @@ type CreatedSpan struct {
 // This function panics if the given trigger name is not a valid
 // one: you are supposed to check for the name validity using [ValidName]
 // ahead of invoking this utility function.
-func Directory(triggerName string) string {
+func Directory(runDir, triggerName string) string {
 	runtimex.Assert(ValidName[triggerName])
-	return filepath.Join(config.RunDir, triggerName)
+	return filepath.Join(runDir, triggerName)
 }
