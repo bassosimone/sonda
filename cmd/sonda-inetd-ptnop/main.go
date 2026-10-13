@@ -10,13 +10,13 @@ import (
 	"log/slog"
 	"net"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/testable"
+	"github.com/bassosimone/sonda/internal/vspool"
 	"github.com/bassosimone/vflag"
 )
 
@@ -32,9 +32,9 @@ func mainMain(ctx context.Context, args []string) error {
 	presets := config.Defaults()
 	configErr := config.ReadDefaultsInto(env, presets)
 	var (
-		idleTimeout = time.Duration(presets.Inetd.Ptnop.IdleTimeout)
-		spoolDir    = config.SpoolDir
-		stdio       = false
+		idleTimeout  = time.Duration(presets.Inetd.Ptnop.IdleTimeout)
+		spoolDirPath = config.SpoolDir
+		stdio        = false
 	)
 
 	// Parse command line flags.
@@ -74,7 +74,7 @@ func mainMain(ctx context.Context, args []string) error {
 		"Close the connection after waiting `DURATION` for I/O to occur on the "+
 			"client connection. Ignored with `--stdio`.",
 		"Default: @DEFAULT_VALUE@.")
-	fset.StringVar(&spoolDir, 0, "spool-dir",
+	fset.StringVar(&spoolDirPath, 0, "spool-dir",
 		"Top-level spool `DIR` containing the data type directories.",
 		"Default: `@DEFAULT_VALUE@`.")
 	fset.BoolVar(&stdio, 0, "stdio", "Do not assume that the stdin is a socket.")
@@ -96,13 +96,12 @@ func mainMain(ctx context.Context, args []string) error {
 		env.Exit(1)
 	}
 
-	// Make the spoolDir absolute for robustness and select the data type dir.
-	spoolDir, err := env.Abs(spoolDir)
+	// Create the spool directory instance that we are going to use.
+	spoolDir, err := vspool.NewSpoolDir(env, spoolDirPath)
 	if err != nil {
-		logger.Error("env.Abs", slog.Any("err", err))
+		logger.Error("vspool.NewSpoolDir", slog.Any("err", err))
 		env.Exit(1)
 	}
-	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
 
 	// Select the transport.
 	//
@@ -150,7 +149,7 @@ func mainMain(ctx context.Context, args []string) error {
 	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(nil, maxLineSize)
 	for scanner.Scan() {
-		resp := serveLine(ctx, env, logger, scanner.Bytes(), ptnopSpoolDir, peer)
+		resp := serveLine(ctx, env, logger, scanner.Bytes(), spoolDir, peer)
 		respData := runtimex.PanicOnError1(json.Marshal(resp)) // always serializable
 		respData = append(respData, '\n')
 		if _, err := writer.Write(respData); err != nil {

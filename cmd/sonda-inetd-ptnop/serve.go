@@ -14,17 +14,15 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
-	"os"
 	"slices"
 	"strings"
 	"time"
 
-	"github.com/bassosimone/closepool"
 	"github.com/bassosimone/dnscodec"
-	"github.com/bassosimone/sonda/internal/ptnoppaths"
+	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/bassosimone/sonda/internal/testable"
-	"github.com/google/uuid"
+	"github.com/bassosimone/sonda/internal/vspool"
 	"github.com/miekg/dns"
 )
 
@@ -39,11 +37,6 @@ const (
 	maxTimeout = 5 * time.Minute
 )
 
-// newSpanID returns a new span ID, which is a UUIDv7 in canonical form.
-func newSpanID() string {
-	return uuid.Must(uuid.NewV7()).String()
-}
-
 // serveLine serves a raw request line received on the standard input and
 // returns the response to send back. It never returns nil.
 //
@@ -56,7 +49,7 @@ func serveLine(
 	env *testable.Environ,
 	logger *slog.Logger,
 	rawLine []byte,
-	spoolDir string,
+	spoolDir *vspool.SpoolDir,
 	peer peerCreds,
 ) *ptnoprpc.Response {
 	// 1. Parse the raw line received on the stdin.
@@ -92,11 +85,16 @@ func serveLine(
 		return resp
 	}
 
-	// 4. Build the proper destination directory.
-	spanID := newSpanID()
-	spanDir := ptnoppaths.SpanDir(spoolDir, spanID)
-	tmpDir := ptnoppaths.SpanDirTmp(spoolDir, spanID)
+	// 4. Build the proper span configuration.
+	spanCfg, err := spoolDir.NewSpanConfig("ptnop")
+	runtimex.Assert(err == nil) // "ptnop" must be a valid datatype name
+	spanID := spanCfg.SpanID()
 	resp.SpanID = spanID
+	spanCfg.StdoutFile = true
+	switch req.Pipeline {
+	case "http", "https":
+		spanCfg.BodyFile = req.HTTPBodyFile
+	}
 
 	// From now on, failures are failures of the server rather than of the
 	// request, hence we also log them to the journal.
@@ -106,59 +104,30 @@ func serveLine(
 		return resp
 	}
 
-	// 5. Create the temporary spool directory.
-	//
-	// Note that `/var/spool/sonda` is `02750 _sonda:_sonda` so we use `0750` when creating
-	// directories and `0640` when creating files to allow `_sonda` to read.
-	if err := env.MkdirAll(tmpDir, 0750); err != nil {
-		return serverFailure("env.MkdirAll", err)
-	}
-
-	// 6. Open stdout in the spool directory.
-	closers := &closepool.Pool{}
-	defer closers.Close() // idempotent
-
-	openFlags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-	stdoutFile, err := env.OpenFile(ptnoppaths.SpanStdout(tmpDir), openFlags, 0640)
+	// 5. Create the full span directory.
+	spanDir, err := spoolDir.NewSpanDir(spanCfg)
 	if err != nil {
-		return serverFailure("env.OpenFile", err)
+		return serverFailure("spoolDir.NewSpanDir", err)
 	}
-	closers.Add(stdoutFile)
+	input.bodyFp = spanDir.BodyWriter()
+	defer spanDir.Rollback()
 
-	// 7. Open the body file, if needed.
-	switch req.Pipeline {
-	case "http", "https":
-		if req.HTTPBodyFile {
-			bodyFile, err := env.OpenFile(ptnoppaths.SpanBodyBin(tmpDir), openFlags, 0640)
-			if err != nil {
-				return serverFailure("env.OpenFile", err)
-			}
-			closers.Add(bodyFile)
-			input.bodyFp = bodyFile
-		}
-	}
+	// 6. Create the structured logger writing the measurement events.
+	input.logger = newLogger(spanDir.StdoutWriter(), spanID, req.Tags, req.Optimize)
 
-	// 8. Create the structured logger writing the measurement events.
-	input.logger = newLogger(stdoutFile, spanID, req.Tags, req.Optimize)
-
-	// 9. Write peer credentials and incoming request.
+	// 7. Write peer credentials and incoming request.
 	input.logger.Info("sondaInetdRunContext", slog.Any("peer", peer), slog.Any("request", req))
 
-	// 10. Run the pipeline.
+	// 8. Run the pipeline.
 	exitCode := ptnopRunPipeline(ctx, input)
 
-	// 11. Make sure we successfully closed all the opened resources.
-	if err := closers.Close(); err != nil {
-		return serverFailure("closers.Close", err)
+	// 9. Copy the results to their final destination.
+	if err := spanDir.Commit(); err != nil {
+		return serverFailure("spanDir.Commit", err)
 	}
 
-	// 12. Atomically rename the temporary directory to the final path.
-	if err := env.Rename(tmpDir, spanDir); err != nil {
-		return serverFailure("env.Rename", err)
-	}
-
-	// 13. Tell the caller that we succeeded.
-	resp.SpanDir = spanDir
+	// 10. Tell the caller that we succeeded.
+	resp.SpanDir = spanDir.Path()
 	resp.ExitCode = &exitCode
 	return resp
 }
