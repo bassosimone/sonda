@@ -37,7 +37,7 @@ func realMain(ctx context.Context, args []string) error {
 
 	// Set the command defaults.
 	presets := config.Defaults()
-	configErr := config.ReadInto(env, config.DefaultConfigFilePath, presets)
+	configErr := config.ReadDefaultsInto(env, presets)
 	var (
 		maxDays    = presets.Archive.Ptnop.MaxDays
 		maxSpanAge = 24 * time.Hour

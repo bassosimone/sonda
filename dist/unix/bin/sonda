@@ -1,4 +1,5 @@
 #!/bin/sh
+export SONDA_ETC_PATH="${SONDA_ETC_PATH:-/etc/sonda}"
 export SONDA_EXEC_PATH="${SONDA_EXEC_PATH:-/usr/libexec/sonda}"
 export SONDA_SHARE_PATH="${SONDA_SHARE_PATH:-/usr/share/sonda}"
 exec "$SONDA_EXEC_PATH/sonda" "$@"

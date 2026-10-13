@@ -6,6 +6,7 @@ Slice=system-sonda.slice
 Type=oneshot
 User=_sonda
 Group=_sonda
+Environment=SONDA_ETC_PATH=/etc/sonda
 ExecStart=/usr/libexec/sonda/sonda-etl-ptnop-archive \
 	--archive-dir=/var/lib/sonda/archive \
 	--run-dir=/run/sonda \

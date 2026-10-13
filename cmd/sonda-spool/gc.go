@@ -25,7 +25,7 @@ func gcMain(ctx context.Context, args []string) error {
 	// Set the command defaults.
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 	presets := config.Defaults()
-	configErr := config.ReadInto(env, config.DefaultConfigFilePath, presets)
+	configErr := config.ReadDefaultsInto(env, presets)
 	var (
 		maxAge   = time.Duration(presets.Spool.GC.MaxAge)
 		spoolDir = config.SpoolDir
