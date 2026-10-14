@@ -5,6 +5,14 @@ package ptnoppaths
 
 import "path/filepath"
 
+// TODO(bassosimone): the SpanDir, SpanArgvJSON, SpanStdout, SpanStderr,
+// SpanExitCode, and SpanTmpDir should probably not be here:
+//
+// - SpanDir and SpanTmpDir are general spool properties
+//
+// - the other definitions are part of the spool-run contract but are
+//   otherwise unused by code using inetd-ptnop
+
 // SpanDir returns the spool directory path for a given span ID.
 func SpanDir(spoolDir, spanID string) string {
 	return filepath.Join(spoolDir, spanID[:4], spanID[4:5], spanID[5:6], spanID)
@@ -18,6 +26,11 @@ func SpanArgvJSON(spanDir string) string {
 // SpanStdout returns the path to stdout.txt inside a span directory.
 func SpanStdout(spanDir string) string {
 	return filepath.Join(spanDir, "stdout.txt")
+}
+
+// SpanStdoutGz returns the path to stdout.txt.gz inside a span directory.
+func SpanStdoutGz(spanDir string) string {
+	return filepath.Join(spanDir, "stdout.txt.gz")
 }
 
 // SpanStderr returns the path to stderr.txt inside a span directory.
@@ -35,7 +48,7 @@ func SpanDirTmp(spoolDir, spanID string) string {
 	return SpanDir(spoolDir, spanID) + ".tmp"
 }
 
-// SpanBodyBin returns the path to body.bin inside a span directory.
-func SpanBodyBin(spanDir string) string {
-	return filepath.Join(spanDir, "body.bin")
+// SpanBodyBinGz returns the path to body.bin.gz inside a span directory.
+func SpanBodyBinGz(spanDir string) string {
+	return filepath.Join(spanDir, "body.bin.gz")
 }

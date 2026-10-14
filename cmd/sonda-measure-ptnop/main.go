@@ -313,9 +313,9 @@ func realMain(ctx context.Context, args []string) error {
 	)
 
 	// 9. Stream the structured logs to the stdout.
-	filep, err := spanDir.OpenStdout()
+	filep, err := spanDir.OpenStdoutGz()
 	if err != nil {
-		logger.Error("spanDir.OpenStdout", slog.Any("err", err))
+		logger.Error("spanDir.OpenStdoutGz", slog.Any("err", err))
 		env.Exit(4)
 	}
 	defer filep.Close()

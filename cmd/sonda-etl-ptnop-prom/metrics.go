@@ -13,7 +13,7 @@ import (
 
 // metricsSet contains the Prometheus metrics we export.
 type metricsSet struct {
-	// Spans whose `stdout.txt` we read.
+	// Spans whose `stdout.txt.gz` we read.
 	Spans *prometheus.CounterVec
 
 	// Duration histogram for successful stages.

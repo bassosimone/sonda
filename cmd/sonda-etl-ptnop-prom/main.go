@@ -337,7 +337,7 @@ func processSpanTrigger(
 		return fmt.Errorf("SpanDir mismatch: expected %s, got %s", expectedPath, info.SpanDir)
 	}
 
-	// 5. Update Prometheus metrics using the spanDir `stdout.txt` file content.
+	// 5. Update Prometheus metrics using the spanDir `stdout.txt.gz` file content.
 	numProcessed, err := updateMetrics(env, logger, metrics, info.SpanDir)
 	if err != nil {
 		return fmt.Errorf("updateMetrics: %s: %w", info.SpanDir, err)

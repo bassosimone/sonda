@@ -262,7 +262,7 @@ func processSpanTrigger(
 		return fmt.Errorf("SpanDir mismatch: expected %s, got %s", expectedPath, info.SpanDir)
 	}
 
-	// 5. Extract events from the spanDir `stdout.txt` file.
+	// 5. Extract events from the spanDir `stdout.txt.gz` file.
 	numWritten, err := extractSpanDir(env, logger, ptnopArchiveDir, info.SpanDir, ts)
 	if err != nil {
 		return fmt.Errorf("extractSpanDir: %s: %w", info.SpanDir, err)

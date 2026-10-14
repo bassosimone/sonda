@@ -3,6 +3,7 @@
 package main
 
 import (
+	"compress/gzip"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -21,6 +22,7 @@ import (
 
 	"github.com/bassosimone/closepool"
 	"github.com/bassosimone/dnscodec"
+	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/ptnoppaths"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/bassosimone/sonda/internal/testable"
@@ -48,7 +50,7 @@ func newSpanID() string {
 // returns the response to send back. It never returns nil.
 //
 // The logger is the operational logger (i.e., the journal). The measurement
-// events go to the span's `stdout.txt` file instead.
+// events go to the span's `stdout.txt.gz` file instead.
 //
 // The peer contains the client credentials, possibly [unknownPeerCreds].
 func serveLine(
@@ -119,27 +121,31 @@ func serveLine(
 	defer closers.Close() // idempotent
 
 	openFlags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-	stdoutFile, err := env.OpenFile(ptnoppaths.SpanStdout(tmpDir), openFlags, 0640)
+	stdoutFile, err := env.OpenFile(ptnoppaths.SpanStdoutGz(tmpDir), openFlags, 0640)
 	if err != nil {
 		return serverFailure("env.OpenFile", err)
 	}
 	closers.Add(stdoutFile)
+	stdoutFileGz := runtimex.PanicOnError1(gzip.NewWriterLevel(stdoutFile, gzip.BestSpeed))
+	closers.Add(stdoutFileGz)
 
 	// 7. Open the body file, if needed.
 	switch req.Pipeline {
 	case "http", "https":
 		if req.HTTPBodyFile {
-			bodyFile, err := env.OpenFile(ptnoppaths.SpanBodyBin(tmpDir), openFlags, 0640)
+			bodyFile, err := env.OpenFile(ptnoppaths.SpanBodyBinGz(tmpDir), openFlags, 0640)
 			if err != nil {
 				return serverFailure("env.OpenFile", err)
 			}
 			closers.Add(bodyFile)
-			input.bodyFp = bodyFile
+			bodyFileGz := runtimex.PanicOnError1(gzip.NewWriterLevel(bodyFile, gzip.BestSpeed))
+			closers.Add(bodyFileGz)
+			input.bodyFp = bodyFileGz
 		}
 	}
 
 	// 8. Create the structured logger writing the measurement events.
-	input.logger = newLogger(stdoutFile, spanID, req.Tags, req.Optimize)
+	input.logger = newLogger(stdoutFileGz, spanID, req.Tags, req.Optimize)
 
 	// 9. Write peer credentials and incoming request.
 	input.logger.Info("sondaInetdRunContext", slog.Any("peer", peer), slog.Any("request", req))

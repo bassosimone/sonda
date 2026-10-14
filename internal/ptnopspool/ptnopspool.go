@@ -5,9 +5,12 @@ package ptnopspool
 
 import (
 	"bufio"
+	"compress/gzip"
 	"errors"
+	"io"
 	"os"
 
+	"github.com/bassosimone/closepool"
 	"github.com/bassosimone/sonda/internal/ptnopdata"
 	"github.com/bassosimone/sonda/internal/ptnoppaths"
 	"github.com/bassosimone/sonda/internal/testable"
@@ -68,13 +71,41 @@ func (d *SpanDir) ResolvedAddrsAAAA() ([]string, error) {
 	return d.resolvedAddrs("sondaDnsRecordsAAAA")
 }
 
-// OpenStdout opens the `stdout.txt` file in the span directory.
-func (d *SpanDir) OpenStdout() (testable.File, error) {
-	return d.Env.OpenFile(ptnoppaths.SpanStdout(d.Path), os.O_RDONLY, 0)
+// OpenStdoutGz opens the `stdout.txt.gz` file in the span directory.
+func (d *SpanDir) OpenStdoutGz() (io.ReadCloser, error) {
+	pool := &closepool.Pool{}
+	filep, err := d.Env.OpenFile(ptnoppaths.SpanStdoutGz(d.Path), os.O_RDONLY, 0)
+	if err != nil {
+		return nil, err
+	}
+	pool.Add(filep)
+
+	reader, err := gzip.NewReader(filep)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	pool.Add(reader)
+
+	out := &stdoutGzReadableFile{
+		Reader: reader,
+		p:      pool,
+	}
+	return out, nil
+}
+
+// stdoutGzReadableFile is an [io.ReadCloser] for reading `stdout.txt.gz`.
+type stdoutGzReadableFile struct {
+	io.Reader
+	p *closepool.Pool
+}
+
+func (rc *stdoutGzReadableFile) Close() error {
+	return rc.p.Close()
 }
 
 func (d *SpanDir) resolvedAddrs(msgName string) ([]string, error) {
-	filep, err := d.OpenStdout()
+	filep, err := d.OpenStdoutGz()
 	if err != nil {
 		return nil, ReadError{err}
 	}
@@ -112,7 +143,7 @@ func (d *SpanDir) resolvedAddrs(msgName string) ([]string, error) {
 //
 //  2. [ReadError] if we cannot open, scan, or parse the structured logs file
 func (d *SpanDir) ReflexiveAddr() (string, error) {
-	filep, err := d.OpenStdout()
+	filep, err := d.OpenStdoutGz()
 	if err != nil {
 		return "", ReadError{err}
 	}

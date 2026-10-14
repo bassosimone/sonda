@@ -4,6 +4,7 @@ package main
 
 import (
 	"bufio"
+	"compress/gzip"
 	"log/slog"
 	"os"
 	"time"
@@ -142,16 +143,21 @@ func updateMetrics(
 	metrics *metricsSet,
 	spanDir string,
 ) (int64, error) {
-	// Open the source file: `stdout.txt` inside the current span dir.
-	inputPath := ptnoppaths.SpanStdout(spanDir)
+	// Open the source file: `stdout.txt.gz` inside the current span dir.
+	inputPath := ptnoppaths.SpanStdoutGz(spanDir)
 	source, err := env.OpenFile(inputPath, os.O_RDONLY, 0)
 	if err != nil {
 		return 0, err
 	}
 	defer source.Close()
+	sourceGz, err := gzip.NewReader(source)
+	if err != nil {
+		return 0, err
+	}
+	defer sourceGz.Close()
 
 	// Create the scanner.
-	scanner := bufio.NewScanner(source)
+	scanner := bufio.NewScanner(sourceGz)
 	scanner.Buffer(nil, updateMaxLineSize)
 
 	// Walk through all input lines.
