@@ -18,6 +18,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bassosimone/closepool"
@@ -126,7 +127,7 @@ func serveLine(
 		return serverFailure("env.OpenFile", err)
 	}
 	closers.Add(stdoutFile)
-	stdoutFileGz := runtimex.PanicOnError1(gzip.NewWriterLevel(stdoutFile, gzip.BestSpeed))
+	stdoutFileGz := newGzipLockedWriteCloser(stdoutFile)
 	closers.Add(stdoutFileGz)
 
 	// 7. Open the body file, if needed.
@@ -138,7 +139,7 @@ func serveLine(
 				return serverFailure("env.OpenFile", err)
 			}
 			closers.Add(bodyFile)
-			bodyFileGz := runtimex.PanicOnError1(gzip.NewWriterLevel(bodyFile, gzip.BestSpeed))
+			bodyFileGz := newGzipLockedWriteCloser(bodyFile)
 			closers.Add(bodyFileGz)
 			input.bodyFp = bodyFileGz
 		}
@@ -356,4 +357,48 @@ func newHTTPRequest(ctx context.Context, req *ptnoprpc.Request) (*http.Request, 
 // errUnknownPipeline returns the error for an unknown pipeline name.
 func errUnknownPipeline(name string) error {
 	return fmt.Errorf("unknown pipeline name: %q", name)
+}
+
+// gzipLockedWriteCloser is a [*gzip.Writer] that ensures that no write can land after close.
+//
+// The purpose of this type is to ensure that writes from other goroutines landing during
+// or after close fail. This outcome is better than (a) crashing inside [compress/flate] or
+// (b) corrupting the gzip stream and making it impossible to read.
+//
+// Use [newGzipLockedWriteCloser] to construct.
+type gzipLockedWriteCloser struct {
+	done bool
+	mu   sync.Mutex
+	w    *gzip.Writer
+}
+
+// newGzipLockedWriteCloser creates and returns a new [*gzipLockedWriteCloser].
+func newGzipLockedWriteCloser(w io.Writer) *gzipLockedWriteCloser {
+	return &gzipLockedWriteCloser{
+		w:  runtimex.PanicOnError1(gzip.NewWriterLevel(w, gzip.BestSpeed)),
+		mu: sync.Mutex{},
+	}
+}
+
+var _ io.WriteCloser = &gzipLockedWriteCloser{}
+
+// Close implements [io.WriteCloser].
+func (w *gzipLockedWriteCloser) Close() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.done = true
+	return w.w.Close()
+}
+
+// errWriteAfterClose indicates that a write was attempted after close.
+var errWriteAfterClose = errors.New("write after close")
+
+// Write implements [io.Writer].
+func (w *gzipLockedWriteCloser) Write(data []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.done {
+		return 0, errWriteAfterClose
+	}
+	return w.w.Write(data)
 }
