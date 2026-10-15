@@ -16,12 +16,17 @@ import (
 
 	"github.com/bassosimone/closepool"
 	"github.com/bassosimone/runtimex"
+	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/ptnoppaths"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 	"github.com/google/uuid"
 )
+
+func main() {
+	plugincommand.Main(plugincommand.FlagAllowReExec, runMain)
+}
 
 // newSpanID returns a new span ID, which is a UUIDv7 in canonical form.
 //
@@ -32,7 +37,7 @@ func newSpanID() string {
 	return uuid.Must(uuid.NewV7()).String()
 }
 
-// runResult is the JSON object that `sonda-spool run` writes to its
+// runResult is the JSON object that `sonda-spool-run` writes to its
 // stdout after the span directory has been atomically renamed.
 type runResult struct {
 	// SpanID is the generated span ID.
@@ -46,7 +51,7 @@ type runResult struct {
 // dataTypeRe matches valid data type names.
 var dataTypeRe = regexp.MustCompile(`^[_a-z][_a-z0-9-]*$`)
 
-// runMain is the main function of the `sonda-spool run` subcommand.
+// runMain is the main function of the `sonda spool-run` subcommand.
 func runMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
@@ -60,7 +65,7 @@ func runMain(ctx context.Context, args []string) error {
 	)
 
 	// Parse command line flags
-	fset := vflag.NewFlagSet("sonda-spool run", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-spool-run", vflag.ExitOnError)
 
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr

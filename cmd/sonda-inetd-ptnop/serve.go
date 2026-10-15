@@ -38,7 +38,7 @@ const (
 
 	// maxTimeout is the maximum pipeline timeout a request may ask for, so
 	// that a single request cannot hold the connection for too long. Same
-	// as the `sonda spool run` default.
+	// as the `sonda spool-run` default.
 	maxTimeout = 5 * time.Minute
 )
 

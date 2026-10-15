@@ -55,8 +55,12 @@ go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 chmod 755 "$stage/usr/libexec/sonda/sonda-scan"
 
 go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
-	-o "$stage/usr/libexec/sonda/sonda-spool" ./cmd/sonda-spool
-chmod 755 "$stage/usr/libexec/sonda/sonda-spool"
+	-o "$stage/usr/libexec/sonda/sonda-spool-gc" ./cmd/sonda-spool-gc
+chmod 755 "$stage/usr/libexec/sonda/sonda-spool-gc"
+
+go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
+	-o "$stage/usr/libexec/sonda/sonda-spool-run" ./cmd/sonda-spool-run
+chmod 755 "$stage/usr/libexec/sonda/sonda-spool-run"
 
 # Install manpage.
 install -d "$stage/usr/share/man/man1"

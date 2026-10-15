@@ -269,9 +269,9 @@ func realMain(ctx context.Context, args []string) error {
 	// 4. Create the structured logger.
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
-	// 5. Refuse to run inside `sonda spool run`.
+	// 5. Refuse to run inside `sonda spool-run`.
 	if env.Getenv("SONDA_SPAN_ID") != "" {
-		logger.Error("cannot run inside `sonda spool run`")
+		logger.Error("cannot run inside `sonda spool-run`")
 		env.Exit(2)
 	}
 

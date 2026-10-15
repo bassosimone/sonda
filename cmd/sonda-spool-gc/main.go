@@ -11,13 +11,18 @@ import (
 	"time"
 
 	"github.com/bassosimone/runtimex"
+	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 	"github.com/google/uuid"
 )
 
-// gcMain is the main function of the `sonda-spool gc` subcommand.
+func main() {
+	plugincommand.Main(0, gcMain)
+}
+
+// gcMain is the main function of the `sonda spool-gc` subcommand.
 func gcMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
@@ -32,7 +37,7 @@ func gcMain(ctx context.Context, args []string) error {
 	)
 
 	// Parse command line flags.
-	fset := vflag.NewFlagSet("sonda-spool gc", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-spool-gc", vflag.ExitOnError)
 
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr

@@ -9,7 +9,7 @@ Description=Garbage collect the sonda spool
 [Service]
 Slice=system-sonda.slice
 Type=oneshot
-ExecStart=/usr/bin/sonda spool gc
+ExecStart=/usr/bin/sonda spool-gc
 User=_sonda
 Group=_sonda
 

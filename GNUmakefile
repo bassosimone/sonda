@@ -4,7 +4,8 @@ sonda_plugins = \
 	sonda-inetd-ptnop \
 	sonda-measure-ptnop \
 	sonda-scan \
-	sonda-spool
+	sonda-spool-gc \
+	sonda-spool-run
 
 .PHONY: all
 all: sonda $(sonda_plugins)

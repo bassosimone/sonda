@@ -96,7 +96,7 @@ span directory, so the destination name alone is enough.
 
 ## How it walks
 
-Same sharding tree walk that `sonda spool gc` uses for each
+Same sharding tree walk that `sonda spool-gc` uses for each
 data type (depth-3 descent through `XXXX/X/X/<spanID>/`). Skips `.tmp` directories
 (incomplete spans) and spans whose UUIDv7 timestamp is older
 than `--max-age`.

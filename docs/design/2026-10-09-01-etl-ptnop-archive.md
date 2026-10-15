@@ -8,7 +8,7 @@ status: active
 ## Purpose
 
 Keep a long-lived copy of the ptnop events, so that we
-can analyze them after `sonda spool gc` has removed the spans.
+can analyze them after `sonda spool-gc` has removed the spans.
 
 ## How it works
 

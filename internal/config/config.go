@@ -89,12 +89,12 @@ type InetdPtnop struct {
 	IdleTimeout Duration `toml:"idle-timeout"`
 }
 
-// Spool contains `sonda-spool` settings.
+// Spool contains settings for the spool commands (e.g., `sonda-spool-gc`).
 type Spool struct {
 	GC SpoolGC `toml:"gc"`
 }
 
-// SpoolGC contains `sonda-spool gc` settings.
+// SpoolGC contains `sonda-spool-gc` settings.
 type SpoolGC struct {
 	MaxAge Duration `toml:"max-age"`
 }
