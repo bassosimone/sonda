@@ -7,12 +7,12 @@ status: active
 
 ## Why this matters
 
-Sonda's measurement commands emit structured JSON logs to stdout.
-The spool stores these as `stdout.txt` files, and every consumer
-— Go parsers and extractors, future Python extractors (sondax), any
-downstream pipeline — parses the same JSON lines. The schema must
-be well-defined and stable because it is the interface between
-producers and consumers.
+Sonda's measurement commands generate structured logs in JSON
+format stored in the spool as `stdout.txt` / `stdout.txt.gz`
+files, and every consumer — Go parsers and extractors, future
+Python extractors (sondax), any downstream pipeline — parses
+the same JSON lines. The schema must be well-defined and stable
+because it is the interface between producers and consumers.
 
 ## Event taxonomy
 

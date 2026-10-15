@@ -18,7 +18,7 @@ can analyze them after `sonda spool gc` has removed the spans.
 
 - For each `ptnop` span younger than `--max-span-age` (24h), it
 checks that `spanDir` matches the path derived from `spanId`, then
-copies every event from `stdout.txt`.
+copies every event from `stdout.txt.gz`.
 
 - Lines are copied verbatim. Empty lines are skipped; lines that do
 not parse as events are logged and skipped.
