@@ -1,0 +1,1 @@
+Remove old span directories from the measurement spool.

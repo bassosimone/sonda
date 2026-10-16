@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+from subprocess import CompletedProcess, Popen
+
+
+# XXX: what is the type of `env`?
+def start_serve_ptnop(*, env, root_dir: Path) -> Popen:
+    args = [
+        str(Path("libexec") / "sonda-serve-ptnop"),
+        "--socket=" + str(Path(".") / "run" / "serve-ptnop" / "sock"),
+        "--spool-dir=" + str(Path(".") / "spool"),
+    ]
+    print(f"args: {args}")
+    return Popen(
+        args=args,
+        cwd=root_dir,
+        env=env,
+        stderr=sys.stderr,
+    )
+
+
+def start_etl_ptnop_archive(*, env, root_dir: Path) -> Popen:
+    args = [
+        str(Path("libexec") / "sonda-etl-ptnop-archive"),
+        "--archive-dir=" + str(Path(".") / "lib" / "archive"),
+        "--run-dir=" + str(Path(".") / "run"),
+        "--spool-dir=" + str(Path(".") / "spool"),
+    ]
+    print(f"args: {args}")
+    return Popen(
+        args=args,
+        cwd=root_dir,
+        env=env,
+        stderr=sys.stderr,
+    )
+
+
+def run_spool_gc(*, env, root_dir: Path) -> CompletedProcess:
+    args = [
+        str(Path("libexec") / "sonda-spool-gc"),
+        "--spool-dir=" + str(Path(".") / "spool"),
+    ]
+    print(f"args: {args}")
+    return subprocess.run(
+        args=args,
+        cwd=root_dir,
+        env=env,
+        stderr=sys.stderr,
+        check=True,
+    )
+
+
+def main():
+    env = os.environ.copy()
+    root_dir = Path(".") / "dist" / "portable"  # XXX
+
+    serve_ptnop = start_serve_ptnop(env=env, root_dir=root_dir)
+    print(f"serve-ptnop: {serve_ptnop.pid}")
+
+    etl_ptnop_archive = start_etl_ptnop_archive(env=env, root_dir=root_dir)
+    print(f"etl-ptnop-archive: {etl_ptnop_archive.pid}")
+
+    try:
+        while True:
+            run_spool_gc(env=env, root_dir=root_dir)
+            time.sleep(30.0)
+    except:
+        serve_ptnop.terminate()
+        etl_ptnop_archive.terminate()
+
+
+if __name__ == "__main__":
+    main()
