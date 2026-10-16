@@ -115,7 +115,7 @@ Systemd hardening directives are applied in three tiers:
 1. Filesystem isolation: `ProtectSystem=strict` (read-only
    root), `ProtectHome=yes`, `PrivateTmp=yes`, and
    `ReadWritePaths=` only where a unit writes: `spool/ptnop`
-   for `sonda-inetd-ptnop`, the whole spool for GC,
+   for `sonda-serve-ptnop`, the whole spool for GC,
    `archive/ptnop` and its run directory for the archive ETL,
    its run directory for the prom ETL, and its run directory
    plus the trigger directories for the scan.
@@ -139,7 +139,7 @@ and write access to the spool.
 The spool directory and the archive directory are owned by
 `_sonda:_sonda` with mode `2750` (setgid).
 
-We use the `_sonda` group because the `sonda-inetd-ptnop` socket
+We use the `_sonda` group because the `sonda-serve-ptnop` socket
 is already `_sonda:_sonda` with mode `0660`. Therefore, a single
 group covers both connecting to the socket to run measurements
 and reading the results. Users who need either capability are

@@ -46,7 +46,7 @@ func realMain(ctx context.Context, args []string) error {
 	upr := vflag.NewDefaultUsagePrinter()
 	fset.UsagePrinter = upr
 	upr.AddDescription(shortDescr,
-		"The measurement runs in the remote `sonda-inetd-ptnop` process, with "+
+		"The measurement runs in the remote `sonda-serve-ptnop` process, with "+
 			"which we communicate using a Unix domain socket.",
 		"Output",
 		"    NDJSON. The first line is a `sondaRemoteMeasurementResult` event containing:",
@@ -232,7 +232,7 @@ func realMain(ctx context.Context, args []string) error {
 		"Use `PIPELINE` as the measurement pipeline.")
 
 	fset.StringVar(&ptnopSocket, 0, "ptnop-socket",
-		"Unix domain socket `PATH` of the `sonda-inetd-ptnop` server.",
+		"Unix domain socket `PATH` of the `sonda-serve-ptnop` server.",
 		"Default: `@DEFAULT_VALUE@`.")
 
 	fset.StringVar(&opts.SNI, 0, "sni",
@@ -275,7 +275,7 @@ func realMain(ctx context.Context, args []string) error {
 		env.Exit(2)
 	}
 
-	// 6. Create the connection with `sonda-inetd-ptnop`.
+	// 6. Create the connection with `sonda-serve-ptnop`.
 	conn, err := ptnoprpc.Dial(ctx, env, ptnopSocket)
 	if err != nil {
 		logger.Error("ptnoprpc.Dial", slog.Any("err", err))
@@ -295,7 +295,7 @@ func realMain(ctx context.Context, args []string) error {
 
 	// 8. Print the response to the stdout.
 	//
-	// Like `sonda-inetd-ptnop`, we omit the top-level time field, so that this
+	// Like `sonda-serve-ptnop`, we omit the top-level time field, so that this
 	// line has the same shape as the structured logs we copy below.
 	stdoutLogger := slog.New(slog.NewJSONHandler(env.Stdout, &slog.HandlerOptions{
 		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {

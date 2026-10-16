@@ -37,13 +37,13 @@ func mainMain(ctx context.Context, args []string) error {
 	configErr := config.ReadDefaultsInto(env, presets)
 	var (
 		maxConns    = int64(8)
-		idleTimeout = time.Duration(presets.Inetd.Ptnop.IdleTimeout)
+		idleTimeout = time.Duration(presets.Serve.Ptnop.IdleTimeout)
 		socketPath  = config.PtnopSocketPath
 		spoolDir    = config.SpoolDir
 	)
 
 	// Parse command line flags.
-	fset := vflag.NewFlagSet("sonda-inetd-ptnop", vflag.ExitOnError)
+	fset := vflag.NewFlagSet("sonda-serve-ptnop", vflag.ExitOnError)
 
 	fset.Exit = env.Exit
 	fset.Stderr = env.Stderr

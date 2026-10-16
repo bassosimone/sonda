@@ -27,7 +27,7 @@ const (
 
 	// maxRequestTimeout is the timeout we assume when [Request.Timeout] is
 	// <= 0, since we do not know the server default. Same as the maximum
-	// timeout accepted by `sonda-inetd-ptnop`.
+	// timeout accepted by `sonda-serve-ptnop`.
 	maxRequestTimeout = 5 * time.Minute
 
 	// roundTripMargin is the time we allow the server, on top of the request
@@ -36,7 +36,7 @@ const (
 	roundTripMargin = 10 * time.Second
 )
 
-// Client is a client for the `sonda-inetd-ptnop` socket.
+// Client is a client for the `sonda-serve-ptnop` socket.
 //
 // Construct using [Dial].
 //
@@ -53,7 +53,7 @@ type Client struct {
 	scanner *bufio.Scanner
 }
 
-// Dial connects to the `sonda-inetd-ptnop` Unix domain socket at the given path.
+// Dial connects to the `sonda-serve-ptnop` Unix domain socket at the given path.
 func Dial(ctx context.Context, env *testable.Environ, path string) (*Client, error) {
 	conn, err := env.Dialer.DialContext(ctx, "unix", path)
 	if err != nil {

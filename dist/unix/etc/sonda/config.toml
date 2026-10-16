@@ -12,7 +12,7 @@
 ## Days after which daily archive files are removed. Zero means never.
 #max-days = 90
 
-[inetd.ptnop]
+[serve.ptnop]
 ## Close idle client connections after this time.
 ##
 ## The value is a Go time duration string.

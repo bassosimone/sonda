@@ -7,12 +7,12 @@ __pycache__/
 /sonda-etl-ptnop-archive.exe
 /sonda-etl-ptnop-prom
 /sonda-etl-ptnop-prom.exe
-/sonda-inetd-ptnop
-/sonda-inetd-ptnop.exe
 /sonda-measure-ptnop
 /sonda-measure-ptnop.exe
 /sonda-scan
 /sonda-scan.exe
+/sonda-serve-ptnop
+/sonda-serve-ptnop.exe
 /sonda-spool-gc
 /sonda-spool-gc.exe
 /sonda-spool-run

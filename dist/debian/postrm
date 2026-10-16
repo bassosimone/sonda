@@ -18,7 +18,10 @@ case "$1" in
         # list the units that older versions shipped, whose symlinks and
         # state may still be around.
         if [ -x "/usr/bin/deb-systemd-helper" ]; then
-            deb-systemd-helper purge 'sonda-etl-ptnop-qoe.timer' 'sonda-etl-ptnop-archive.path' 'sonda-etl-ptnop-prom.service' 'sonda-inetd-ptnop.service' 'sonda-scan.timer' 'sonda-spool-gc.timer' >/dev/null || true
+            deb-systemd-helper purge 'sonda-etl-ptnop-qoe.timer' \
+				'sonda-etl-ptnop-archive.path' 'sonda-etl-ptnop-prom.service' \
+				'sonda-scan.timer' 'sonda-serve-ptnop.service' \
+				'sonda-spool-gc.timer' >/dev/null || true
         fi
 
         # Remove the _sonda system user and group.

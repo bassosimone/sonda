@@ -2,16 +2,16 @@
 
 [Unit]
 Description=Run sonda scan
-After=network-online.target sonda-inetd-ptnop.service
+After=network-online.target sonda-serve-ptnop.service
 Wants=network-online.target
-Requires=sonda-inetd-ptnop.service
+Requires=sonda-serve-ptnop.service
 
 [Service]
 Slice=system-sonda.slice
 Type=oneshot
 Environment=SONDA_ETC_PATH=/etc/sonda
 ExecStart=/usr/libexec/sonda/sonda-scan \
-	--ptnop-socket=/run/sonda/inetd-ptnop/sock \
+	--ptnop-socket=/run/sonda/serve-ptnop/sock \
 	--run-dir=/run/sonda \
 	--workflow-file=/etc/sonda/scan/default.yml
 

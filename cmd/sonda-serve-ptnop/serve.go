@@ -149,7 +149,7 @@ func serveLine(
 	input.logger = newLogger(stdoutFileGz, spanID, req.Tags, req.Optimize)
 
 	// 9. Write peer credentials and incoming request.
-	input.logger.Info("sondaInetdRunContext", slog.Any("peer", peer), slog.Any("request", req))
+	input.logger.Info("sondaPtnopRunContext", slog.Any("peer", peer), slog.Any("request", req))
 
 	// 10. Run the pipeline.
 	exitCode := ptnopRunPipeline(ctx, input)

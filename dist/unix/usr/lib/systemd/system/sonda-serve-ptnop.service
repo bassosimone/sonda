@@ -10,14 +10,14 @@ Group=_sonda
 Environment=SONDA_ETC_PATH=/etc/sonda
 UMask=0007
 Restart=on-failure
-ExecStartPre=rm -f /run/sonda/inetd-ptnop/sock
-ExecStart=/usr/libexec/sonda/sonda-inetd-ptnop \
-	--socket=/run/sonda/inetd-ptnop/sock \
+ExecStartPre=rm -f /run/sonda/serve-ptnop/sock
+ExecStart=/usr/libexec/sonda/sonda-serve-ptnop \
+	--socket=/run/sonda/serve-ptnop/sock \
 	--spool-dir=/var/spool/sonda
 
 NoNewPrivileges=yes
 ProtectSystem=strict
-ReadWritePaths=/run/sonda/inetd-ptnop /var/spool/sonda/ptnop
+ReadWritePaths=/run/sonda/serve-ptnop /var/spool/sonda/ptnop
 ProtectHome=yes
 PrivateTmp=yes
 PrivateDevices=yes

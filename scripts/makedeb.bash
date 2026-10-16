@@ -43,16 +43,16 @@ go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 chmod 755 "$stage/usr/libexec/sonda/sonda-etl-ptnop-prom"
 
 go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
-	-o "$stage/usr/libexec/sonda/sonda-inetd-ptnop" ./cmd/sonda-inetd-ptnop
-chmod 755 "$stage/usr/libexec/sonda/sonda-inetd-ptnop"
-
-go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 	-o "$stage/usr/libexec/sonda/sonda-measure-ptnop" ./cmd/sonda-measure-ptnop
 chmod 755 "$stage/usr/libexec/sonda/sonda-measure-ptnop"
 
 go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 	-o "$stage/usr/libexec/sonda/sonda-scan" ./cmd/sonda-scan
 chmod 755 "$stage/usr/libexec/sonda/sonda-scan"
+
+go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
+	-o "$stage/usr/libexec/sonda/sonda-serve-ptnop" ./cmd/sonda-serve-ptnop
+chmod 755 "$stage/usr/libexec/sonda/sonda-serve-ptnop"
 
 go build -buildmode=pie -ldflags="-s -w -X $ldflags_buildcfg.Version=$ver" \
 	-o "$stage/usr/libexec/sonda/sonda-spool-gc" ./cmd/sonda-spool-gc
@@ -74,9 +74,9 @@ install -d "$stage/usr/lib/systemd/system"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-archive.service "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-archive.path "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-prom.service "$stage/usr/lib/systemd/system/"
-install -m 644 dist/unix/usr/lib/systemd/system/sonda-inetd-ptnop.service "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-scan.service "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-scan.timer "$stage/usr/lib/systemd/system/"
+install -m 644 dist/unix/usr/lib/systemd/system/sonda-serve-ptnop.service "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-spool-gc.service "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-spool-gc.timer "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/system-sonda.slice "$stage/usr/lib/systemd/system/"

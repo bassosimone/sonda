@@ -1,9 +1,9 @@
 sonda_plugins = \
 	sonda-etl-ptnop-archive \
 	sonda-etl-ptnop-prom \
-	sonda-inetd-ptnop \
 	sonda-measure-ptnop \
 	sonda-scan \
+	sonda-serve-ptnop \
 	sonda-spool-gc \
 	sonda-spool-run
 

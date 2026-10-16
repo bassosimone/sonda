@@ -49,7 +49,7 @@ func scanMain(ctx context.Context, args []string) error {
 	fset.UsagePrinter = upr
 	upr.AddDescription(
 		"Run the steps listed in the `--workflow-file` YAML file, in order. " +
-			"Each step sends a measurement request to the `sonda-inetd-ptnop` server " +
+			"Each step sends a measurement request to the `sonda-serve-ptnop` server " +
 			"listening at `--ptnop-socket`, which stores the results in the spool. " +
 			"A failed step does not stop the scan unless `--fail` is set.")
 
@@ -58,7 +58,7 @@ func scanMain(ctx context.Context, args []string) error {
 	fset.BoolVar(&fail, 0, "fail", "Exit with error on first failure.")
 
 	fset.StringVar(&ptnopSocket, 0, "ptnop-socket",
-		"Unix domain socket `PATH` of the `sonda-inetd-ptnop` server.",
+		"Unix domain socket `PATH` of the `sonda-serve-ptnop` server.",
 		"Default: `@DEFAULT_VALUE@`.")
 
 	fset.StringVar(&runDir, 0, "run-dir",

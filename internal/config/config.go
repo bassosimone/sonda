@@ -26,10 +26,10 @@ func DefaultConfigFilePath(env *testable.Environ) string {
 	return filepath.Join(etcPath, "config.toml")
 }
 
-// PtnopSocketPath is the `sonda-inetd-ptnop` socket path.
+// PtnopSocketPath is the `sonda-serve-ptnop` socket path.
 //
-// Not configurable: it must match the value in `sonda-inetd-ptnop.service`.
-const PtnopSocketPath = "/run/sonda/inetd-ptnop/sock"
+// Not configurable: it must match the value in `sonda-serve-ptnop.service`.
+const PtnopSocketPath = "/run/sonda/serve-ptnop/sock"
 
 // ArchiveDir is the top-level archive directory.
 //
@@ -74,7 +74,7 @@ func (d *Duration) UnmarshalText(text []byte) error {
 // Settings contains `sonda` settings.
 type Settings struct {
 	Archive Archive `toml:"archive"`
-	Inetd   Inetd   `toml:"inetd"`
+	Serve   Serve   `toml:"serve"`
 	Spool   Spool   `toml:"spool"`
 }
 
@@ -89,13 +89,13 @@ type ArchivePtnop struct {
 	MaxDays int `toml:"max-days"`
 }
 
-// Inetd contains settings for the inetd-like servers.
-type Inetd struct {
-	Ptnop InetdPtnop `toml:"ptnop"`
+// Serve contains settings for services.
+type Serve struct {
+	Ptnop ServePtnop `toml:"ptnop"`
 }
 
-// InetdPtnop contains `sonda-inetd-ptnop` settings.
-type InetdPtnop struct {
+// ServePtnop contains `sonda-serve-ptnop` settings.
+type ServePtnop struct {
 	IdleTimeout Duration `toml:"idle-timeout"`
 }
 
@@ -119,8 +119,8 @@ func Defaults() *Settings {
 		},
 		// The idle timeout is a guess: it should leave plenty of margin
 		// to a client sending requests back to back, such as `sonda scan`.
-		Inetd: Inetd{
-			Ptnop: InetdPtnop{
+		Serve: Serve{
+			Ptnop: ServePtnop{
 				IdleTimeout: Duration(60 * time.Second),
 			},
 		},

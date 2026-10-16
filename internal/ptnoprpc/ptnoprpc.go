@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package ptnoprpc contains the wire format spoken over the `sonda-inetd-ptnop`
+// Package ptnoprpc contains the wire format spoken over the `sonda-serve-ptnop`
 // socket. Each request and each response is a JSON object on a single line.
 //
 // The server reads one request and writes exactly one response, in order,
@@ -20,7 +20,7 @@ import (
 // A Timeout <= 0 means the server default.
 //
 // The Optimize field indicates what we should optimize for in terms of the
-// generated events. When Optimize is empty, the `inetd-ptnop` service collects
+// generated events. When Optimize is empty, the `serve-ptnop` service collects
 // and emits all structured log events. Set to "size" to optimize for lean
 // output. Specifics may change in the future, and some sonda events may
 // be trimmed as well. What matters is that "size" guarantees that at least
@@ -34,7 +34,7 @@ import (
 //   - httpRoundTripDone
 //   - sondaDnsRecordsA
 //   - sondaDnsRecordsAAAA
-//   - sondaInetdRunContext
+//   - sondaPtnopRunContext
 //   - stunBindingResult
 //   - tlsHandshakeDone
 //

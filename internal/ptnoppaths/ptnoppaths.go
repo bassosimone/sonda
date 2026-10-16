@@ -11,7 +11,7 @@ import "path/filepath"
 // - SpanDir and SpanTmpDir are general spool properties
 //
 // - the other definitions are part of the spool-run contract but are
-//   otherwise unused by code using inetd-ptnop
+//   otherwise unused by code using serve-ptnop
 
 // SpanDir returns the spool directory path for a given span ID.
 func SpanDir(spoolDir, spanID string) string {
