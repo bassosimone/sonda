@@ -6,11 +6,11 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"io"
 	"log/slog"
 	"net"
-	"os"
 	"path/filepath"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/bassosimone/runtimex"
@@ -19,6 +19,10 @@ import (
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 )
+
+func main() {
+	plugincommand.Main(0, mainMain)
+}
 
 // maxLineSize bounds the size of a request line. Requests are small JSON objects,
 // so this is generous even with many HTTP headers or tags.
@@ -32,15 +36,13 @@ func mainMain(ctx context.Context, args []string) error {
 	presets := config.Defaults()
 	configErr := config.ReadDefaultsInto(env, presets)
 	var (
+		maxConns    = int64(8)
 		idleTimeout = time.Duration(presets.Inetd.Ptnop.IdleTimeout)
+		socketPath  = config.PtnopSocketPath
 		spoolDir    = config.SpoolDir
-		stdio       = false
 	)
 
 	// Parse command line flags.
-	//
-	// Note that the socket is attached to the stdin and the stdout, while
-	// the systemd unit is expected to send the stderr to the journal.
 	fset := vflag.NewFlagSet("sonda-inetd-ptnop", vflag.ExitOnError)
 
 	fset.Exit = env.Exit
@@ -50,34 +52,28 @@ func mainMain(ctx context.Context, args []string) error {
 	upr := vflag.NewDefaultUsagePrinter()
 	fset.UsagePrinter = upr
 	upr.AddDescription(
-		"Serve ptnop measurement requests read as JSON lines from the stdin, "+
-			"writing one span per request into `<spool-dir>/ptnop` and one JSON "+
-			"response line per request to the stdout.",
-		"Designed to run behind a systemd socket with: ",
-		"    - Accept=yes",
-		"    - StandardError=journal",
-		"    - StandardInput=socket",
-		"which attaches the connection to stdin and stdout and "+
-			"sends logs to the journal. The code assumes that the stdin "+
-			"is a socket unless `--stdio` is given; use it for manual testing.")
-
-	upr.AddExamples(
-		"Serve a Unix socket without installing the systemd units, using "+
-			"a socket path that is absolute and shorter than 108 bytes:",
-		"    systemd-socket-activate --listen=/tmp/ptnop.sock --accept --inetd \\\n"+
-			"          sonda-inetd-ptnop --spool-dir /tmp/spool",
-		"Connect to the socket using:",
-		"    nc -U /tmp/ptnop.sock")
+		"Accept connections at `--socket=<path>` and serve ptnop " +
+			"measurement requests writing one span per request into `<spool-dir>/ptnop` " +
+			"and one JSON response line per request to the socket.")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
+
+	fset.Int64Var(&maxConns, 0, "max-conns",
+		"Refuse serving more than `N` concurrent conns.",
+		"Default: @DEFAULT_VALUE@.")
+
 	fset.DurationVar(&idleTimeout, 0, "idle-timeout",
 		"Close the connection after waiting `DURATION` for I/O to occur on the "+
-			"client connection. Ignored with `--stdio`.",
+			"client connection.",
 		"Default: @DEFAULT_VALUE@.")
+
+	fset.StringVar(&socketPath, 0, "socket",
+		"Unix socket `PATH` to listen at.",
+		"Default: `@DEFAULT_VALUE@`.")
+
 	fset.StringVar(&spoolDir, 0, "spool-dir",
 		"Top-level spool `DIR` containing the data type directories.",
 		"Default: `@DEFAULT_VALUE@`.")
-	fset.BoolVar(&stdio, 0, "stdio", "Do not assume that the stdin is a socket.")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
@@ -91,7 +87,7 @@ func mainMain(ctx context.Context, args []string) error {
 	}
 
 	// Make sure the idle timeout makes sense.
-	if !stdio && idleTimeout <= 0 {
+	if idleTimeout <= 0 {
 		logger.Error("invalid --idle-timeout", slog.Duration("idleTimeout", idleTimeout))
 		env.Exit(1)
 	}
@@ -104,43 +100,74 @@ func mainMain(ctx context.Context, args []string) error {
 	}
 	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
 
-	// Select the transport.
-	//
-	// By default, the stdin must be a socket. We wrap it as a [net.Conn] so that
-	// we can close the connection with idle clients, which would otherwise hold
-	// one of the socket unit's MaxConnections slots forever. With `--stdio`, any
-	// stdin works, but an idle client can block us forever.
-	//
-	// Note: once we wrap the socket, we MUST NOT use the stdout anymore, since
-	// [net.FileConn] makes the open file description non-blocking and, under
-	// systemd, the stdin and the stdout share the same file description.
-	var (
-		peer   peerCreds = unknownPeerCreds
-		reader io.Reader = env.Stdin
-		writer io.Writer = env.Stdout
-	)
-	if !stdio {
-		conn, err := env.FileConn(os.Stdin)
+	// Create the listening socket.
+	listener, err := env.ListenConfig.Listen(ctx, "unix", socketPath)
+	if err != nil {
+		logger.Error("env.ListenConfig", slog.Any("err", err))
+		env.Exit(1)
+	}
+	stopCloser := context.AfterFunc(ctx, func() {
+		listener.Close()
+	})
+	defer stopCloser()
+
+	// Wait for background goroutines on exit.
+	wg := &sync.WaitGroup{}
+	defer func() {
+		logger.Info("waiting for background goroutines to stop")
+		wg.Wait()
+	}()
+
+	// Accept connections and spawn serving goroutines. Handle overload
+	// by dropping incoming connections, like systemd does.
+	activeConns := &atomic.Int64{}
+	for {
+		conn, err := listener.Accept()
 		if err != nil {
-			logger.Error("env.FileConn", slog.Any("err", err))
+			logger.Warn("listener.Accept", slog.Any("err", err))
 			env.Exit(1)
 		}
-		defer conn.Close()
-		reader = &idleReader{conn: conn, timeout: idleTimeout}
-		writer = &idleWriter{conn: conn, timeout: idleTimeout}
 
-		// Obtain the peer credentials once, since they belong to the connection.
-		//
-		// We only try with Unix domain sockets: on a TCP socket, Linux does not fail
-		// SO_PEERCRED but returns pid 0 and uid/gid 4294967295 (tested on 7.0.0).
-		// Failing is fine: we log and continue without credentials.
-		if uconn, ok := conn.(*net.UnixConn); ok {
-			var err error
-			peer, err = peerCred(uconn)
-			if err != nil {
-				logger.Warn("peerCred", slog.Any("err", err))
-			}
+		cur := activeConns.Load()
+		if overload := cur >= maxConns; overload {
+			logger.Warn(
+				"too many client connections",
+				slog.Int64("cur", cur),
+				slog.Int64("max", maxConns),
+			)
+			conn.Close()
+			continue
 		}
+
+		activeConns.Add(1)
+		wg.Go(func() {
+			defer activeConns.Add(-1)
+			serveConn(ctx, conn, env, idleTimeout, logger, ptnopSpoolDir)
+		})
+	}
+}
+
+func serveConn(
+	ctx context.Context,
+	conn net.Conn,
+	env *testable.Environ,
+	idleTimeout time.Duration,
+	logger *slog.Logger,
+	ptnopSpoolDir string,
+) {
+	// Close the connection when we leave the scope or the service-scoped context is done.
+	defer conn.Close()
+	stopCloser := context.AfterFunc(ctx, func() {
+		conn.Close()
+	})
+	defer stopCloser()
+
+	// Get the peer credentials.
+	reader := &idleReader{conn: conn, timeout: idleTimeout}
+	writer := &idleWriter{conn: conn, timeout: idleTimeout}
+	peer := unknownPeerCreds
+	if uconn, ok := conn.(*net.UnixConn); ok {
+		peer, _ = peerCred(uconn) // best effort + portability on Windows/macOS
 	}
 
 	// Read and serve incoming requests, one per line, sequentially.
@@ -155,7 +182,7 @@ func mainMain(ctx context.Context, args []string) error {
 		respData = append(respData, '\n')
 		if _, err := writer.Write(respData); err != nil {
 			logger.Warn("writer.Write", slog.Any("err", err))
-			return nil // the client is gone or not reading
+			return // the client is gone or not reading
 		}
 	}
 
@@ -163,9 +190,4 @@ func mainMain(ctx context.Context, args []string) error {
 	if err := scanner.Err(); err != nil {
 		logger.Warn("scanner.Err", slog.Any("err", err))
 	}
-	return nil
-}
-
-func main() {
-	plugincommand.Main(0, mainMain)
 }

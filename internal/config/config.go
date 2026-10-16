@@ -28,7 +28,7 @@ func DefaultConfigFilePath(env *testable.Environ) string {
 
 // PtnopSocketPath is the `sonda-inetd-ptnop` socket path.
 //
-// Not configurable: it must match `ListenStream=` in `sonda-inetd-ptnop.socket`.
+// Not configurable: it must match the value in `sonda-inetd-ptnop.service`.
 const PtnopSocketPath = "/run/sonda/inetd-ptnop/sock"
 
 // ArchiveDir is the top-level archive directory.

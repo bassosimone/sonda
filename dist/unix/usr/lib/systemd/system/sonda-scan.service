@@ -2,9 +2,9 @@
 
 [Unit]
 Description=Run sonda scan
-After=network-online.target sonda-inetd-ptnop.socket
+After=network-online.target sonda-inetd-ptnop.service
 Wants=network-online.target
-Requires=sonda-inetd-ptnop.socket
+Requires=sonda-inetd-ptnop.service
 
 [Service]
 Slice=system-sonda.slice
