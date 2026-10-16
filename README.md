@@ -56,7 +56,7 @@ sonda scan --help         # scan-specific help
 
 ## Subcommands
 
-- `etl-ptnop-archive` — archive ptnop events into daily zstd-compressed JSONL files (path-activated after each scan).
+- `etl-ptnop-archive` — archive ptnop events into daily zstd-compressed JSONL files.
 
 - `etl-ptnop-prom` — export ptnop spans as Prometheus metrics.
 

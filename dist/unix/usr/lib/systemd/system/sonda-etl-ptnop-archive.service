@@ -5,7 +5,8 @@ Description=Archive sonda ptnop events
 
 [Service]
 Slice=system-sonda.slice
-Type=oneshot
+Type=exec
+Restart=on-failure
 User=_sonda
 Group=_sonda
 Environment=SONDA_ETC_PATH=/etc/sonda
@@ -36,3 +37,6 @@ LockPersonality=yes
 MemoryDenyWriteExecute=yes
 SystemCallFilter=@system-service
 RestrictRealtime=yes
+
+[Install]
+WantedBy=multi-user.target

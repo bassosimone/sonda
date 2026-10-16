@@ -12,9 +12,9 @@ can analyze them after `sonda spool-gc` has removed the spans.
 
 ## How it works
 
-- Started by `sonda-etl-ptnop-archive.path` (see
-`2026-10-09-00-triggers.md`). It reads every work unit in
-`/run/sonda/etl-ptnop-archive` and removes it.
+- Started as `sonda-etl-ptnop-archive.service`. It reads every
+work unit in `/run/sonda/etl-ptnop-archive` and removes it (see
+`2026-10-09-00-triggers.md`).
 
 - For each `ptnop` span younger than `--max-span-age` (24h), it
 checks that `spanDir` matches the path derived from `spanId`, then

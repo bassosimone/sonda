@@ -21,6 +21,7 @@ import (
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/sonda/internal/triggers"
 	"github.com/bassosimone/vflag"
+	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"
 )
 
@@ -104,9 +105,21 @@ func realMain(ctx context.Context, args []string) error {
 		env.Exit(1)
 	}
 
+	// Setup the watcher to watch the triggers directory.
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		logger.Error("fsnotify.NewWatcher", slog.Any("err", err))
+		env.Exit(1)
+	}
+	etlPtnopArchiveRunDir := filepath.Join(runDir, "etl-ptnop-archive")
+	defer watcher.Close()
+	if err := watcher.Add(etlPtnopArchiveRunDir); err != nil {
+		logger.Error("watcher.Add", slog.Any("err", err))
+		env.Exit(1)
+	}
+
 	// We read from and write to the ptnop data type.
 	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
-	etlPtnopArchiveRunDir := filepath.Join(runDir, "etl-ptnop-archive")
 	ptnopArchiveDir := filepath.Join(archiveDir, "ptnop")
 
 	// Make sure the destination directory exists.
@@ -115,12 +128,102 @@ func realMain(ctx context.Context, args []string) error {
 		env.Exit(1)
 	}
 
-	// Process each trigger file in the triggers dir.
-	cutoff := time.Now().Add(-maxSpanAge)
+	// Loop processing the triggers.
+	processTriggersLoop(
+		ctx,
+		env,
+		etlPtnopArchiveRunDir,
+		logger,
+		maxDays,
+		maxSpanAge,
+		ptnopArchiveDir,
+		ptnopSpoolDir,
+		watcher,
+	)
+	return nil
+}
+
+// processTriggersLoop is the loop that processes the triggers dir in a loop.
+func processTriggersLoop(
+	ctx context.Context,
+	env *testable.Environ,
+	etlPtnopArchiveRunDir string,
+	logger *slog.Logger,
+	maxDays int,
+	maxSpanAge time.Duration,
+	ptnopArchiveDir string,
+	ptnopSpoolDir string,
+	watcher *fsnotify.Watcher,
+) {
+	ticker := time.NewTicker(1 * time.Hour)
+	defer ticker.Stop()
+	for {
+		cutoff := time.Now().Add(-maxSpanAge)
+
+		// Process new trigger files.
+		_ = processTriggersDir(
+			cutoff,
+			env,
+			etlPtnopArchiveRunDir,
+			logger,
+			ptnopArchiveDir,
+			ptnopSpoolDir,
+		)
+
+		// Compress the days no span can be appended to anymore.
+		_ = compressClosedDays(env, logger, ptnopArchiveDir, cutoff)
+
+		// Remove the days older than the retention period.
+		if maxDays > 0 {
+			expireCutoff := time.Now().UTC().AddDate(0, 0, -maxDays)
+			_ = expireOldDays(env, logger, ptnopArchiveDir, expireCutoff)
+		}
+
+		// Block until a new event occurs.
+		if !processWaitEvents(ctx, ticker, watcher) {
+			break
+		}
+	}
+
+}
+
+// processWaitEvents blocks until a context, ticker, or watcher event occurs.
+//
+// Returns false when the caller should stop waiting for events.
+func processWaitEvents(ctx context.Context, ticker *time.Ticker, watcher *fsnotify.Watcher) bool {
+	for {
+		select {
+		case <-ctx.Done():
+			return false
+		case <-ticker.C:
+			return true
+		case err, ok := <-watcher.Errors:
+			runtimex.Assert(!ok || errors.Is(err, fsnotify.ErrEventOverflow))
+			return ok
+		case event, ok := <-watcher.Events:
+			if ok && event.Has(fsnotify.Create) {
+				return true
+			}
+		}
+	}
+}
+
+// processTriggersDir does a pass over `/run/sonda/etl-ptnop-archive`, processing
+// and removing each trigger file, and generating archives as a side effect.
+func processTriggersDir(
+	cutoff time.Time,
+	env *testable.Environ,
+	etlPtnopArchiveRunDir string,
+	logger *slog.Logger,
+	ptnopArchiveDir string,
+	ptnopSpoolDir string,
+) error {
+	logger.Info("processing triggers dir", slog.String("dir", etlPtnopArchiveRunDir))
+
 	dentries, err := env.ReadDir(etlPtnopArchiveRunDir)
 	if err != nil {
 		logger.Error("env.ReadDir", slog.Any("err", err))
-		env.Exit(1)
+		return err
 	}
 
 	var errv []error
@@ -141,24 +244,7 @@ func realMain(ctx context.Context, args []string) error {
 		}
 	}
 
-	// Compress the days no span can be appended to anymore.
-	if err := compressClosedDays(env, logger, ptnopArchiveDir, cutoff); err != nil {
-		errv = append(errv, err)
-	}
-
-	// Remove the days older than the retention period.
-	if maxDays > 0 {
-		expireCutoff := time.Now().UTC().AddDate(0, 0, -maxDays)
-		if err := expireOldDays(env, logger, ptnopArchiveDir, expireCutoff); err != nil {
-			errv = append(errv, err)
-		}
-	}
-
-	// Determine the exit code and exit
-	if len(errv) >= 1 {
-		env.Exit(1)
-	}
-	return nil
+	return errors.Join(errv...)
 }
 
 // processDentry drains a single dentry in the `/run/sonda/etl-ptnop-archive` dir.

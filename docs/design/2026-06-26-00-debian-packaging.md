@@ -88,11 +88,11 @@ delays. `Persistent=true` fires a missed run on next boot.
 The spool GC timer (`sonda-spool-gc.timer`) uses the same two
 triggers with `OnActiveSec=1min` and `OnUnitInactiveSec=1h`.
 
-`sonda-etl-ptnop-archive.path` has no timer: it starts
-`sonda-etl-ptnop-archive.service` when the scan leaves work units in
-`/run/sonda/etl-ptnop-archive` (see `2026-10-09-00-triggers.md`).
-The service sets `Nice=10` and `IOSchedulingClass=idle`, so the ETL
-does not compete with the measurements, and `PrivateNetwork=yes`,
+`sonda-etl-ptnop-archive.service` is long-running
+(`WantedBy=multi-user.target`, `Restart=on-failure`), so `postinst`
+restarts it to pick up a new binary on upgrade. The service sets
+`Nice=10` and `IOSchedulingClass=idle`, so the ETL does not
+compete with the measurements, and `PrivateNetwork=yes`,
 since it needs no network.
 
 `sonda-etl-ptnop-prom.service` is long-running

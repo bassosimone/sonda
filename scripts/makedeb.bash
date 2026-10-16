@@ -72,7 +72,6 @@ chmod 644 "$stage/usr/share/man/man1/sonda.1.gz"
 # Install systemd units.
 install -d "$stage/usr/lib/systemd/system"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-archive.service "$stage/usr/lib/systemd/system/"
-install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-archive.path "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-etl-ptnop-prom.service "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-scan.service "$stage/usr/lib/systemd/system/"
 install -m 644 dist/unix/usr/lib/systemd/system/sonda-scan.timer "$stage/usr/lib/systemd/system/"

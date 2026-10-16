@@ -24,6 +24,7 @@ func expireOldDays(
 ) error {
 	dentries, err := env.ReadDir(ptnopArchiveDir)
 	if err != nil {
+		logger.Warn("env.ReadDir", slog.Any("err", err))
 		return err
 	}
 

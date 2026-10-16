@@ -17,9 +17,9 @@ The Debian package installs a systemd timer that runs
 five minutes after the previous scan finishes.
 Each scan runs the measurements listed in
 .IR /etc/sonda/scan/default.yml .
-After each scan, a path unit runs
+A long\-running
 .B sonda etl\-ptnop\-archive
-to archive the events of the new spool entries.
+service archives the events of each new spool entry.
 A second timer runs
 .B sonda spool\-gc
 every hour to remove old spool entries.
