@@ -24,6 +24,7 @@ import (
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/sonda/internal/triggers"
 	"github.com/bassosimone/vflag"
+	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -63,7 +64,7 @@ func realMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
 	env := testable.ContextEnviron(ctx)
 
-	// Parse command line flags.
+	// Set the command defaults.
 	var (
 		httpEpnt   = "127.0.0.1:9774"
 		maxSpanAge = 24 * time.Hour
@@ -72,6 +73,7 @@ func realMain(ctx context.Context, args []string) error {
 		runDir     = config.RunDir
 	)
 
+	// Parse command line flags.
 	fset := vflag.NewFlagSet("sonda-etl-ptnop-prom", vflag.ExitOnError)
 
 	fset.Exit = env.Exit
@@ -118,10 +120,22 @@ func realMain(ctx context.Context, args []string) error {
 		env.Exit(1)
 	}
 
+	// Setup the watcher to watch the triggers directory.
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		logger.Error("fsnotify.NewWatcher", slog.Any("err", err))
+		env.Exit(1)
+	}
+	etlPtnopPromRunDir := filepath.Join(runDir, "etl-ptnop-prom")
+	defer watcher.Close()
+	if err := watcher.Add(etlPtnopPromRunDir); err != nil {
+		logger.Error("watcher.Add", slog.Any("err", err))
+		env.Exit(1)
+	}
+
 	// Run in the background and monitor the triggers dir.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	etlPtnopPromRunDir := filepath.Join(runDir, "etl-ptnop-prom")
 	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
 	reg := prometheus.NewRegistry()
 	metrics := newMetricsSet(reg)
@@ -129,7 +143,16 @@ func realMain(ctx context.Context, args []string) error {
 	wg := &sync.WaitGroup{}
 	wg.Go(func() {
 		logger.Info("started background goroutine to monitor triggers")
-		processTriggersLoop(ctx, env, etlPtnopPromRunDir, logger, maxSpanAge, metrics, ptnopSpoolDir)
+		processTriggersLoop(
+			ctx,
+			env,
+			etlPtnopPromRunDir,
+			logger,
+			maxSpanAge,
+			metrics,
+			ptnopSpoolDir,
+			watcher,
+		)
 	})
 
 	// Create the listener for HTTP
@@ -183,16 +206,36 @@ func processTriggersLoop(
 	maxSpanAge time.Duration,
 	metrics *metricsSet,
 	ptnopSpoolDir string,
+	watcher *fsnotify.Watcher,
 ) {
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
+	for {
+		cutoff := time.Now().Add(-maxSpanAge)
+		_ = processTriggersDir(cutoff, env, etlPtnopPromRunDir, logger, metrics, ptnopSpoolDir)
+		if !processWaitEvents(ctx, ticker, watcher) {
+			break
+		}
+	}
+}
+
+// processWaitEvents blocks until a context, ticker, or watcher event occurs.
+//
+// Returns false when the caller should stop waiting for events.
+func processWaitEvents(ctx context.Context, ticker *time.Ticker, watcher *fsnotify.Watcher) bool {
 	for {
 		select {
 		case <-ctx.Done():
-			return
-		case now := <-ticker.C:
-			cutoff := now.Add(-maxSpanAge)
-			_ = processTriggersDir(cutoff, env, etlPtnopPromRunDir, logger, metrics, ptnopSpoolDir)
+			return false
+		case <-ticker.C:
+			return true
+		case err, ok := <-watcher.Errors:
+			runtimex.Assert(!ok || errors.Is(err, fsnotify.ErrEventOverflow))
+			return ok
+		case event, ok := <-watcher.Events:
+			if ok && event.Has(fsnotify.Create) {
+				return true
+			}
 		}
 	}
 }

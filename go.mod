@@ -11,6 +11,7 @@ require (
 	github.com/bassosimone/runtimex v0.0.0-20261005144844-77dc639b0e90
 	github.com/bassosimone/vclip v0.0.0-20261006070757-1ed765ad0339
 	github.com/bassosimone/vflag v0.0.0-20261006065510-ce05c7d76a28
+	github.com/fsnotify/fsnotify v1.10.1
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/uuid v1.6.0
 	github.com/klauspost/compress v1.20.1

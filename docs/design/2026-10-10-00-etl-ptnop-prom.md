@@ -18,8 +18,9 @@ Prometheus cannot scrape a Unix domain socket.
 - Requests whose `Host` is not `localhost`, `127.0.0.1`, or `::1`
 (with a port) get 421, to defeat DNS rebinding.
 
-- Every 30 s it drains the work units in `/run/sonda/etl-ptnop-prom`
-(see `2026-10-09-00-triggers.md`).
+- Drains the work units in `/run/sonda/etl-ptnop-prom`
+(see `2026-10-09-00-triggers.md`) when new files are added
+and/or every hour (fallback timer).
 
 - Each span flattens into one record: ptnop Done events carry the
 whole pipeline context (later stages emit `ESKIP` with the intended
