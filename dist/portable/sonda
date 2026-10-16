@@ -1,0 +1,6 @@
+#!/bin/sh
+root="$(dirname "$(readlink -f "$0")")"
+export SONDA_ETC_PATH="$root/etc"
+export SONDA_EXEC_PATH="$root/libexec"
+export SONDA_SHARE_PATH="$root/share"
+exec "$SONDA_EXEC_PATH/sonda" "$@"

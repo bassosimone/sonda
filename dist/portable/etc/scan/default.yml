@@ -1,0 +1,85 @@
+# Default scan workflow for sonda.
+
+steps:
+  #
+  # STUN
+  #
+  - name: "STUN lookup"
+    run: stun
+    with:
+      optimize: size
+      server: stun.l.google.com
+
+  #
+  # DNS over UDP
+  #
+  - name: "DNS over UDP via Google"
+    run: dns-over-udp
+    with:
+      optimize: size
+      query: www.example.com
+      server: dns.google
+
+  - name: "DNS over UDP via Quad9"
+    run: dns-over-udp
+    with:
+      optimize: size
+      query: www.example.com
+      server: dns.quad9.net
+
+  - name: "DNS over UDP via Cloudflare"
+    run: dns-over-udp
+    with:
+      optimize: size
+      query: www.example.com
+      server: one.one.one.one
+
+  #
+  # DNS over HTTPS
+  #
+  - name: "DNS over HTTPS via Google"
+    run: dns-over-https
+    with:
+      optimize: size
+      query: www.example.com
+      server: dns.google
+
+  - name: "DNS over HTTPS via Quad9"
+    run: dns-over-https
+    with:
+      optimize: size
+      query: www.example.com
+      server: dns.quad9.net
+
+  - name: "DNS over HTTPS via Cloudflare"
+    run: dns-over-https
+    with:
+      optimize: size
+      query: www.example.com
+      server: cloudflare-dns.com
+
+  #
+  # HTTPS
+  #
+  - name: "HTTPS GET www.example.com"
+    run: https
+    with:
+      host: www.example.com
+      optimize: size
+
+  - name: "HTTPS GET Google generate_204"
+    run: https
+    with:
+      host: www.google.com
+      optimize: size
+      url_path: /generate_204
+
+  - name: "HTTPS GET Cloudflare cdn-cgi/trace"
+    run: https
+    with:
+      host: www.cloudflare.com
+      optimize: size
+      url_path: /cdn-cgi/trace
+
+triggers:
+  - "etl-ptnop-archive"
