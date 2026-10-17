@@ -88,18 +88,18 @@ func (e UsageError) Unwrap() error {
 	return e.Err
 }
 
-// ClientRunResult is the type returned by [Conn.Run] on success.
-type ClientRunResult struct {
+// RunResult is the type returned by [Conn.Run] on success.
+type RunResult struct {
 	ExitCode int
 	SpanID   string
 }
 
-// Run sends the request, waits for the response, and returns a [*ClientRunResult].
+// Run sends the request, waits for the response, and returns a [*RunResult].
 //
 // We do not mutate the request. We send a copy with the ID replaced by our own
 // counter, which we use to check that the response matches the request.
 //
-// The returned [*ClientRunResult] ExitCode is either `0` (success) or `1` (measurement failure).
+// The returned [*RunResult] ExitCode is either `0` (success) or `1` (measurement failure).
 //
 // We fail if the server reports an error or returns an invalid response, which do
 // not break the connection, or on transport errors or when the response does not
@@ -107,7 +107,7 @@ type ClientRunResult struct {
 //
 // The error is [UsageError] when the server noticed that the request contained invalid
 // fields such as, for example, an unknown pipeline name or an invalid addrport.
-func (c *Conn) Run(ctx context.Context, req *ptnoprpc.Request) (*ClientRunResult, error) {
+func (c *Conn) Run(ctx context.Context, req *ptnoprpc.Request) (*RunResult, error) {
 	// 1. Refuse to use a connection that is out of sync.
 	if c.err != nil {
 		return nil, c.err
@@ -178,7 +178,7 @@ func (c *Conn) Run(ctx context.Context, req *ptnoprpc.Request) (*ClientRunResult
 	}
 
 	// 8. On success, return the result.
-	result := &ClientRunResult{
+	result := &RunResult{
 		ExitCode: *resp.ExitCode,
 		SpanID:   resp.SpanID,
 	}
