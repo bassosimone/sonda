@@ -14,6 +14,7 @@ import (
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
+	"github.com/bassosimone/sonda/internal/ptnoprpc/client"
 	"github.com/bassosimone/sonda/internal/spool"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/sonda/internal/triggers"
@@ -105,7 +106,7 @@ func scanMain(ctx context.Context, args []string) error {
 	//
 	// We connect after loading the workflow, so `scan` fails early when the server
 	// is not running, but still prints the usage or workflow errors without it.
-	ptnopClient, err := ptnoprpc.Dial(ctx, env, ptnopSocket)
+	ptnopClient, err := client.Dial(ctx, env, ptnopSocket)
 	if err != nil {
 		logger.Error("connecting to the ptnop server", slog.Any("err", err))
 		env.Exit(1)
@@ -280,7 +281,7 @@ func (s *sharedState) Tags() []string {
 // entry inside the [*sharedState] so that, at the end of the scan, we can write trigger
 // files for the ETL processing pipeline according to the registered triggers.
 func (s *sharedState) RunAndSave(ctx context.Context,
-	client *ptnoprpc.Client, req *ptnoprpc.Request) (spool.SpanDir, error) {
+	client *client.Client, req *ptnoprpc.Request) (spool.SpanDir, error) {
 	result, err := client.Run(ctx, req)
 	if err != nil {
 		return nil, err

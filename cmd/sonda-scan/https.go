@@ -9,11 +9,12 @@ import (
 	"time"
 
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
+	"github.com/bassosimone/sonda/internal/ptnoprpc/client"
 )
 
 // httpsRunner runs an HTTPS GET measurement against each resolved address.
 type httpsRunner struct {
-	Client *ptnoprpc.Client
+	Client *client.Client
 	State  *sharedState
 }
 

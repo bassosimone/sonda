@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+// UsageErrorPrefix is the prefix the server adds to errors
+// that indicate that a usage error occurred.
+const UsageErrorPrefix = "usage error: "
+
 // Request is the request sent by the client.
 //
 // The ID is opaque: the server echoes it back in the [Response], so the client

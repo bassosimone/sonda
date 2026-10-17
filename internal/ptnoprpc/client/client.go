@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package ptnoprpc
+// Package client implements the [ptnoprpc] client.
+package client
 
 import (
 	"bufio"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	"github.com/bassosimone/runtimex"
+	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/bassosimone/sonda/internal/testable"
 )
 
@@ -75,11 +77,7 @@ func (c *Client) Close() error {
 	return c.conn.Close()
 }
 
-// UsageErrorPrefix is the prefix the server adds to errors
-// that indicate that a usage error occurred.
-const UsageErrorPrefix = "usage error: "
-
-// UsageError wraps a remote error starting with [UsageErrorPrefix].
+// UsageError wraps a remote error starting with [ptnoprpc.UsageErrorPrefix].
 type UsageError struct {
 	Err error
 }
@@ -113,7 +111,7 @@ type ClientRunResult struct {
 //
 // The error is [UsageError] when the server noticed that the request contained invalid
 // fields such as, for example, an unknown pipeline name or an invalid addrport.
-func (c *Client) Run(ctx context.Context, req *Request) (*ClientRunResult, error) {
+func (c *Client) Run(ctx context.Context, req *ptnoprpc.Request) (*ClientRunResult, error) {
 	// 1. Refuse to use a connection that is out of sync.
 	if c.err != nil {
 		return nil, c.err
@@ -158,7 +156,7 @@ func (c *Client) Run(ctx context.Context, req *Request) (*ClientRunResult, error
 		}
 		return nil, c.fail(err)
 	}
-	var resp Response
+	var resp ptnoprpc.Response
 	if err := json.Unmarshal(c.scanner.Bytes(), &resp); err != nil {
 		return nil, c.fail(err)
 	}
@@ -171,7 +169,7 @@ func (c *Client) Run(ctx context.Context, req *Request) (*ClientRunResult, error
 	// 7. Handle the errors reported by the server.
 	if resp.Error != "" {
 		err := fmt.Errorf("ptnoprpc: server error: %s", resp.Error)
-		if strings.HasPrefix(resp.Error, UsageErrorPrefix) {
+		if strings.HasPrefix(resp.Error, ptnoprpc.UsageErrorPrefix) {
 			err = UsageError{err}
 		}
 		return nil, err

@@ -9,11 +9,12 @@ import (
 	"time"
 
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
+	"github.com/bassosimone/sonda/internal/ptnoprpc/client"
 )
 
 // dnsOverHTTPSRunner runs a DNS-over-HTTPS lookup.
 type dnsOverHTTPSRunner struct {
-	Client *ptnoprpc.Client
+	Client *client.Client
 	State  *sharedState
 }
 

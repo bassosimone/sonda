@@ -15,6 +15,7 @@ import (
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
+	"github.com/bassosimone/sonda/internal/ptnoprpc/client"
 	"github.com/bassosimone/sonda/internal/spool"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
@@ -280,7 +281,7 @@ func realMain(ctx context.Context, args []string) error {
 	}
 
 	// 6. Create the connection with `sonda-serve-ptnop`.
-	conn, err := ptnoprpc.Dial(ctx, env, ptnopSocket)
+	conn, err := client.Dial(ctx, env, ptnopSocket)
 	if err != nil {
 		logger.Error("ptnoprpc.Dial", slog.Any("err", err))
 		env.Exit(3)
@@ -291,7 +292,7 @@ func realMain(ctx context.Context, args []string) error {
 	result, err := conn.Run(ctx, opts)
 	if err != nil {
 		logger.Error("conn.Run", slog.Any("err", err))
-		if _, ok := errors.AsType[ptnoprpc.UsageError](err); ok {
+		if _, ok := errors.AsType[client.UsageError](err); ok {
 			env.Exit(2)
 		}
 		env.Exit(4)

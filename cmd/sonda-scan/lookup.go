@@ -9,11 +9,12 @@ import (
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
+	"github.com/bassosimone/sonda/internal/ptnoprpc/client"
 	"github.com/bassosimone/sonda/internal/ptnopspool"
 )
 
 // lookupHost resolves a domain name using 8.8.8.8:53/udp.
-func lookupHost(ctx context.Context, client *ptnoprpc.Client,
+func lookupHost(ctx context.Context, client *client.Client,
 	state *sharedState, domain string) ([]string, error) {
 	a, errA := lookupA(ctx, client, state, domain)
 	aaaa, errAAAA := lookupAAAA(ctx, client, state, domain)
@@ -38,7 +39,7 @@ func newLookupRequest(state *sharedState, domain, queryType string) *ptnoprpc.Re
 }
 
 // lookupA resolves a domain name to A using 8.8.8.8:53/udp.
-func lookupA(ctx context.Context, client *ptnoprpc.Client,
+func lookupA(ctx context.Context, client *client.Client,
 	state *sharedState, domain string) ([]string, error) {
 	spanDir, err := state.RunAndSave(ctx, client, newLookupRequest(state, domain, "A"))
 	if err != nil {
@@ -48,7 +49,7 @@ func lookupA(ctx context.Context, client *ptnoprpc.Client,
 }
 
 // lookupAAAA resolves a domain name to AAAA using 8.8.8.8:53/udp.
-func lookupAAAA(ctx context.Context, client *ptnoprpc.Client,
+func lookupAAAA(ctx context.Context, client *client.Client,
 	state *sharedState, domain string) ([]string, error) {
 	v6sup := state.SupportsV6()
 	if v6sup != nil && !*v6sup {
