@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package server implements the ptnoprpc server.
-package server
+// Package ptnopserver implements the ptnoprpc server.
+package ptnopserver
 
 import (
 	"bufio"

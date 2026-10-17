@@ -12,7 +12,7 @@ import (
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
-	"github.com/bassosimone/sonda/internal/ptnoprpc/server"
+	"github.com/bassosimone/sonda/internal/ptnopserver"
 	"github.com/bassosimone/sonda/internal/spool"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
@@ -135,7 +135,7 @@ func mainMain(ctx context.Context, args []string) error {
 		activeConns.Add(1)
 		wg.Go(func() {
 			defer activeConns.Add(-1)
-			server.ServeConn(ctx, conn, env, idleTimeout, logger, spoolRootDir)
+			ptnopserver.ServeConn(ctx, conn, env, idleTimeout, logger, spoolRootDir)
 		})
 	}
 }

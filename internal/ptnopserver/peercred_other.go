@@ -2,7 +2,7 @@
 
 //go:build !linux
 
-package server
+package ptnopserver
 
 import (
 	"errors"

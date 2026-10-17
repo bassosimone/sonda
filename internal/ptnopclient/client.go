@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package client implements the [ptnoprpc] client.
-package client
+// Package ptnopclient implements the [ptnoprpc] client.
+package ptnopclient
 
 import (
 	"bufio"

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package server
+package ptnopserver
 
 // peerCreds contains the credentials of the process connected to the socket.
 //

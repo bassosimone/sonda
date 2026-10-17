@@ -10,15 +10,15 @@ import (
 	"net/netip"
 	"time"
 
+	"github.com/bassosimone/sonda/internal/ptnopclient"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
-	"github.com/bassosimone/sonda/internal/ptnoprpc/client"
 	"github.com/bassosimone/sonda/internal/ptnopspool"
 )
 
 // stunRunner performs STUN lookups and writes reflexive addresses
 // as tags into the shared state.
 type stunRunner struct {
-	Conn  *client.Conn
+	Conn  *ptnopclient.Conn
 	State *sharedState
 }
 

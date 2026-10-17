@@ -8,13 +8,13 @@ import (
 	"net"
 	"time"
 
+	"github.com/bassosimone/sonda/internal/ptnopclient"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
-	"github.com/bassosimone/sonda/internal/ptnoprpc/client"
 )
 
 // dnsOverUDPRunner runs a DNS-over-UDP lookup.
 type dnsOverUDPRunner struct {
-	Conn  *client.Conn
+	Conn  *ptnopclient.Conn
 	State *sharedState
 }
 

@@ -8,13 +8,13 @@ import (
 	"net"
 	"time"
 
+	"github.com/bassosimone/sonda/internal/ptnopclient"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
-	"github.com/bassosimone/sonda/internal/ptnoprpc/client"
 )
 
 // httpsRunner runs an HTTPS GET measurement against each resolved address.
 type httpsRunner struct {
-	Conn  *client.Conn
+	Conn  *ptnopclient.Conn
 	State *sharedState
 }
 

@@ -13,8 +13,8 @@ import (
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
+	"github.com/bassosimone/sonda/internal/ptnopclient"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
-	"github.com/bassosimone/sonda/internal/ptnoprpc/client"
 	"github.com/bassosimone/sonda/internal/spool"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/sonda/internal/triggers"
@@ -106,12 +106,12 @@ func scanMain(ctx context.Context, args []string) error {
 	//
 	// We connect after loading the workflow, so `scan` fails early when the server
 	// is not running, but still prints the usage or workflow errors without it.
-	ptnopClient, err := client.Dial(ctx, env, ptnopSocket)
+	conn, err := ptnopclient.Dial(ctx, env, ptnopSocket)
 	if err != nil {
 		logger.Error("connecting to the ptnop server", slog.Any("err", err))
 		env.Exit(1)
 	}
-	defer ptnopClient.Close()
+	defer conn.Close()
 
 	// Construct shared dependencies.
 	spoolRootDir, err := spool.NewRootDirFS(env, spoolDir)
@@ -123,10 +123,10 @@ func scanMain(ctx context.Context, args []string) error {
 
 	// Build the runner registry.
 	runners := map[string]stepRunner{
-		"stun":           &stunRunner{Conn: ptnopClient, State: state},
-		"dns-over-udp":   &dnsOverUDPRunner{Conn: ptnopClient, State: state},
-		"dns-over-https": &dnsOverHTTPSRunner{Conn: ptnopClient, State: state},
-		"https":          &httpsRunner{Conn: ptnopClient, State: state},
+		"stun":           &stunRunner{Conn: conn, State: state},
+		"dns-over-udp":   &dnsOverUDPRunner{Conn: conn, State: state},
+		"dns-over-https": &dnsOverHTTPSRunner{Conn: conn, State: state},
+		"https":          &httpsRunner{Conn: conn, State: state},
 	}
 
 	// Execute each step in order.
@@ -281,7 +281,7 @@ func (s *sharedState) Tags() []string {
 // entry inside the [*sharedState] so that, at the end of the scan, we can write trigger
 // files for the ETL processing pipeline according to the registered triggers.
 func (s *sharedState) RunAndSave(ctx context.Context,
-	conn *client.Conn, req *ptnoprpc.Request) (spool.SpanDir, error) {
+	conn *ptnopclient.Conn, req *ptnoprpc.Request) (spool.SpanDir, error) {
 	result, err := conn.Run(ctx, req)
 	if err != nil {
 		return nil, err
