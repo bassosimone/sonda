@@ -123,10 +123,10 @@ func scanMain(ctx context.Context, args []string) error {
 
 	// Build the runner registry.
 	runners := map[string]stepRunner{
-		"stun":           &stunRunner{Client: ptnopClient, State: state},
-		"dns-over-udp":   &dnsOverUDPRunner{Client: ptnopClient, State: state},
-		"dns-over-https": &dnsOverHTTPSRunner{Client: ptnopClient, State: state},
-		"https":          &httpsRunner{Client: ptnopClient, State: state},
+		"stun":           &stunRunner{Conn: ptnopClient, State: state},
+		"dns-over-udp":   &dnsOverUDPRunner{Conn: ptnopClient, State: state},
+		"dns-over-https": &dnsOverHTTPSRunner{Conn: ptnopClient, State: state},
+		"https":          &httpsRunner{Conn: ptnopClient, State: state},
 	}
 
 	// Execute each step in order.
@@ -281,8 +281,8 @@ func (s *sharedState) Tags() []string {
 // entry inside the [*sharedState] so that, at the end of the scan, we can write trigger
 // files for the ETL processing pipeline according to the registered triggers.
 func (s *sharedState) RunAndSave(ctx context.Context,
-	client *client.Client, req *ptnoprpc.Request) (spool.SpanDir, error) {
-	result, err := client.Run(ctx, req)
+	conn *client.Conn, req *ptnoprpc.Request) (spool.SpanDir, error) {
+	result, err := conn.Run(ctx, req)
 	if err != nil {
 		return nil, err
 	}

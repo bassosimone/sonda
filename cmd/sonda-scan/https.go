@@ -14,8 +14,8 @@ import (
 
 // httpsRunner runs an HTTPS GET measurement against each resolved address.
 type httpsRunner struct {
-	Client *client.Client
-	State  *sharedState
+	Conn  *client.Conn
+	State *sharedState
 }
 
 // RunStep implements StepRunner.
@@ -35,7 +35,7 @@ func (r *httpsRunner) RunStep(ctx context.Context, with map[string]string) error
 	}
 
 	// Resolve the host to addresses.
-	addrs, err := lookupHost(ctx, r.Client, r.State, host)
+	addrs, err := lookupHost(ctx, r.Conn, r.State, host)
 	if err != nil {
 		return fmt.Errorf("https: resolving %s: %w", host, err)
 	}
@@ -56,7 +56,7 @@ func (r *httpsRunner) RunStep(ctx context.Context, with map[string]string) error
 			Timeout:      30 * time.Second,
 			URLPath:      urlPath,
 		}
-		if _, err := r.State.RunAndSave(ctx, r.Client, req); err != nil {
+		if _, err := r.State.RunAndSave(ctx, r.Conn, req); err != nil {
 			return fmt.Errorf("https: %w", err)
 		}
 	}

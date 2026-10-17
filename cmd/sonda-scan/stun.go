@@ -18,8 +18,8 @@ import (
 // stunRunner performs STUN lookups and writes reflexive addresses
 // as tags into the shared state.
 type stunRunner struct {
-	Client *client.Client
-	State  *sharedState
+	Conn  *client.Conn
+	State *sharedState
 }
 
 // RunStep implements stepRunner.
@@ -35,7 +35,7 @@ func (r *stunRunner) RunStep(ctx context.Context, with map[string]string) error 
 	}
 
 	// Resolve the server hostname to addresses.
-	addrs, err := lookupHost(ctx, r.Client, r.State, server)
+	addrs, err := lookupHost(ctx, r.Conn, r.State, server)
 	if err != nil {
 		return fmt.Errorf("stun: resolving %s: %w", server, err)
 	}
@@ -50,7 +50,7 @@ func (r *stunRunner) RunStep(ctx context.Context, with map[string]string) error 
 			Tags:     r.State.Tags(),
 			Timeout:  5 * time.Second,
 		}
-		spanDir, err := r.State.RunAndSave(ctx, r.Client, req)
+		spanDir, err := r.State.RunAndSave(ctx, r.Conn, req)
 		if err != nil {
 			return fmt.Errorf("stun: %w", err)
 		}

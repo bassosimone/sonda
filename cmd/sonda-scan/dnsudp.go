@@ -14,8 +14,8 @@ import (
 
 // dnsOverUDPRunner runs a DNS-over-UDP lookup.
 type dnsOverUDPRunner struct {
-	Client *client.Client
-	State  *sharedState
+	Conn  *client.Conn
+	State *sharedState
 }
 
 // RunStep implements StepRunner.
@@ -35,7 +35,7 @@ func (r *dnsOverUDPRunner) RunStep(ctx context.Context, with map[string]string) 
 	}
 
 	// Resolve the server hostname to addresses.
-	addrs, err := lookupHost(ctx, r.Client, r.State, server)
+	addrs, err := lookupHost(ctx, r.Conn, r.State, server)
 	if err != nil {
 		return fmt.Errorf("dns-over-udp: resolving %s: %w", server, err)
 	}
@@ -51,7 +51,7 @@ func (r *dnsOverUDPRunner) RunStep(ctx context.Context, with map[string]string) 
 			Tags:         r.State.Tags(),
 			Timeout:      5 * time.Second,
 		}
-		if _, err := r.State.RunAndSave(ctx, r.Client, req); err != nil {
+		if _, err := r.State.RunAndSave(ctx, r.Conn, req); err != nil {
 			return fmt.Errorf("dns-over-udp: %w", err)
 		}
 	}

@@ -37,16 +37,16 @@ const (
 	roundTripMargin = 10 * time.Second
 )
 
-// Client is a client for the `sonda-serve-ptnop` socket.
+// Conn is a client conn for the `sonda-serve-ptnop` socket.
 //
 // Construct using [Dial].
 //
-// A [*Client] runs one request at a time and is not safe for concurrent use.
+// A [*Conn] runs one request at a time and is not safe for concurrent use.
 //
 // After a transport or protocol error, the connection is out of sync with the
 // server (e.g., a late response could still arrive), so every subsequent
-// [*Client.Run] fails with the same error. We do not reconnect.
-type Client struct {
+// [*Conn.Run] fails with the same error. We do not reconnect.
+type Conn struct {
 	conn    net.Conn
 	env     *testable.Environ
 	err     error
@@ -55,14 +55,14 @@ type Client struct {
 }
 
 // Dial connects to the `sonda-serve-ptnop` Unix domain socket at the given path.
-func Dial(ctx context.Context, env *testable.Environ, path string) (*Client, error) {
+func Dial(ctx context.Context, env *testable.Environ, path string) (*Conn, error) {
 	conn, err := env.Dialer.DialContext(ctx, "unix", path)
 	if err != nil {
 		return nil, err
 	}
 	scanner := bufio.NewScanner(conn)
 	scanner.Buffer(nil, maxLineSize)
-	client := &Client{
+	client := &Conn{
 		conn:    conn,
 		env:     env,
 		err:     nil,
@@ -73,7 +73,7 @@ func Dial(ctx context.Context, env *testable.Environ, path string) (*Client, err
 }
 
 // Close closes the connection with the server.
-func (c *Client) Close() error {
+func (c *Conn) Close() error {
 	return c.conn.Close()
 }
 
@@ -92,7 +92,7 @@ func (e UsageError) Unwrap() error {
 	return e.Err
 }
 
-// ClientRunResult is the type returned by [Client.Run] on success.
+// ClientRunResult is the type returned by [Conn.Run] on success.
 type ClientRunResult struct {
 	ExitCode int
 	SpanID   string
@@ -107,11 +107,11 @@ type ClientRunResult struct {
 //
 // We fail if the server reports an error or returns an invalid response, which do
 // not break the connection, or on transport errors or when the response does not
-// match the request, which do (see [Client]).
+// match the request, which do (see [Conn]).
 //
 // The error is [UsageError] when the server noticed that the request contained invalid
 // fields such as, for example, an unknown pipeline name or an invalid addrport.
-func (c *Client) Run(ctx context.Context, req *ptnoprpc.Request) (*ClientRunResult, error) {
+func (c *Conn) Run(ctx context.Context, req *ptnoprpc.Request) (*ClientRunResult, error) {
 	// 1. Refuse to use a connection that is out of sync.
 	if c.err != nil {
 		return nil, c.err
@@ -191,7 +191,7 @@ func (c *Client) Run(ctx context.Context, req *ptnoprpc.Request) (*ClientRunResu
 
 // fail records a transport or protocol error, which makes the connection
 // unusable for subsequent requests, and returns it.
-func (c *Client) fail(err error) error {
+func (c *Conn) fail(err error) error {
 	c.err = fmt.Errorf("ptnoprpc: connection unusable: %w", err)
 	return c.err
 }

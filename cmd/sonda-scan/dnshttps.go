@@ -14,8 +14,8 @@ import (
 
 // dnsOverHTTPSRunner runs a DNS-over-HTTPS lookup.
 type dnsOverHTTPSRunner struct {
-	Client *client.Client
-	State  *sharedState
+	Conn  *client.Conn
+	State *sharedState
 }
 
 // RunStep implements StepRunner.
@@ -35,7 +35,7 @@ func (r *dnsOverHTTPSRunner) RunStep(ctx context.Context, with map[string]string
 	}
 
 	// Resolve the server hostname to addresses.
-	addrs, err := lookupHost(ctx, r.Client, r.State, server)
+	addrs, err := lookupHost(ctx, r.Conn, r.State, server)
 	if err != nil {
 		return fmt.Errorf("dns-over-https: resolving %s: %w", server, err)
 	}
@@ -57,7 +57,7 @@ func (r *dnsOverHTTPSRunner) RunStep(ctx context.Context, with map[string]string
 			Timeout:      5 * time.Second,
 			URLPath:      "/dns-query",
 		}
-		if _, err := r.State.RunAndSave(ctx, r.Client, req); err != nil {
+		if _, err := r.State.RunAndSave(ctx, r.Conn, req); err != nil {
 			return fmt.Errorf("dns-over-https: %w", err)
 		}
 	}

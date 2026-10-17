@@ -14,10 +14,10 @@ import (
 )
 
 // lookupHost resolves a domain name using 8.8.8.8:53/udp.
-func lookupHost(ctx context.Context, client *client.Client,
+func lookupHost(ctx context.Context, conn *client.Conn,
 	state *sharedState, domain string) ([]string, error) {
-	a, errA := lookupA(ctx, client, state, domain)
-	aaaa, errAAAA := lookupAAAA(ctx, client, state, domain)
+	a, errA := lookupA(ctx, conn, state, domain)
+	aaaa, errAAAA := lookupAAAA(ctx, conn, state, domain)
 	if errA != nil && errAAAA != nil {
 		return nil, errors.Join(errA, errAAAA)
 	}
@@ -39,9 +39,9 @@ func newLookupRequest(state *sharedState, domain, queryType string) *ptnoprpc.Re
 }
 
 // lookupA resolves a domain name to A using 8.8.8.8:53/udp.
-func lookupA(ctx context.Context, client *client.Client,
+func lookupA(ctx context.Context, conn *client.Conn,
 	state *sharedState, domain string) ([]string, error) {
-	spanDir, err := state.RunAndSave(ctx, client, newLookupRequest(state, domain, "A"))
+	spanDir, err := state.RunAndSave(ctx, conn, newLookupRequest(state, domain, "A"))
 	if err != nil {
 		return nil, err
 	}
@@ -49,13 +49,13 @@ func lookupA(ctx context.Context, client *client.Client,
 }
 
 // lookupAAAA resolves a domain name to AAAA using 8.8.8.8:53/udp.
-func lookupAAAA(ctx context.Context, client *client.Client,
+func lookupAAAA(ctx context.Context, conn *client.Conn,
 	state *sharedState, domain string) ([]string, error) {
 	v6sup := state.SupportsV6()
 	if v6sup != nil && !*v6sup {
 		return nil, errors.New("no answer") // same suffix as the stdlib error for EAI_NODATA
 	}
-	spanDir, err := state.RunAndSave(ctx, client, newLookupRequest(state, domain, "AAAA"))
+	spanDir, err := state.RunAndSave(ctx, conn, newLookupRequest(state, domain, "AAAA"))
 	if err != nil {
 		return nil, err
 	}
