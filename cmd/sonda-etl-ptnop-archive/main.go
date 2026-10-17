@@ -18,7 +18,7 @@ import (
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
-	"github.com/bassosimone/sonda/internal/ptnoppaths"
+	"github.com/bassosimone/sonda/internal/spool"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/sonda/internal/triggers"
 	"github.com/bassosimone/vflag"
@@ -99,13 +99,6 @@ func realMain(ctx context.Context, args []string) error {
 		env.Exit(2)
 	}
 
-	// Make the spoolDir absolute to match the absolute span paths in triggers.
-	spoolDir, err := env.Abs(spoolDir)
-	if err != nil {
-		logger.Error("env.Abs", slog.Any("err", err))
-		env.Exit(1)
-	}
-
 	// Setup the watcher to watch the triggers directory.
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -119,13 +112,17 @@ func realMain(ctx context.Context, args []string) error {
 		env.Exit(1)
 	}
 
-	// We read from and write to the ptnop data type.
-	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
-	ptnopArchiveDir := filepath.Join(archiveDir, "ptnop")
-
 	// Make sure the destination directory exists.
+	ptnopArchiveDir := filepath.Join(archiveDir, "ptnop")
 	if err := env.MkdirAll(ptnopArchiveDir, 0750); err != nil {
 		logger.Error("env.MkdirAll", slog.Any("err", err))
+		env.Exit(1)
+	}
+
+	// Open the root spool directory using the spool API.
+	spoolRootDir, err := spool.NewRootDirFS(env, spoolDir)
+	if err != nil {
+		logger.Error("spool.NewRootDirFS", slog.Any("err", err))
 		env.Exit(1)
 	}
 
@@ -138,7 +135,7 @@ func realMain(ctx context.Context, args []string) error {
 		maxDays,
 		maxSpanAge,
 		ptnopArchiveDir,
-		ptnopSpoolDir,
+		spoolRootDir,
 		watcher,
 	)
 	return nil
@@ -153,7 +150,7 @@ func processTriggersLoop(
 	maxDays int,
 	maxSpanAge time.Duration,
 	ptnopArchiveDir string,
-	ptnopSpoolDir string,
+	spoolRootDir spool.RootDir,
 	watcher *fsnotify.Watcher,
 ) {
 	ticker := time.NewTicker(1 * time.Hour)
@@ -168,7 +165,7 @@ func processTriggersLoop(
 			etlPtnopArchiveRunDir,
 			logger,
 			ptnopArchiveDir,
-			ptnopSpoolDir,
+			spoolRootDir,
 		)
 
 		// Compress the days no span can be appended to anymore.
@@ -217,7 +214,7 @@ func processTriggersDir(
 	etlPtnopArchiveRunDir string,
 	logger *slog.Logger,
 	ptnopArchiveDir string,
-	ptnopSpoolDir string,
+	spoolRootDir spool.RootDir,
 ) error {
 	logger.Info("processing triggers dir", slog.String("dir", etlPtnopArchiveRunDir))
 
@@ -236,7 +233,7 @@ func processTriggersDir(
 			etlPtnopArchiveRunDir,
 			logger,
 			ptnopArchiveDir,
-			ptnopSpoolDir,
+			spoolRootDir,
 		)
 		if err != nil {
 			logger.Warn("processDentry", slog.Any("err", err))
@@ -256,7 +253,7 @@ func processDentry(
 	etlPtnopArchiveRunDir string,
 	logger *slog.Logger,
 	ptnopArchiveDir string,
-	ptnopSpoolDir string,
+	spoolRootDir spool.RootDir,
 ) error {
 	// 1. The dentry must be a regular `<UUIDv7>.jsonl` file.
 	name, mode := dentry.Name(), dentry.Type()
@@ -304,7 +301,7 @@ func processDentry(
 
 		// 4.2. Otherwise process each span and collect errors to be
 		// reported all together at the end of the processing.
-		err := processSpanTrigger(cutoff, env, &info, logger, ptnopArchiveDir, ptnopSpoolDir)
+		err := processSpanTrigger(cutoff, env, &info, logger, ptnopArchiveDir, spoolRootDir)
 		if err != nil {
 			logger.Warn("cannot process span", slog.Any("err", err))
 			errv = append(errv, err)
@@ -329,47 +326,33 @@ func processSpanTrigger(
 	info *triggers.CreatedSpan,
 	logger *slog.Logger,
 	ptnopArchiveDir string,
-	ptnopSpoolDir string,
+	spoolRootDir spool.RootDir,
 ) error {
-	// 1. Make sure the spanID is valid.
-	spanID, err := uuid.Parse(info.SpanID)
-	if err != nil {
-		return fmt.Errorf("not a UUID: %s: %w", info.SpanID, err)
-	}
-	if spanID.Version() != 7 {
-		return fmt.Errorf("invalid UUID version: %s", info.SpanID)
-	}
-
-	// 2. The span must be about "ptnop".
+	// 1. The span must be about "ptnop".
 	if info.DataType != "ptnop" {
 		logger.Info("skip unhandled data type", slog.String("dataType", info.DataType))
 		return nil
 	}
 
-	// 3. The spanID must have been created after the cutoff.
-	sec, nsec := spanID.Time().UnixTime()
-	ts := time.Unix(sec, nsec)
-	if ts.Before(cutoff) {
+	// 2. Make sure the spanID is valid and created after the cutoff.
+	spanDir, err := spool.OpenSpanDir(spoolRootDir, "ptnop", info.SpanID)
+	if err != nil {
+		return fmt.Errorf("spool.OpenSpanDir: %w", err)
+	}
+	if spanDir.Created().Before(cutoff) {
 		logger.Info("skip old span", slog.String("spanID", info.SpanID))
 		return nil
 	}
 
-	// 4. The path must be the expected path. We use the string representation of the spanID
-	// here, instead of info.SpanID, because the former is the normalized representation.
-	expectedPath := ptnoppaths.SpanDir(ptnopSpoolDir, spanID.String())
-	if expectedPath != info.SpanDir {
-		return fmt.Errorf("SpanDir mismatch: expected %s, got %s", expectedPath, info.SpanDir)
-	}
-
-	// 5. Extract events from the spanDir `stdout.txt.gz` file.
-	numWritten, err := extractSpanDir(env, logger, ptnopArchiveDir, info.SpanDir, ts)
+	// 3. Extract events from the span `stdout.txt` entity.
+	numWritten, err := extractSpanDir(env, logger, ptnopArchiveDir, spanDir)
 	if err != nil {
-		return fmt.Errorf("extractSpanDir: %s: %w", info.SpanDir, err)
+		return fmt.Errorf("extractSpanDir: %s: %w", info.SpanID, err)
 	}
 	logger.Info(
 		"extractSpanDir",
 		slog.Int64("numEventsWritten", numWritten),
-		slog.String("spanDir", info.SpanDir),
+		slog.String("spanId", info.SpanID),
 	)
 	return nil
 }

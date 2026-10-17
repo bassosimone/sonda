@@ -4,14 +4,11 @@ package main
 
 import (
 	"bufio"
-	"compress/gzip"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/bassosimone/sonda/internal/ptnopdata"
-	"github.com/bassosimone/sonda/internal/ptnoppaths"
-	"github.com/bassosimone/sonda/internal/testable"
+	"github.com/bassosimone/sonda/internal/spool"
 )
 
 // updateMaxLineSize is the maximum accepted line size.
@@ -137,27 +134,16 @@ func (uue *updateUnifiedEvent) Update(ev *ptnopdata.Event) {
 // updateMetrics updates Prometheus metrics based on the spanDir content.
 //
 // Returns the number of processed events and/or an error.
-func updateMetrics(
-	env *testable.Environ,
-	logger *slog.Logger,
-	metrics *metricsSet,
-	spanDir string,
-) (int64, error) {
-	// Open the source file: `stdout.txt.gz` inside the current span dir.
-	inputPath := ptnoppaths.SpanStdoutGz(spanDir)
-	source, err := env.OpenFile(inputPath, os.O_RDONLY, 0)
+func updateMetrics(logger *slog.Logger, metrics *metricsSet, spanDir spool.SpanDir) (int64, error) {
+	// Open the source entity: `stdout.txt` inside the current span.
+	source, err := spanDir.OpenEntity("stdout.txt")
 	if err != nil {
 		return 0, err
 	}
 	defer source.Close()
-	sourceGz, err := gzip.NewReader(source)
-	if err != nil {
-		return 0, err
-	}
-	defer sourceGz.Close()
 
 	// Create the scanner.
-	scanner := bufio.NewScanner(sourceGz)
+	scanner := bufio.NewScanner(source)
 	scanner.Buffer(nil, updateMaxLineSize)
 
 	// Walk through all input lines.
@@ -178,8 +164,8 @@ func updateMetrics(
 			logger.Warn(
 				"ptnopdata.ParseEvent",
 				slog.Any("err", err),
-				slog.String("file", inputPath),
 				slog.Int64("line", lineID),
+				slog.String("spanID", spanDir.ID()),
 			)
 			continue
 		}

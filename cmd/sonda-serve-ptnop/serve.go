@@ -3,7 +3,6 @@
 package main
 
 import (
-	"compress/gzip"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -15,19 +14,14 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
-	"os"
 	"slices"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/bassosimone/closepool"
 	"github.com/bassosimone/dnscodec"
-	"github.com/bassosimone/runtimex"
-	"github.com/bassosimone/sonda/internal/ptnoppaths"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
+	"github.com/bassosimone/sonda/internal/spool"
 	"github.com/bassosimone/sonda/internal/testable"
-	"github.com/google/uuid"
 	"github.com/miekg/dns"
 )
 
@@ -42,11 +36,6 @@ const (
 	maxTimeout = 5 * time.Minute
 )
 
-// newSpanID returns a new span ID, which is a UUIDv7 in canonical form.
-func newSpanID() string {
-	return uuid.Must(uuid.NewV7()).String()
-}
-
 // serveLine serves a raw request line received on the standard input and
 // returns the response to send back. It never returns nil.
 //
@@ -59,8 +48,8 @@ func serveLine(
 	env *testable.Environ,
 	logger *slog.Logger,
 	rawLine []byte,
-	spoolDir string,
 	peer peerCreds,
+	spoolRootDir spool.RootDir,
 ) *ptnoprpc.Response {
 	// 1. Parse the raw line received on the stdin.
 	var req ptnoprpc.Request
@@ -95,10 +84,14 @@ func serveLine(
 		return resp
 	}
 
-	// 4. Build the proper destination directory.
-	spanID := newSpanID()
-	spanDir := ptnoppaths.SpanDir(spoolDir, spanID)
-	tmpDir := ptnoppaths.SpanDirTmp(spoolDir, spanID)
+	// 4. Create a writable span for writing the measurement results.
+	spanDir, err := spool.CreateTempSpanDir(spoolRootDir, "ptnop")
+	if err != nil {
+		resp.Error = err.Error()
+		return resp
+	}
+	defer spanDir.Close() // ensure cleanup on failure path
+	spanID := spanDir.ID()
 	resp.SpanID = spanID
 
 	// From now on, failures are failures of the server rather than of the
@@ -109,63 +102,39 @@ func serveLine(
 		return resp
 	}
 
-	// 5. Create the temporary spool directory.
-	//
-	// Note that `/var/spool/sonda` is `02750 _sonda:_sonda` so we use `0750` when creating
-	// directories and `0640` when creating files to allow `_sonda` to read.
-	if err := env.MkdirAll(tmpDir, 0750); err != nil {
-		return serverFailure("env.MkdirAll", err)
-	}
-
-	// 6. Open stdout in the spool directory.
-	closers := &closepool.Pool{}
-	defer closers.Close() // idempotent
-
-	openFlags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-	stdoutFile, err := env.OpenFile(ptnoppaths.SpanStdoutGz(tmpDir), openFlags, 0640)
+	// 5. Create an entity representing the stdout in the writable span.
+	stdoutWriter, err := spanDir.CreateEntity("stdout.txt")
 	if err != nil {
-		return serverFailure("env.OpenFile", err)
+		return serverFailure("spanDir.CreateEntity", err)
 	}
-	closers.Add(stdoutFile)
-	stdoutFileGz := newGzipLockedWriteCloser(stdoutFile)
-	closers.Add(stdoutFileGz)
 
-	// 7. Open the body file, if needed.
+	// 6. Same as above for the body, if needed.
 	switch req.Pipeline {
 	case "http", "https":
 		if req.HTTPBodyFile {
-			bodyFile, err := env.OpenFile(ptnoppaths.SpanBodyBinGz(tmpDir), openFlags, 0640)
+			bodyWriter, err := spanDir.CreateEntity("body.bin")
 			if err != nil {
-				return serverFailure("env.OpenFile", err)
+				return serverFailure("spanDir.CreateEntity", err)
 			}
-			closers.Add(bodyFile)
-			bodyFileGz := newGzipLockedWriteCloser(bodyFile)
-			closers.Add(bodyFileGz)
-			input.bodyFp = bodyFileGz
+			input.bodyFp = bodyWriter
 		}
 	}
 
-	// 8. Create the structured logger writing the measurement events.
-	input.logger = newLogger(stdoutFileGz, spanID, req.Tags, req.Optimize)
+	// 7. Create the structured logger writing the measurement events.
+	input.logger = newLogger(stdoutWriter, spanID, req.Tags, req.Optimize)
 
-	// 9. Write peer credentials and incoming request.
+	// 8. Write peer credentials and incoming request.
 	input.logger.Info("sondaPtnopRunContext", slog.Any("peer", peer), slog.Any("request", req))
 
-	// 10. Run the pipeline.
+	// 9. Run the pipeline.
 	exitCode := ptnopRunPipeline(ctx, input)
 
-	// 11. Make sure we successfully closed all the opened resources.
-	if err := closers.Close(); err != nil {
-		return serverFailure("closers.Close", err)
+	// 10. Make sure we properly publish the temporary span.
+	if err := spanDir.Publish(); err != nil {
+		return serverFailure("spanDir.Publish", err)
 	}
 
-	// 12. Atomically rename the temporary directory to the final path.
-	if err := env.Rename(tmpDir, spanDir); err != nil {
-		return serverFailure("env.Rename", err)
-	}
-
-	// 13. Tell the caller that we succeeded.
-	resp.SpanDir = spanDir
+	// 11. Tell the caller that we succeeded.
 	resp.ExitCode = &exitCode
 	return resp
 }
@@ -357,48 +326,4 @@ func newHTTPRequest(ctx context.Context, req *ptnoprpc.Request) (*http.Request, 
 // errUnknownPipeline returns the error for an unknown pipeline name.
 func errUnknownPipeline(name string) error {
 	return fmt.Errorf("unknown pipeline name: %q", name)
-}
-
-// gzipLockedWriteCloser is a [*gzip.Writer] that ensures that no write can land after close.
-//
-// The purpose of this type is to ensure that writes from other goroutines landing during
-// or after close fail. This outcome is better than (a) crashing inside [compress/flate] or
-// (b) corrupting the gzip stream and making it impossible to read.
-//
-// Use [newGzipLockedWriteCloser] to construct.
-type gzipLockedWriteCloser struct {
-	done bool
-	mu   sync.Mutex
-	w    *gzip.Writer
-}
-
-// newGzipLockedWriteCloser creates and returns a new [*gzipLockedWriteCloser].
-func newGzipLockedWriteCloser(w io.Writer) *gzipLockedWriteCloser {
-	return &gzipLockedWriteCloser{
-		w:  runtimex.PanicOnError1(gzip.NewWriterLevel(w, gzip.BestSpeed)),
-		mu: sync.Mutex{},
-	}
-}
-
-var _ io.WriteCloser = &gzipLockedWriteCloser{}
-
-// Close implements [io.WriteCloser].
-func (w *gzipLockedWriteCloser) Close() error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	w.done = true
-	return w.w.Close()
-}
-
-// errWriteAfterClose indicates that a write was attempted after close.
-var errWriteAfterClose = errors.New("write after close")
-
-// Write implements [io.Writer].
-func (w *gzipLockedWriteCloser) Write(data []byte) (int, error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	if w.done {
-		return 0, errWriteAfterClose
-	}
-	return w.w.Write(data)
 }

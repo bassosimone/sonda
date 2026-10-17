@@ -14,7 +14,7 @@ import (
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
-	"github.com/bassosimone/sonda/internal/ptnopspool"
+	"github.com/bassosimone/sonda/internal/spool"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/sonda/internal/triggers"
 	"github.com/bassosimone/vflag"
@@ -35,6 +35,7 @@ func scanMain(ctx context.Context, args []string) error {
 		fail         = false
 		ptnopSocket  = config.PtnopSocketPath
 		runDir       = config.RunDir
+		spoolDir     = config.SpoolDir
 		workflowFile = ""
 	)
 
@@ -65,15 +66,16 @@ func scanMain(ctx context.Context, args []string) error {
 		"Directory `PATH` in which to write trigger files.",
 		"Default: `@DEFAULT_VALUE@`.")
 
+	fset.StringVar(&spoolDir, 0, "spool-dir",
+		"Top-level spool `DIR` containing the data type directories.",
+		"Default: `@DEFAULT_VALUE@`.")
+
 	fset.StringVar(&workflowFile, 0, "workflow-file", "Load steps from `FILE` (required).")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
 	// Emit structured logs to stderr.
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
-
-	// Construct shared dependencies.
-	state := &sharedState{}
 
 	// TODO(bassosimone): probe IPv6 connectivity here using a UDP connect
 	// to a well-known v6 address (e.g., net.Dial("udp6", "[2001:4860:4860::8888]:53")).
@@ -109,6 +111,14 @@ func scanMain(ctx context.Context, args []string) error {
 		env.Exit(1)
 	}
 	defer ptnopClient.Close()
+
+	// Construct shared dependencies.
+	spoolRootDir, err := spool.NewRootDirFS(env, spoolDir)
+	if err != nil {
+		logger.Error("spool.NewRootDirFS", slog.Any("err", err))
+		env.Exit(1)
+	}
+	state := &sharedState{spoolRootDir: spoolRootDir}
 
 	// Build the runner registry.
 	runners := map[string]stepRunner{
@@ -220,10 +230,11 @@ type stepRunner interface {
 
 // sharedState holds state that steps can read and write during a scan.
 type sharedState struct {
-	mu    sync.Mutex
-	spans []triggers.CreatedSpan
-	tags  map[string]string
-	v6sup *bool
+	mu           sync.Mutex
+	spans        []triggers.CreatedSpan
+	spoolRootDir spool.RootDir
+	tags         map[string]string
+	v6sup        *bool
 }
 
 // SetSupportsV6 sets the value of the "supportsV6" internal variable.
@@ -269,16 +280,20 @@ func (s *sharedState) Tags() []string {
 // entry inside the [*sharedState] so that, at the end of the scan, we can write trigger
 // files for the ETL processing pipeline according to the registered triggers.
 func (s *sharedState) RunAndSave(ctx context.Context,
-	client *ptnoprpc.Client, req *ptnoprpc.Request) (*ptnopspool.SpanDir, error) {
-	spanDir, err := client.Run(ctx, req)
+	client *ptnoprpc.Client, req *ptnoprpc.Request) (spool.SpanDir, error) {
+	result, err := client.Run(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	spanDir, err := spool.OpenSpanDir(s.spoolRootDir, "ptnop", result.SpanID)
 	if err != nil {
 		return nil, err
 	}
 
 	cs := triggers.CreatedSpan{
-		DataType: "ptnop",
-		SpanDir:  spanDir.Path,
-		SpanID:   spanDir.SpanID,
+		DataType: spanDir.DataType(),
+		SpanID:   spanDir.ID(),
 	}
 
 	s.mu.Lock()

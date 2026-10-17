@@ -5,16 +5,14 @@ package main
 import (
 	"context"
 	"log/slog"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
+	"github.com/bassosimone/sonda/internal/spool"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
-	"github.com/google/uuid"
 )
 
 func main() {
@@ -66,81 +64,15 @@ func gcMain(ctx context.Context, args []string) error {
 		env.Exit(1)
 	}
 
-	// Compute the cutoff time.
-	cutoff := time.Now().Add(-maxAge)
+	// Open the root spool directory using the spool API.
+	spoolRootDir, err := spool.NewRootDirFS(env, spoolDir)
+	if err != nil {
+		logger.Error("spool.NewRootDirFS", slog.Any("err", err))
+		env.Exit(1)
+	}
 
 	// Walk the spool structure: spoolDir/<dataType>/XXXX/X/X/<spanID>.
-	gcWalkSpool(env, logger, spoolDir, cutoff)
+	cutoff := time.Now().Add(-maxAge)
+	spoolRootDir.GarbageCollect(cutoff, logger)
 	return nil
-}
-
-// gcWalkSpool treats each subdirectory of the spool dir as a data type
-// directory (e.g., `ptnop`) and walks its sharding tree.
-//
-// We never remove data type directories, even when they become empty, since
-// they are part of the spool structure rather than sharding artifacts.
-func gcWalkSpool(env *testable.Environ, logger *slog.Logger, spoolDir string, cutoff time.Time) {
-	entries, err := env.ReadDir(spoolDir)
-	if err != nil {
-		logger.Warn("env.ReadDir", slog.String("path", spoolDir), slog.Any("err", err))
-		return
-	}
-	for _, e := range entries {
-		if !e.IsDir() {
-			continue
-		}
-		gcWalkDir(env, logger, filepath.Join(spoolDir, e.Name()), cutoff, 3)
-	}
-}
-
-// gcWalkDir walks a data type's sharding tree (XXXX/X/X/<spanID>) recursively.
-// At depth > 0, it descends into subdirectories and removes empty ones. At depth
-// 0, it processes span directories.
-func gcWalkDir(
-	env *testable.Environ, logger *slog.Logger, dir string, cutoff time.Time, depth int) {
-	entries, err := env.ReadDir(dir)
-	if err != nil {
-		return
-	}
-	for _, e := range entries {
-		if !e.IsDir() {
-			continue
-		}
-		if depth > 0 {
-			child := filepath.Join(dir, e.Name())
-			gcWalkDir(env, logger, child, cutoff, depth-1)
-			env.Remove(child)
-		} else {
-			gcMaybeRemoveSpan(env, logger, dir, e.Name(), cutoff)
-		}
-	}
-}
-
-// gcMaybeRemoveSpan removes a span directory if its UUIDv7 timestamp is older
-// than the cutoff. Handles both final and .tmp directories.
-func gcMaybeRemoveSpan(
-	env *testable.Environ, logger *slog.Logger, parent, name string, cutoff time.Time) {
-	// Entries are UUIDv7 with an optional `.tmp` suffix if in progress
-	// that said it's fine to delete very old in progress entries.
-	uuidStr := strings.TrimSuffix(name, ".tmp")
-	spanID, err := uuid.Parse(uuidStr)
-	if err != nil {
-		return
-	}
-	if spanID.Version() != 7 {
-		return
-	}
-
-	// Determine whether this entry is too new to remove.
-	sec, nsec := spanID.Time().UnixTime()
-	ts := time.Unix(sec, nsec)
-	if !ts.Before(cutoff) {
-		return
-	}
-
-	// Remove the directory entry.
-	spanPath := filepath.Join(parent, name)
-	if err := env.RemoveAll(spanPath); err != nil {
-		logger.Warn("env.RemoveAll", slog.String("path", spanPath), slog.Any("err", err))
-	}
 }

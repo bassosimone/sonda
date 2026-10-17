@@ -4,15 +4,13 @@ package main
 
 import (
 	"bufio"
-	"compress/gzip"
 	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/bassosimone/sonda/internal/ptnopdata"
-	"github.com/bassosimone/sonda/internal/ptnoppaths"
+	"github.com/bassosimone/sonda/internal/spool"
 	"github.com/bassosimone/sonda/internal/testable"
 )
 
@@ -22,25 +20,18 @@ import (
 func extractSpanDir(
 	env *testable.Environ,
 	logger *slog.Logger,
-	ptnopArchiveDir,
-	spanDir string,
-	ts time.Time,
+	ptnopArchiveDir string,
+	spanDir spool.SpanDir,
 ) (int64, error) {
-	// Open the source file: `stdout.txt.gz` inside the current span dir.
-	inputPath := ptnoppaths.SpanStdoutGz(spanDir)
-	source, err := env.OpenFile(inputPath, os.O_RDONLY, 0)
+	// Open the source entity: `stdout.txt` inside the current span.
+	source, err := spanDir.OpenEntity("stdout.txt")
 	if err != nil {
 		return 0, err
 	}
 	defer source.Close()
-	sourceGz, err := gzip.NewReader(source)
-	if err != nil {
-		return 0, err
-	}
-	defer sourceGz.Close()
 
 	// Open the destination file.
-	dateOnlyTimestampUTC := ts.UTC().Format("20060102") + "T000000Z"
+	dateOnlyTimestampUTC := spanDir.Created().UTC().Format("20060102") + "T000000Z"
 	outputPath := filepath.Join(ptnopArchiveDir, dateOnlyTimestampUTC+".jsonl")
 	dest, err := env.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0640)
 	if err != nil {
@@ -48,7 +39,7 @@ func extractSpanDir(
 	}
 
 	// Extract the data.
-	numWritten, err := extractSpanLoop(dest, logger, sourceGz, inputPath)
+	numWritten, err := extractSpanLoop(dest, logger, source, spanDir)
 	if err != nil {
 		dest.Close()
 		return numWritten, err
@@ -68,7 +59,7 @@ func extractSpanLoop(
 	dest io.Writer,
 	logger *slog.Logger,
 	sourceFp io.Reader,
-	sourcePath string,
+	spanDir spool.SpanDir,
 ) (int64, error) {
 	// Create the scanner.
 	scanner := bufio.NewScanner(sourceFp)
@@ -90,8 +81,8 @@ func extractSpanLoop(
 			logger.Warn(
 				"ptnopdata.ParseEvent",
 				slog.Any("err", err),
-				slog.String("file", sourcePath),
 				slog.Int64("line", lineID),
+				slog.String("spanID", spanDir.ID()),
 			)
 			continue
 		}

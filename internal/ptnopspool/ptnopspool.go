@@ -5,15 +5,11 @@ package ptnopspool
 
 import (
 	"bufio"
-	"compress/gzip"
 	"errors"
-	"io"
-	"os"
+	"fmt"
 
-	"github.com/bassosimone/closepool"
 	"github.com/bassosimone/sonda/internal/ptnopdata"
-	"github.com/bassosimone/sonda/internal/ptnoppaths"
-	"github.com/bassosimone/sonda/internal/testable"
+	"github.com/bassosimone/sonda/internal/spool"
 )
 
 // maxLineSize is large enough to contain a DoH response (max size 64 KiB) encoded in
@@ -43,16 +39,14 @@ func (e ReadError) Unwrap() error {
 	return e.Err
 }
 
-// SpanDir is the directory containing the result of running a pipeline.
-//
-// The ExitCode is either `0` (success) or `1` (measurement error).
-//
-// The Path is the span dir path.
-type SpanDir struct {
-	Env      *testable.Environ
-	ExitCode int
-	Path     string
-	SpanID   string
+// DataTypeError is an error indicating that a [spool.SpanDir] has the wrong data type.
+type DataTypeError struct {
+	Got string
+}
+
+// Error returns a string representation of the error.
+func (e DataTypeError) Error() string {
+	return fmt.Sprintf("ptnopspool: expected dataType to be %q, got %q", "ptnop", e.Got)
 }
 
 // ResolvedAddrsA returns the resolved IPv4 addrs.
@@ -62,50 +56,23 @@ type SpanDir struct {
 //  1. [ErrNoData] if we cannot find the matching structured logs
 //
 //  2. [ReadError] if we cannot open, scan, or parse the structured logs file
-func (d *SpanDir) ResolvedAddrsA() ([]string, error) {
-	return d.resolvedAddrs("sondaDnsRecordsA")
+//
+//  3. [DataTypeError] if the spanDir dataType is not "ptnop".
+func ResolvedAddrsA(spanDir spool.SpanDir) ([]string, error) {
+	return resolvedAddrs(spanDir, "sondaDnsRecordsA")
 }
 
-// ResolvedAddrsAAAA is like [*SpanDir.ResolvedAddrsA] but for AAAA addrs.
-func (d *SpanDir) ResolvedAddrsAAAA() ([]string, error) {
-	return d.resolvedAddrs("sondaDnsRecordsAAAA")
+// ResolvedAddrsAAAA is like [ResolvedAddrsA] but for AAAA addrs.
+func ResolvedAddrsAAAA(spanDir spool.SpanDir) ([]string, error) {
+	return resolvedAddrs(spanDir, "sondaDnsRecordsAAAA")
 }
 
-// OpenStdoutGz opens the `stdout.txt.gz` file in the span directory.
-func (d *SpanDir) OpenStdoutGz() (io.ReadCloser, error) {
-	pool := &closepool.Pool{}
-	filep, err := d.Env.OpenFile(ptnoppaths.SpanStdoutGz(d.Path), os.O_RDONLY, 0)
-	if err != nil {
-		return nil, err
+func resolvedAddrs(spanDir spool.SpanDir, msgName string) ([]string, error) {
+	if value := spanDir.DataType(); value != "ptnop" {
+		return nil, DataTypeError{value}
 	}
-	pool.Add(filep)
 
-	reader, err := gzip.NewReader(filep)
-	if err != nil {
-		pool.Close()
-		return nil, err
-	}
-	pool.Add(reader)
-
-	out := &stdoutGzReadableFile{
-		Reader: reader,
-		p:      pool,
-	}
-	return out, nil
-}
-
-// stdoutGzReadableFile is an [io.ReadCloser] for reading `stdout.txt.gz`.
-type stdoutGzReadableFile struct {
-	io.Reader
-	p *closepool.Pool
-}
-
-func (rc *stdoutGzReadableFile) Close() error {
-	return rc.p.Close()
-}
-
-func (d *SpanDir) resolvedAddrs(msgName string) ([]string, error) {
-	filep, err := d.OpenStdoutGz()
+	filep, err := spanDir.OpenEntity("stdout.txt")
 	if err != nil {
 		return nil, ReadError{err}
 	}
@@ -142,8 +109,14 @@ func (d *SpanDir) resolvedAddrs(msgName string) ([]string, error) {
 //  1. [ErrNoData] if we cannot find the matching structured logs
 //
 //  2. [ReadError] if we cannot open, scan, or parse the structured logs file
-func (d *SpanDir) ReflexiveAddr() (string, error) {
-	filep, err := d.OpenStdoutGz()
+//
+//  3. [DataTypeError] if the spanDir dataType is not "ptnop".
+func ReflexiveAddr(spanDir spool.SpanDir) (string, error) {
+	if value := spanDir.DataType(); value != "ptnop" {
+		return "", DataTypeError{value}
+	}
+
+	filep, err := spanDir.OpenEntity("stdout.txt")
 	if err != nil {
 		return "", ReadError{err}
 	}

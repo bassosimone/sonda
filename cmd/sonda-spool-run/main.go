@@ -18,7 +18,7 @@ import (
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
-	"github.com/bassosimone/sonda/internal/ptnoppaths"
+	"github.com/bassosimone/sonda/internal/legacy/ptnoppaths"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 	"github.com/google/uuid"
@@ -122,6 +122,9 @@ func runMain(ctx context.Context, args []string) error {
 	spanDir := ptnoppaths.SpanDir(spoolDir, spanID)
 	tmpDir := ptnoppaths.SpanDirTmp(spoolDir, spanID)
 
+	// TODO(bassosimone): `@SONDA_SPAN_DIR@` is what prevents this code to
+	// be migrated to the new abstract spool API.
+	//
 	// Expand @SONDA_SPAN_DIR@ in the command arguments so that inner commands
 	// can reference the span directory for auxiliary files.
 	for idx, arg := range cmdArgs {

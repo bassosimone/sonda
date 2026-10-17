@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Package ptnoppaths contains the ptnop spool directory path construction.
+//
+// Deprecated: this package is deprecated because it makes assumptions about how
+// the spool is implemented and that the spool uses the file system.
 package ptnoppaths
 
 import "path/filepath"

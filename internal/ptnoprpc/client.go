@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/bassosimone/runtimex"
-	"github.com/bassosimone/sonda/internal/ptnopspool"
 	"github.com/bassosimone/sonda/internal/testable"
 )
 
@@ -95,12 +94,18 @@ func (e UsageError) Unwrap() error {
 	return e.Err
 }
 
-// Run sends the request, waits for the response, and returns the [*ptnopspool.SpanDir].
+// ClientRunResult is the type returned by [Client.Run] on success.
+type ClientRunResult struct {
+	ExitCode int
+	SpanID   string
+}
+
+// Run sends the request, waits for the response, and returns a [*ClientRunResult].
 //
 // We do not mutate the request. We send a copy with the ID replaced by our own
 // counter, which we use to check that the response matches the request.
 //
-// The returned SpanDir ExitCode is either `0` (success) or `1` (measurement failure).
+// The returned [*ClientRunResult] ExitCode is either `0` (success) or `1` (measurement failure).
 //
 // We fail if the server reports an error or returns an invalid response, which do
 // not break the connection, or on transport errors or when the response does not
@@ -108,7 +113,7 @@ func (e UsageError) Unwrap() error {
 //
 // The error is [UsageError] when the server noticed that the request contained invalid
 // fields such as, for example, an unknown pipeline name or an invalid addrport.
-func (c *Client) Run(ctx context.Context, req *Request) (*ptnopspool.SpanDir, error) {
+func (c *Client) Run(ctx context.Context, req *Request) (*ClientRunResult, error) {
 	// 1. Refuse to use a connection that is out of sync.
 	if c.err != nil {
 		return nil, c.err
@@ -174,21 +179,16 @@ func (c *Client) Run(ctx context.Context, req *Request) (*ptnopspool.SpanDir, er
 	if resp.ExitCode == nil {
 		return nil, errors.New("ptnoprpc: missing exitCode in response")
 	}
-	if resp.SpanDir == "" {
-		return nil, errors.New("ptnoprpc: missing spanDir in response")
-	}
 	if *resp.ExitCode != 0 && *resp.ExitCode != 1 {
 		return nil, fmt.Errorf("ptnoprpc: unexpected exit code %d", *resp.ExitCode)
 	}
 
-	// 8. On success, return the span directory.
-	spanDir := &ptnopspool.SpanDir{
-		Env:      c.env,
+	// 8. On success, return the result.
+	result := &ClientRunResult{
 		ExitCode: *resp.ExitCode,
-		Path:     resp.SpanDir,
 		SpanID:   resp.SpanID,
 	}
-	return spanDir, nil
+	return result, nil
 }
 
 // fail records a transport or protocol error, which makes the connection

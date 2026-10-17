@@ -17,7 +17,6 @@ work unit in `/run/sonda/etl-ptnop-archive` and removes it, when new
 files are added and/or every hour (see `2026-10-09-00-triggers.md`).
 
 - For each `ptnop` span younger than `--max-span-age` (24h), it
-checks that `spanDir` matches the path derived from `spanId`, then
 copies every event from `stdout.txt.gz`.
 
 - Lines are copied verbatim. Empty lines are skipped; lines that do

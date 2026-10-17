@@ -72,8 +72,8 @@ type Request struct {
 
 // Response is the response sent by the server.
 //
-// On success, Error is empty and SpanID, SpanDir, and ExitCode are set. The
-// ExitCode is either `0` (success) or `1` (measurement failure).
+// On success, Error is empty and SpanID and ExitCode are set. The ExitCode is
+// either `0` (success) or `1` (measurement failure).
 //
 // On failure, Error is set and ExitCode is nil. SpanID is set if and only if
 // the failure happened after the server started creating the span directory, in
@@ -86,6 +86,5 @@ type Response struct {
 	ID       json.RawMessage `json:"id,omitempty"`
 	Error    string          `json:"error,omitempty"`
 	ExitCode *int            `json:"exitCode,omitempty"`
-	SpanDir  string          `json:"spanDir,omitempty"`
 	SpanID   string          `json:"spanId,omitempty"`
 }

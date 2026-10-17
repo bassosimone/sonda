@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net"
-	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
+	"github.com/bassosimone/sonda/internal/spool"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 )
@@ -92,13 +92,12 @@ func mainMain(ctx context.Context, args []string) error {
 		env.Exit(1)
 	}
 
-	// Make the spoolDir absolute for robustness and select the data type dir.
-	spoolDir, err := env.Abs(spoolDir)
+	// Open the root spool directory using the spool API.
+	spoolRootDir, err := spool.NewRootDirFS(env, spoolDir)
 	if err != nil {
-		logger.Error("env.Abs", slog.Any("err", err))
+		logger.Error("spool.NewRootDirFS", slog.Any("err", err))
 		env.Exit(1)
 	}
-	ptnopSpoolDir := filepath.Join(spoolDir, "ptnop")
 
 	// Create the listening socket.
 	listener, err := env.ListenConfig.Listen(ctx, "unix", socketPath)
@@ -142,7 +141,7 @@ func mainMain(ctx context.Context, args []string) error {
 		activeConns.Add(1)
 		wg.Go(func() {
 			defer activeConns.Add(-1)
-			serveConn(ctx, conn, env, idleTimeout, logger, ptnopSpoolDir)
+			serveConn(ctx, conn, env, idleTimeout, logger, spoolRootDir)
 		})
 	}
 }
@@ -153,7 +152,7 @@ func serveConn(
 	env *testable.Environ,
 	idleTimeout time.Duration,
 	logger *slog.Logger,
-	ptnopSpoolDir string,
+	spoolRootDir spool.RootDir,
 ) {
 	// Close the connection when we leave the scope or the service-scoped context is done.
 	defer conn.Close()
@@ -177,7 +176,7 @@ func serveConn(
 	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(nil, maxLineSize)
 	for scanner.Scan() {
-		resp := serveLine(ctx, env, logger, scanner.Bytes(), ptnopSpoolDir, peer)
+		resp := serveLine(ctx, env, logger, scanner.Bytes(), peer, spoolRootDir)
 		respData := runtimex.PanicOnError1(json.Marshal(resp)) // always serializable
 		respData = append(respData, '\n')
 		if _, err := writer.Write(respData); err != nil {

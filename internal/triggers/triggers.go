@@ -20,9 +20,6 @@ type CreatedSpan struct {
 	// DataType describes the data type.
 	DataType string `json:"dataType"`
 
-	// SpanDir is the spool directory containing the span.
-	SpanDir string `json:"spanDir"`
-
 	// SpanID is the span identifier (UUIDv7).
 	SpanID string `json:"spanId"`
 }

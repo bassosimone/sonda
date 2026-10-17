@@ -15,6 +15,7 @@ import (
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
+	"github.com/bassosimone/sonda/internal/spool"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 )
@@ -36,6 +37,7 @@ func realMain(ctx context.Context, args []string) error {
 	var (
 		dryRun      = false
 		ptnopSocket = config.PtnopSocketPath
+		spoolDir    = config.SpoolDir
 	)
 	fset := vflag.NewFlagSet("sonda-measure-ptnop", vflag.ExitOnError)
 
@@ -52,8 +54,6 @@ func realMain(ctx context.Context, args []string) error {
 		"    NDJSON. The first line is a `sondaRemoteMeasurementResult` event containing:",
 		"        exitCode",
 		"            remote measurement exit code",
-		"        spanDir",
-		"            measurement path within the spool dir",
 		"        spanId",
 		"            measurement span ID",
 		"    The following lines copy the remote structured logs, after the measurement completes.",
@@ -238,6 +238,10 @@ func realMain(ctx context.Context, args []string) error {
 	fset.StringVar(&opts.SNI, 0, "sni",
 		"Use `HOST` in the TLS SNI extension.")
 
+	fset.StringVar(&spoolDir, 0, "spool-dir",
+		"Top-level spool `DIR` containing the data type directories.",
+		"Default: `@DEFAULT_VALUE@`.")
+
 	fset.StringSliceVar(&opts.Tags, 0, "tag",
 		"Annotate the structured logs with the given `KEY=VALUE` tag.",
 		"Repeat to annotate the logs with multiple tags.")
@@ -284,7 +288,7 @@ func realMain(ctx context.Context, args []string) error {
 	defer conn.Close()
 
 	// 7. Send the request and receive the response.
-	spanDir, err := conn.Run(ctx, opts)
+	result, err := conn.Run(ctx, opts)
 	if err != nil {
 		logger.Error("conn.Run", slog.Any("err", err))
 		if _, ok := errors.AsType[ptnoprpc.UsageError](err); ok {
@@ -293,7 +297,7 @@ func realMain(ctx context.Context, args []string) error {
 		env.Exit(4)
 	}
 
-	// 8. Print the response to the stdout.
+	// 8. Print the result to the stdout.
 	//
 	// Like `sonda-serve-ptnop`, we omit the top-level time field, so that this
 	// line has the same shape as the structured logs we copy below.
@@ -307,15 +311,26 @@ func realMain(ctx context.Context, args []string) error {
 	}))
 	stdoutLogger.Info(
 		"sondaRemoteMeasurementResult",
-		slog.Int("exitCode", spanDir.ExitCode),
-		slog.String("spanDir", spanDir.Path),
-		slog.String("spanId", spanDir.SpanID),
+		slog.Int("exitCode", result.ExitCode),
+		slog.String("spanId", result.SpanID),
 	)
 
-	// 9. Stream the structured logs to the stdout.
-	filep, err := spanDir.OpenStdoutGz()
+	// 9. Open the root spool directory using the spool API.
+	spoolRootDir, err := spool.NewRootDirFS(env, spoolDir)
 	if err != nil {
-		logger.Error("spanDir.OpenStdoutGz", slog.Any("err", err))
+		logger.Error("spool.NewRootDirFS", slog.Any("err", err))
+		env.Exit(4)
+	}
+	spanDir, err := spool.OpenSpanDir(spoolRootDir, "ptnop", result.SpanID)
+	if err != nil {
+		logger.Error("spool.OpenSpanDir", slog.Any("err", err))
+		env.Exit(4)
+	}
+
+	// 10. Stream the structured logs to the stdout.
+	filep, err := spanDir.OpenEntity("stdout.txt")
+	if err != nil {
+		logger.Error("spanDir.OpenEntity", slog.Any("err", err))
 		env.Exit(4)
 	}
 	defer filep.Close()
@@ -324,7 +339,7 @@ func realMain(ctx context.Context, args []string) error {
 		env.Exit(4)
 	}
 
-	// 10. Use the same exit code as the remote invocation.
-	env.Exit(spanDir.ExitCode)
+	// 11. Use the same exit code as the remote invocation.
+	env.Exit(result.ExitCode)
 	return nil
 }

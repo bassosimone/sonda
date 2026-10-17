@@ -9,6 +9,7 @@ import (
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
+	"github.com/bassosimone/sonda/internal/ptnopspool"
 )
 
 // lookupHost resolves a domain name using 8.8.8.8:53/udp.
@@ -43,7 +44,7 @@ func lookupA(ctx context.Context, client *ptnoprpc.Client,
 	if err != nil {
 		return nil, err
 	}
-	return spanDir.ResolvedAddrsA()
+	return ptnopspool.ResolvedAddrsA(spanDir)
 }
 
 // lookupAAAA resolves a domain name to AAAA using 8.8.8.8:53/udp.
@@ -57,5 +58,5 @@ func lookupAAAA(ctx context.Context, client *ptnoprpc.Client,
 	if err != nil {
 		return nil, err
 	}
-	return spanDir.ResolvedAddrsAAAA()
+	return ptnopspool.ResolvedAddrsAAAA(spanDir)
 }
