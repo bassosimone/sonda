@@ -59,6 +59,7 @@ type Environ struct {
 	ReadDir          func(path string) ([]os.DirEntry, error)
 	ReadFile         func(path string) ([]byte, error)
 	Remove           func(path string) error
+	RemoveAll        func(path string) error
 	Rename           func(oldpath, newpath string) error
 	RunCommand       func(cmd *exec.Cmd) error
 	SignalProcess    func(proc *os.Process, sig os.Signal) error
@@ -113,11 +114,12 @@ func NewEnvironOS() *Environ {
 				deferexit.Panic(1)
 			}
 		},
-		MkdirAll: os.MkdirAll,
-		ReadDir:  os.ReadDir,
-		ReadFile: os.ReadFile,
-		Remove:   os.Remove,
-		Rename:   os.Rename,
+		MkdirAll:  os.MkdirAll,
+		ReadDir:   os.ReadDir,
+		ReadFile:  os.ReadFile,
+		Remove:    os.Remove,
+		RemoveAll: os.RemoveAll,
+		Rename:    os.Rename,
 		RunCommand: func(cmd *exec.Cmd) error {
 			return cmd.Run()
 		},
@@ -158,6 +160,7 @@ func (e *Environ) Clone() *Environ {
 		ReadFile:         e.ReadFile,
 		ReadDir:          e.ReadDir,
 		Remove:           e.Remove,
+		RemoveAll:        e.RemoveAll,
 		Rename:           e.Rename,
 		RunCommand:       e.RunCommand,
 		SignalProcess:    e.SignalProcess,
