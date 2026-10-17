@@ -172,7 +172,7 @@ func serveLine(
 	}
 
 	// 7. Create the structured logger writing the measurement events.
-	input.logger = newLogger(stdoutWriter, spanID, req.Tags, req.Optimize)
+	input.logger = newServeLogger(stdoutWriter, spanID, req.Tags, req.Optimize)
 
 	// 8. Write peer credentials and incoming request.
 	input.logger.Info("sondaPtnopRunContext", slog.Any("peer", peer), slog.Any("request", req))
@@ -190,11 +190,11 @@ func serveLine(
 	return resp
 }
 
-// newLogger creates the JSON logger writing to w and bound to tags. When optimize
+// newServeLogger creates the JSON logger writing to w and bound to tags. When optimize
 // is "size", we trim the emitted events as documented by [*ptnoprpc.Request].
 //
 // We omit the top-level time field: library events carry their own times.
-func newLogger(w io.Writer, spanID string, tags []string, optimize string) *slog.Logger {
+func newServeLogger(w io.Writer, spanID string, tags []string, optimize string) *slog.Logger {
 	// Configure the JSON handler.
 	level := slog.LevelDebug
 	if optimize == "size" {
@@ -311,7 +311,7 @@ func newPipelineInput(
 	// 4. Build the HTTP request, if needed.
 	switch req.Pipeline {
 	case "dns-over-https", "http", "https":
-		httpReq, err := newHTTPRequest(ctx, req)
+		httpReq, err := newPipelineHTTPRequest(ctx, req)
 		if err != nil {
 			return nil, err
 		}
@@ -335,8 +335,8 @@ func newPipelineInput(
 	return input, nil
 }
 
-// newHTTPRequest builds the HTTP request from the request options.
-func newHTTPRequest(ctx context.Context, req *ptnoprpc.Request) (*http.Request, error) {
+// newPipelineHTTPRequest builds the HTTP request from the request options.
+func newPipelineHTTPRequest(ctx context.Context, req *ptnoprpc.Request) (*http.Request, error) {
 	// 1. Make sure the input is valid.
 	if req.HTTPHost == "" {
 		return nil, errors.New("http host is empty")
