@@ -34,7 +34,10 @@ const (
 )
 
 // ServeConn reads requests from the conn (a single JSON per line), runs the
-// corresponding pipeline and response when done.
+// corresponding pipeline and writes the response when done.
+//
+// Takes ownership of conn and closes it when done. Note that when the context
+// is canceled, the conn is automatically closed.
 func ServeConn(
 	ctx context.Context,
 	conn net.Conn,
@@ -74,13 +77,14 @@ func ServeConn(
 		}
 	}
 
-	// Note: an idle client or a line longer than maxLineSize ends the connection here.
+	// Note: an idle client or a line longer than [ptnoprpc.MaxLineSize]
+	// ends the connection here.
 	if err := scanner.Err(); err != nil {
 		logger.Warn("scanner.Err", slog.Any("err", err))
 	}
 }
 
-// serveLine serves a raw request line received on the standard input and
+// serveLine serves a raw request line received from the conn and
 // returns the response to send back. It never returns nil.
 //
 // The logger is the operational logger (i.e., the journal). The measurement
@@ -95,7 +99,7 @@ func serveLine(
 	peer peerCreds,
 	spoolRootDir spool.RootDir,
 ) *ptnoprpc.Response {
-	// 1. Parse the raw line received on the stdin.
+	// 1. Parse the raw line received from the client.
 	var req ptnoprpc.Request
 	if err := json.Unmarshal(rawLine, &req); err != nil {
 		return &ptnoprpc.Response{Error: err.Error()}

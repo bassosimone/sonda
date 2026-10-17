@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-// MaxLineSize bounds the size of a request or response line. Responses are small
+// MaxLineSize bounds the size of a request or response line. Requests/responses are small
 // JSON objects, so this is generous. Used by the client and the server.
 const MaxLineSize = 1 << 19
 
