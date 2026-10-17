@@ -4,8 +4,8 @@ package main
 
 import (
 	"fmt"
-	"os"
 
+	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/goccy/go-yaml"
 )
 
@@ -16,8 +16,8 @@ type workflowFile struct {
 }
 
 // loadWorkflowFile reads and parses a scan workflow file.
-func loadWorkflowFile(path string) (*workflowFile, error) {
-	data, err := os.ReadFile(path)
+func loadWorkflowFile(env *testable.Environ, path string) (*workflowFile, error) {
+	data, err := env.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading workflow: %w", err)
 	}

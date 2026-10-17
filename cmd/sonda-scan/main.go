@@ -93,7 +93,7 @@ func scanMain(ctx context.Context, args []string) error {
 		logger.Error("no `--workflow-file` specified; nothing to do.")
 		env.Exit(2)
 	}
-	wff, err := loadWorkflowFile(workflowFile)
+	wff, err := loadWorkflowFile(env, workflowFile)
 	if err != nil {
 		logger.Error("loading workflow", slog.Any("err", err))
 		env.Exit(2)
