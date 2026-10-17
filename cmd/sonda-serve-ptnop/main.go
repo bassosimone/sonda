@@ -3,11 +3,8 @@
 package main
 
 import (
-	"bufio"
 	"context"
-	"encoding/json"
 	"log/slog"
-	"net"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -15,7 +12,7 @@ import (
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
-	"github.com/bassosimone/sonda/internal/ptnoprpc"
+	"github.com/bassosimone/sonda/internal/ptnoprpc/server"
 	"github.com/bassosimone/sonda/internal/spool"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
@@ -138,52 +135,7 @@ func mainMain(ctx context.Context, args []string) error {
 		activeConns.Add(1)
 		wg.Go(func() {
 			defer activeConns.Add(-1)
-			serveConn(ctx, conn, env, idleTimeout, logger, spoolRootDir)
+			server.ServeConn(ctx, conn, env, idleTimeout, logger, spoolRootDir)
 		})
-	}
-}
-
-func serveConn(
-	ctx context.Context,
-	conn net.Conn,
-	env *testable.Environ,
-	idleTimeout time.Duration,
-	logger *slog.Logger,
-	spoolRootDir spool.RootDir,
-) {
-	// Close the connection when we leave the scope or the service-scoped context is done.
-	defer conn.Close()
-	stopCloser := context.AfterFunc(ctx, func() {
-		conn.Close()
-	})
-	defer stopCloser()
-
-	// Get the peer credentials.
-	reader := &idleReader{conn: conn, timeout: idleTimeout}
-	writer := &idleWriter{conn: conn, timeout: idleTimeout}
-	peer := unknownPeerCreds
-	if uconn, ok := conn.(*net.UnixConn); ok {
-		peer, _ = peerCred(uconn) // best effort + portability on Windows/macOS
-	}
-
-	// Read and serve incoming requests, one per line, sequentially.
-	//
-	// Each request receives exactly one response line. A malformed or invalid
-	// request receives an error response and does not close the connection.
-	scanner := bufio.NewScanner(reader)
-	scanner.Buffer(nil, ptnoprpc.MaxLineSize)
-	for scanner.Scan() {
-		resp := serveLine(ctx, env, logger, scanner.Bytes(), peer, spoolRootDir)
-		respData := runtimex.PanicOnError1(json.Marshal(resp)) // always serializable
-		respData = append(respData, '\n')
-		if _, err := writer.Write(respData); err != nil {
-			logger.Warn("writer.Write", slog.Any("err", err))
-			return // the client is gone or not reading
-		}
-	}
-
-	// Note: an idle client or a line longer than maxLineSize ends the connection here.
-	if err := scanner.Err(); err != nil {
-		logger.Warn("scanner.Err", slog.Any("err", err))
 	}
 }

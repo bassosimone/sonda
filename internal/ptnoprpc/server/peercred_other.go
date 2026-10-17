@@ -2,7 +2,7 @@
 
 //go:build !linux
 
-package main
+package server
 
 import (
 	"errors"
