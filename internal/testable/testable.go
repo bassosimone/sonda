@@ -51,7 +51,6 @@ type Environ struct {
 	Environ          func() []string
 	Executable       func() (string, error)
 	Exit             func(code int)
-	FileConn         func(f *os.File) (net.Conn, error)
 	Getenv           func(key string) string
 	Link             func(oldname, newname string) error
 	ListenConfig     ListenConfig
@@ -105,7 +104,6 @@ func NewEnvironOS() *Environ {
 		Environ:      os.Environ,
 		Executable:   os.Executable,
 		Exit:         deferexit.Panic,
-		FileConn:     net.FileConn,
 		Getenv:       os.Getenv,
 		Link:         os.Link,
 		ListenConfig: newListenConfig(),
@@ -152,7 +150,6 @@ func (e *Environ) Clone() *Environ {
 		Environ:          e.Environ,
 		Executable:       e.Executable,
 		Exit:             e.Exit,
-		FileConn:         e.FileConn,
 		Getenv:           e.Getenv,
 		Link:             e.Link,
 		ListenConfig:     e.ListenConfig,
