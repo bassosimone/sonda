@@ -15,7 +15,7 @@ import (
 	"github.com/pion/stun/v3"
 )
 
-func ptnopRunPipeline(ctx context.Context, input *pipelineInput) int {
+func runPipeline(ctx context.Context, input *pipelineInput) int {
 	// 1. Create the shared pipeline configuration.
 	cfg := ptnop.NewConfig()
 	cfg.SLogger = input.logger
@@ -27,7 +27,7 @@ func ptnopRunPipeline(ctx context.Context, input *pipelineInput) int {
 		runtimex.Assert(input.tlsConfig != nil)
 		runtimex.Assert(input.httpReq != nil)
 		runtimex.Assert(input.httpReq.URL != nil)
-		return ptnopRunDNS(ctx, input, ptnop.Compose6(
+		return runPipelineDNS(ctx, input, ptnop.Compose6(
 			ptnop.NewConnectFunc(cfg, "tcp"),
 			ptnop.NewObserveConnFunc(cfg),
 			ptnop.NewCancelWatchFunc(),
@@ -37,7 +37,7 @@ func ptnopRunPipeline(ctx context.Context, input *pipelineInput) int {
 		))
 
 	case "dns-over-tcp":
-		return ptnopRunDNS(ctx, input, ptnop.Compose4(
+		return runPipelineDNS(ctx, input, ptnop.Compose4(
 			ptnop.NewConnectFunc(cfg, "tcp"),
 			ptnop.NewObserveConnFunc(cfg),
 			ptnop.NewCancelWatchFunc(),
@@ -46,7 +46,7 @@ func ptnopRunPipeline(ctx context.Context, input *pipelineInput) int {
 
 	case "dns-over-tls":
 		runtimex.Assert(input.tlsConfig != nil)
-		return ptnopRunDNS(ctx, input, ptnop.Compose5(
+		return runPipelineDNS(ctx, input, ptnop.Compose5(
 			ptnop.NewConnectFunc(cfg, "tcp"),
 			ptnop.NewObserveConnFunc(cfg),
 			ptnop.NewCancelWatchFunc(),
@@ -55,7 +55,7 @@ func ptnopRunPipeline(ctx context.Context, input *pipelineInput) int {
 		))
 
 	case "dns-over-udp":
-		return ptnopRunDNS(ctx, input, ptnop.Compose4(
+		return runPipelineDNS(ctx, input, ptnop.Compose4(
 			ptnop.NewConnectFunc(cfg, "udp"),
 			ptnop.NewObserveConnFunc(cfg),
 			ptnop.NewCancelWatchFunc(),
@@ -63,7 +63,7 @@ func ptnopRunPipeline(ctx context.Context, input *pipelineInput) int {
 		))
 
 	case "http":
-		return ptnopRunHTTP(ctx, input, ptnop.Compose4(
+		return runPipelineHTTP(ctx, input, ptnop.Compose4(
 			ptnop.NewConnectFunc(cfg, "tcp"),
 			ptnop.NewObserveConnFunc(cfg),
 			ptnop.NewCancelWatchFunc(),
@@ -72,7 +72,7 @@ func ptnopRunPipeline(ctx context.Context, input *pipelineInput) int {
 
 	case "https":
 		runtimex.Assert(input.tlsConfig != nil)
-		return ptnopRunHTTP(ctx, input, ptnop.Compose5(
+		return runPipelineHTTP(ctx, input, ptnop.Compose5(
 			ptnop.NewConnectFunc(cfg, "tcp"),
 			ptnop.NewObserveConnFunc(cfg),
 			ptnop.NewCancelWatchFunc(),
@@ -87,7 +87,7 @@ func ptnopRunPipeline(ctx context.Context, input *pipelineInput) int {
 			ptnop.NewCancelWatchFunc(),
 		).Call(ctx, input.addrPort)
 		if result.Err != nil {
-			return logFailure(input.logger, "tcpPipeline", result.Err, 1)
+			return logPipelineFailure(input.logger, "tcpPipeline", result.Err, 1)
 		}
 		result.V.Close() // we own the conn
 		return 0
@@ -101,25 +101,25 @@ func ptnopRunPipeline(ctx context.Context, input *pipelineInput) int {
 			ptnop.NewTLSHandshakeFunc(cfg, input.tlsConfig),
 		).Call(ctx, input.addrPort)
 		if result.Err != nil {
-			return logFailure(input.logger, "tlsPipeline", result.Err, 1)
+			return logPipelineFailure(input.logger, "tlsPipeline", result.Err, 1)
 		}
 		result.V.Close() // we own the conn
 		return 0
 
 	case "stun":
-		return ptnopRunSTUN(ctx, input, ptnop.Compose3(
+		return runPipelineSTUN(ctx, input, ptnop.Compose3(
 			ptnop.NewConnectFunc(cfg, "udp"),
 			ptnop.NewObserveConnFunc(cfg),
 			ptnop.NewCancelWatchFunc(),
 		))
 
 	default:
-		return logFailure(input.logger, "selectPipeline", errUnknownPipeline(input.name), 2)
+		return logPipelineFailure(input.logger, "selectPipeline", errUnknownPipeline(input.name), 2)
 	}
 }
 
-// ptnopRunHTTP dials, performs the round trip, and drains the body.
-func ptnopRunHTTP(ctx context.Context, input *pipelineInput,
+// runPipelineHTTP dials, performs the round trip, and drains the body.
+func runPipelineHTTP(ctx context.Context, input *pipelineInput,
 	dialFunc ptnop.Func[netip.AddrPort, *ptnop.HTTPConn]) int {
 	// 1. Dial the HTTP connection.
 	httpConn := dialFunc.Call(ctx, input.addrPort)
@@ -130,7 +130,7 @@ func ptnopRunHTTP(ctx context.Context, input *pipelineInput,
 	runtimex.Assert(input.httpReq.URL != nil)
 	resp, err := httpConn.RoundTrip(input.httpReq)
 	if err != nil {
-		return logFailure(input.logger, "httpRoundTrip", err, 1)
+		return logPipelineFailure(input.logger, "httpRoundTrip", err, 1)
 	}
 	defer resp.Body.Close()
 
@@ -144,7 +144,7 @@ func ptnopRunHTTP(ctx context.Context, input *pipelineInput,
 	// 4. Drain the response body.
 	count, err := io.Copy(input.bodyFp, reader)
 	if err != nil {
-		return logFailure(input.logger, "httpReadResponseBody", err, 1)
+		return logPipelineFailure(input.logger, "httpReadResponseBody", err, 1)
 	}
 
 	// 5. Let the user know when the body was possibly truncated.
@@ -158,8 +158,8 @@ func ptnopRunHTTP(ctx context.Context, input *pipelineInput,
 	return 0
 }
 
-// ptnopRunDNS dials and performs the DNS exchange.
-func ptnopRunDNS(ctx context.Context, input *pipelineInput,
+// runPipelineDNS dials and performs the DNS exchange.
+func runPipelineDNS(ctx context.Context, input *pipelineInput,
 	dialFunc ptnop.Func[netip.AddrPort, ptnop.DNSConn]) int {
 	// 1. Dial the DNS connection.
 	dnsConn := dialFunc.Call(ctx, input.addrPort)
@@ -168,7 +168,7 @@ func ptnopRunDNS(ctx context.Context, input *pipelineInput,
 	// 2. Perform the DNS exchange.
 	resp, err := dnsConn.Exchange(ctx, input.query)
 	if err != nil {
-		return logFailure(input.logger, "dnsExchange", err, 1)
+		return logPipelineFailure(input.logger, "dnsExchange", err, 1)
 	}
 
 	// 3. Print records as expected by `./internal/ptnopspool`.
@@ -186,13 +186,13 @@ func ptnopRunDNS(ctx context.Context, input *pipelineInput,
 	return 0
 }
 
-// ptnopRunSTUN dials and performs the STUN binding transaction.
-func ptnopRunSTUN(ctx context.Context, input *pipelineInput,
+// runPipelineSTUN dials and performs the STUN binding transaction.
+func runPipelineSTUN(ctx context.Context, input *pipelineInput,
 	dialFunc ptnop.Func[netip.AddrPort, ptnop.Result[net.Conn]]) int {
 	// 1. Dial the UDP connection.
 	res := dialFunc.Call(ctx, input.addrPort)
 	if err := res.Err; err != nil {
-		return logFailure(input.logger, "stunDial", err, 1)
+		return logPipelineFailure(input.logger, "stunDial", err, 1)
 	}
 	conn := res.V
 	defer conn.Close()
@@ -202,35 +202,35 @@ func ptnopRunSTUN(ctx context.Context, input *pipelineInput,
 
 	// 3. Write the binding request.
 	if _, err := conn.Write(req.Raw); err != nil {
-		return logFailure(input.logger, "stunWriteBindingRequest", err, 1)
+		return logPipelineFailure(input.logger, "stunWriteBindingRequest", err, 1)
 	}
 
 	// 4. Read the binding response.
 	buf := make([]byte, 1024)
 	bytesRead, err := conn.Read(buf)
 	if err != nil {
-		return logFailure(input.logger, "stunReadBindingResponse", err, 1)
+		return logPipelineFailure(input.logger, "stunReadBindingResponse", err, 1)
 	}
 
 	// 5. Decode the response using pion/stun as codec.
 	resp := new(stun.Message)
 	resp.Raw = buf[:bytesRead]
 	if err := resp.Decode(); err != nil {
-		return logFailure(input.logger, "stunDecodeBindingResponse", err, 1)
+		return logPipelineFailure(input.logger, "stunDecodeBindingResponse", err, 1)
 	}
 	if reqTID, respTID := req.TransactionID, resp.TransactionID; reqTID != respTID {
 		err := fmt.Errorf("stun: transaction ID mismatch: expected %q, got %q", reqTID, respTID)
-		return logFailure(input.logger, "stunDecodeBindingResponse", err, 1)
+		return logPipelineFailure(input.logger, "stunDecodeBindingResponse", err, 1)
 	}
 	if rt := resp.Type; rt != stun.BindingSuccess {
 		err := fmt.Errorf("stun: expected stun.BindingSuccess, got %v", rt)
-		return logFailure(input.logger, "stunDecodeBindingResponse", err, 1)
+		return logPipelineFailure(input.logger, "stunDecodeBindingResponse", err, 1)
 	}
 
 	// 6. Extract and log the reflexive address.
 	var xorAddr stun.XORMappedAddress
 	if err := xorAddr.GetFrom(resp); err != nil {
-		return logFailure(input.logger, "stunDecodeBindingResponse", err, 1)
+		return logPipelineFailure(input.logger, "stunDecodeBindingResponse", err, 1)
 	}
 	input.logger.Info("stunBindingResult",
 		slog.String("stunReflexiveAddr", xorAddr.IP.String()),
@@ -239,8 +239,8 @@ func ptnopRunSTUN(ctx context.Context, input *pipelineInput,
 	return 0
 }
 
-// logFailure logs a sondaFailure event and returns the exit code.
-func logFailure(logger *slog.Logger, operation string, err error, exitCode int) int {
+// logPipelineFailure logs a sondaFailure event and returns the exit code.
+func logPipelineFailure(logger *slog.Logger, operation string, err error, exitCode int) int {
 	logger.Error(
 		"sondaFailure",
 		slog.String("operation", operation),

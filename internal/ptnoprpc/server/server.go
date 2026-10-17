@@ -178,7 +178,7 @@ func serveLine(
 	input.logger.Info("sondaPtnopRunContext", slog.Any("peer", peer), slog.Any("request", req))
 
 	// 9. Run the pipeline.
-	exitCode := ptnopRunPipeline(ctx, input)
+	exitCode := runPipeline(ctx, input)
 
 	// 10. Make sure we properly publish the temporary span.
 	if err := spanDir.Publish(); err != nil {
