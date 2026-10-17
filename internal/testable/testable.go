@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"maps"
 	"net"
@@ -55,8 +56,8 @@ type Environ struct {
 	Link             func(oldname, newname string) error
 	ListenConfig     ListenConfig
 	LogFatalOnError0 func(err error)
-	MkdirAll         func(path string, perm os.FileMode) error
-	ReadDir          func(path string) ([]os.DirEntry, error)
+	MkdirAll         func(path string, perm fs.FileMode) error
+	ReadDir          func(path string) ([]fs.DirEntry, error)
 	ReadFile         func(path string) ([]byte, error)
 	Remove           func(path string) error
 	RemoveAll        func(path string) error
@@ -65,11 +66,11 @@ type Environ struct {
 	SignalProcess    func(proc *os.Process, sig os.Signal) error
 	Stdin            io.Reader
 	Stderr           io.Writer
-	WriteFile        func(name string, data []byte, perm os.FileMode) error
+	WriteFile        func(name string, data []byte, perm fs.FileMode) error
 
 	// OpenFile is like [os.OpenFile] but abstract in the returned file type, to accommodate
 	// testing and hosting in a library, where the [File] could be memory or a pipe.
-	OpenFile func(name string, flag int, perm os.FileMode) (File, error)
+	OpenFile func(name string, flag int, perm fs.FileMode) (File, error)
 
 	// ReExec allows to re-execute `sonda` with the given command
 	// line arguments. By default, this function does not allow
@@ -129,7 +130,7 @@ func NewEnvironOS() *Environ {
 		Stdin:     os.Stdin,
 		Stderr:    os.Stderr,
 		WriteFile: os.WriteFile,
-		OpenFile: func(name string, flag int, perm os.FileMode) (File, error) {
+		OpenFile: func(name string, flag int, perm fs.FileMode) (File, error) {
 			return os.OpenFile(name, flag, perm)
 		},
 		ReExec: func(ctx context.Context, args []string) error {

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
@@ -282,7 +283,7 @@ func processTriggersDir(
 // processDentry drains a single dentry in the `/run/sonda/etl-ptnop-prom` dir.
 func processDentry(
 	cutoff time.Time,
-	dentry os.DirEntry,
+	dentry fs.DirEntry,
 	env *testable.Environ,
 	etlPtnopPromRunDir string,
 	logger *slog.Logger,

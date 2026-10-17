@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"syscall"
@@ -82,7 +83,7 @@ func AsExitCode(err error) int {
 		}
 		return code
 	}
-	if pathErr, ok := errors.AsType[*os.PathError](err); ok && pathErr.Op == "fork/exec" {
+	if pathErr, ok := errors.AsType[*fs.PathError](err); ok && pathErr.Op == "fork/exec" {
 		return 127
 	}
 	if err != nil {
@@ -101,7 +102,7 @@ func WithReExecFeature(ctx context.Context) context.Context {
 	env.Executable = func() (string, error) {
 		value := getenv("SONDA_COMMAND")
 		if value == "" {
-			err := &os.PathError{ // cause exit code 127
+			err := &fs.PathError{ // cause exit code 127
 				Op:   "fork/exec",
 				Path: "sonda",
 				Err:  errors.New("the SONDA_COMMAND environment variable is not set"),
