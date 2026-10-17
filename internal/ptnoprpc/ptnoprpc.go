@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+// MaxLineSize bounds the size of a request or response line. Responses are small
+// JSON objects, so this is generous. Used by the client and the server.
+const MaxLineSize = 1 << 19
+
 // UsageErrorPrefix is the prefix the server adds to errors
 // that indicate that a usage error occurred.
 const UsageErrorPrefix = "usage error: "

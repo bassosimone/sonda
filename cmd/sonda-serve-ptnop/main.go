@@ -15,6 +15,7 @@ import (
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
+	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/bassosimone/sonda/internal/spool"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
@@ -23,10 +24,6 @@ import (
 func main() {
 	plugincommand.Main(0, mainMain)
 }
-
-// maxLineSize bounds the size of a request line. Requests are small JSON objects,
-// so this is generous even with many HTTP headers or tags.
-const maxLineSize = 1 << 19
 
 func mainMain(ctx context.Context, args []string) error {
 	// Inject dependencies using testable.
@@ -174,7 +171,7 @@ func serveConn(
 	// Each request receives exactly one response line. A malformed or invalid
 	// request receives an error response and does not close the connection.
 	scanner := bufio.NewScanner(reader)
-	scanner.Buffer(nil, maxLineSize)
+	scanner.Buffer(nil, ptnoprpc.MaxLineSize)
 	for scanner.Scan() {
 		resp := serveLine(ctx, env, logger, scanner.Bytes(), peer, spoolRootDir)
 		respData := runtimex.PanicOnError1(json.Marshal(resp)) // always serializable

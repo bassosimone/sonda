@@ -22,10 +22,6 @@ import (
 )
 
 const (
-	// maxLineSize bounds the size of a response line. Responses are small
-	// JSON objects, so this is generous. Same as the server's request limit.
-	maxLineSize = 1 << 19
-
 	// maxRequestTimeout is the timeout we assume when [Request.Timeout] is
 	// <= 0, since we do not know the server default. Same as the maximum
 	// timeout accepted by `sonda-serve-ptnop`.
@@ -61,7 +57,7 @@ func Dial(ctx context.Context, env *testable.Environ, path string) (*Conn, error
 		return nil, err
 	}
 	scanner := bufio.NewScanner(conn)
-	scanner.Buffer(nil, maxLineSize)
+	scanner.Buffer(nil, ptnoprpc.MaxLineSize)
 	client := &Conn{
 		conn:    conn,
 		env:     env,
