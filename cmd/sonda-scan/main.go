@@ -16,7 +16,7 @@ import (
 	"github.com/bassosimone/sonda/internal/ptnopclient"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/bassosimone/sonda/internal/spool"
-	"github.com/bassosimone/sonda/internal/spoolfs"
+	"github.com/bassosimone/sonda/internal/spoolclient"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/sonda/internal/triggers"
 	"github.com/bassosimone/vflag"
@@ -37,7 +37,7 @@ func scanMain(ctx context.Context, args []string) error {
 		fail         = false
 		ptnopSocket  = config.PtnopSocketPath
 		runDir       = config.RunDir
-		spoolDir     = config.SpoolDir
+		spoolSocket  = config.SpoolSocketPath
 		workflowFile = ""
 	)
 
@@ -54,6 +54,8 @@ func scanMain(ctx context.Context, args []string) error {
 		"Run the steps listed in the `--workflow-file` YAML file, in order. " +
 			"Each step sends a measurement request to the `sonda-serve-ptnop` server " +
 			"listening at `--ptnop-socket`, which stores the results in the spool. " +
+			"We read the results back from the `sonda-serve-spool` server " +
+			"listening at `--spool-socket`. " +
 			"A failed step does not stop the scan unless `--fail` is set.")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
@@ -68,8 +70,8 @@ func scanMain(ctx context.Context, args []string) error {
 		"Directory `PATH` in which to write trigger files.",
 		"Default: `@DEFAULT_VALUE@`.")
 
-	fset.StringVar(&spoolDir, 0, "spool-dir",
-		"Top-level spool `DIR` containing the data type directories.",
+	fset.StringVar(&spoolSocket, 0, "spool-socket",
+		"Unix domain socket `PATH` of the `sonda-serve-spool` server.",
 		"Default: `@DEFAULT_VALUE@`.")
 
 	fset.StringVar(&workflowFile, 0, "workflow-file", "Load steps from `FILE` (required).")
@@ -115,9 +117,9 @@ func scanMain(ctx context.Context, args []string) error {
 	defer conn.Close()
 
 	// Construct shared dependencies.
-	spoolRootDir, err := spoolfs.NewRootDir(env, spoolDir)
+	spoolRootDir, err := spoolclient.NewRootDir(env, spoolSocket)
 	if err != nil {
-		logger.Error("spoolfs.NewRootDir", slog.Any("err", err))
+		logger.Error("spoolclient.NewRootDir", slog.Any("err", err))
 		env.Exit(1)
 	}
 	state := &sharedState{spoolRootDir: spoolRootDir}

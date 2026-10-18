@@ -2,9 +2,9 @@
 
 [Unit]
 Description=Run sonda scan
-After=network-online.target sonda-serve-ptnop.service
+After=network-online.target sonda-serve-ptnop.service sonda-serve-spool.service
 Wants=network-online.target
-Requires=sonda-serve-ptnop.service
+Requires=sonda-serve-ptnop.service sonda-serve-spool.service
 
 [Service]
 Slice=system-sonda.slice
@@ -13,6 +13,7 @@ Environment=SONDA_ETC_PATH=/etc/sonda
 ExecStart=/usr/libexec/sonda/sonda-scan \
 	--ptnop-socket=/run/sonda/serve-ptnop/sock \
 	--run-dir=/run/sonda \
+	--spool-socket=/run/sonda/serve-spool/sock \
 	--workflow-file=/etc/sonda/scan/default.yml
 
 # Must have access to the whole of `/run/sonda` otherwise it cannot
