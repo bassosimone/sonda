@@ -13,7 +13,8 @@ Restart=on-failure
 ExecStartPre=rm -f /run/sonda/serve-ptnop/sock
 ExecStart=/usr/libexec/sonda/sonda-serve-ptnop \
 	--socket=/run/sonda/serve-ptnop/sock \
-	--spool-dir=/var/spool/sonda
+	--spool-dir=/var/spool/sonda \
+	--spool-socket=/run/sonda/serve-spool/sock
 
 NoNewPrivileges=yes
 ProtectSystem=strict

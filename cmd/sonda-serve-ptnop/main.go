@@ -13,6 +13,7 @@ import (
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/ptnopserver"
+	"github.com/bassosimone/sonda/internal/spoolclient"
 	"github.com/bassosimone/sonda/internal/spoolfs"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
@@ -34,6 +35,7 @@ func mainMain(ctx context.Context, args []string) error {
 		idleTimeout = time.Duration(presets.Serve.Ptnop.IdleTimeout)
 		socketPath  = config.PtnopSocketPath
 		spoolDir    = config.SpoolDir
+		spoolSocket = config.SpoolSocketPath
 	)
 
 	// Parse command line flags.
@@ -69,6 +71,10 @@ func mainMain(ctx context.Context, args []string) error {
 		"Top-level spool `DIR` containing the data type directories.",
 		"Default: `@DEFAULT_VALUE@`.")
 
+	fset.StringVar(&spoolSocket, 0, "spool-socket",
+		"Unix domain socket `PATH` of the `sonda-serve-spool` server.",
+		"Default: `@DEFAULT_VALUE@`.")
+
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
 	// Emit operational logs to the stderr (i.e., the journal).
@@ -90,6 +96,13 @@ func mainMain(ctx context.Context, args []string) error {
 	spoolRootDir, err := spoolfs.NewRootDir(env, spoolDir)
 	if err != nil {
 		logger.Error("spoolfs.NewRootDir", slog.Any("err", err))
+		env.Exit(1)
+	}
+
+	// Also, be ready to communicate with the `sonda-serve-spool` service.
+	spoolRemoteDir, err := spoolclient.NewRootDir(env, spoolSocket)
+	if err != nil {
+		logger.Error("spoolclient.NewRootDir", slog.Any("err", err))
 		env.Exit(1)
 	}
 
@@ -135,7 +148,8 @@ func mainMain(ctx context.Context, args []string) error {
 		activeConns.Add(1)
 		wg.Go(func() {
 			defer activeConns.Add(-1)
-			ptnopserver.ServeConn(ctx, conn, env, idleTimeout, logger, spoolRootDir)
+			ptnopserver.ServeConn(ctx, conn, env, idleTimeout,
+				logger, spoolRemoteDir, spoolRootDir)
 		})
 	}
 }

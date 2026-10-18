@@ -22,10 +22,16 @@ const UsageErrorPrefix = "usage error: "
 
 // Request is the request sent by the client.
 //
+// # ID
+//
 // The ID is opaque: the server echoes it back in the [Response], so the client
 // can match responses to requests. A missing ID is echoed as a missing ID.
 //
+// # Timeout
+//
 // A Timeout <= 0 means the server default.
+//
+// # Optimize
 //
 // The Optimize field indicates what we should optimize for in terms of the
 // generated events. When Optimize is empty, the `serve-ptnop` service collects
@@ -51,12 +57,35 @@ const UsageErrorPrefix = "usage error: "
 //
 // Any unknown value is silently equal to empty and emits everything.
 //
+// # MaxHTTPResponseBodySize
+//
 // The MaxHTTPResponseBodySize optional setting controls whether we
 // should cap the maximum response body size. A zero (or negative) value
 // disables this functionality. Otherwise, we stop reading the response
 // body after the given number of bytes has been read. When scanning
 // multiple URLs that may have relatively large bodies, it is advisable
 // to use this functionality, to limit the overall network I/O.
+//
+// # Spool
+//
+// Set Spool to "service" to buffer gzip-compressed structured logs
+// and (when enabled) the body, and submit them to the `sonda-serve-spool`
+// service when the pipeline terminates.
+//
+// Set to "fs" or "" to write the spoolDir directly.
+//
+// Any unrecognized value is silently mapped to "fs" without warnings.
+//
+// The "fs" strategy uses less memory but does disk I/O. With this
+// strategy, the structured logs and the body are streamed directly to
+// disk; the only limiting factors are the disk size and wear.
+//
+// With "service", `sonda-serve-spool` refuses submissions larger
+// than ~16 MiB (by default). The submission is kept in memory until
+// it is garbage collected and `sonda-serve-spool` refuses
+// new submissions until garbage collection when it is already
+// buffering 256 MiB of data (by default). If your measurements
+// are small and you do not want any disk I/O, use "service".
 type Request struct {
 	ID                      json.RawMessage `json:"id,omitempty"`
 	ALPN                    []string        `json:"alpn"`
@@ -72,6 +101,7 @@ type Request struct {
 	Optimize                string          `json:"optimize"`
 	Pipeline                string          `json:"pipeline"`
 	SNI                     string          `json:"sni"`
+	Spool                   string          `json:"spool"`
 	Tags                    []string        `json:"tags"`
 	Timeout                 time.Duration   `json:"timeout"`
 	URLPath                 string          `json:"urlPath"`

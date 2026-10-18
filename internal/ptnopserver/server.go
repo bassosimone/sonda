@@ -38,12 +38,17 @@ const (
 //
 // Takes ownership of conn and closes it when done. Note that when the context
 // is canceled, the conn is automatically closed.
+//
+// spoolRemoteDir is a handle to the `sonda-serve-spool` service.
+//
+// spoolRootDir writes to `/var/spool/sonda` directly.
 func ServeConn(
 	ctx context.Context,
 	conn net.Conn,
 	env *testable.Environ,
 	idleTimeout time.Duration,
 	logger *slog.Logger,
+	spoolRemoteDir spool.RootDir,
 	spoolRootDir spool.RootDir,
 ) {
 	// Close the connection when we leave the scope or the service-scoped context is done.
@@ -68,7 +73,7 @@ func ServeConn(
 	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(nil, ptnoprpc.MaxLineSize)
 	for scanner.Scan() {
-		resp := serveLine(ctx, env, logger, scanner.Bytes(), peer, spoolRootDir)
+		resp := serveLine(ctx, env, logger, scanner.Bytes(), peer, spoolRemoteDir, spoolRootDir)
 		respData := runtimex.PanicOnError1(json.Marshal(resp)) // always serializable
 		respData = append(respData, '\n')
 		if _, err := writer.Write(respData); err != nil {
@@ -97,6 +102,7 @@ func serveLine(
 	logger *slog.Logger,
 	rawLine []byte,
 	peer peerCreds,
+	spoolRemoteDir spool.RootDir,
 	spoolRootDir spool.RootDir,
 ) *ptnoprpc.Response {
 	// 1. Parse the raw line received from the client.
@@ -132,8 +138,14 @@ func serveLine(
 		return resp
 	}
 
-	// 4. Create a writable span for writing the measurement results.
-	spanDir, err := spool.CreateTempSpanDir(spoolRootDir, "ptnop")
+	// 4. Select the spool backend to use depending on the incoming request.
+	spoolRoot := spoolRootDir
+	if req.Spool == "service" {
+		spoolRoot = spoolRemoteDir
+	}
+
+	// 5. Create a writable span for writing the measurement results.
+	spanDir, err := spool.CreateTempSpanDir(spoolRoot, "ptnop")
 	if err != nil {
 		resp.Error = err.Error()
 		return resp
@@ -150,13 +162,13 @@ func serveLine(
 		return resp
 	}
 
-	// 5. Create an entity representing the stdout in the writable span.
+	// 6. Create an entity representing the stdout in the writable span.
 	stdoutWriter, err := spanDir.CreateEntity("stdout.txt")
 	if err != nil {
 		return serverFailure("spanDir.CreateEntity", err)
 	}
 
-	// 6. Same as above for the body, if needed.
+	// 7. Same as above for the body, if needed.
 	switch req.Pipeline {
 	case "http", "https":
 		if req.HTTPBodyFile {
@@ -168,22 +180,22 @@ func serveLine(
 		}
 	}
 
-	// 7. Create the structured logger writing the measurement events.
+	// 8. Create the structured logger writing the measurement events.
 	input.logger = newServeLogger(stdoutWriter, spanID, req.Tags, req.Optimize)
 
-	// 8. Write peer credentials and incoming request.
+	// 9. Write peer credentials and incoming request.
 	input.logger.Info("sondaPtnopRunContext", slog.Any("peer", peer), slog.Any("request", req))
 
-	// 9. Run the pipeline.
+	// 10. Run the pipeline.
 	exitCode := runPipeline(ctx, input)
 
-	// 10. Make sure we properly publish the temporary span. Detach from context
+	// 11. Make sure we properly publish the temporary span. Detach from context
 	// deadline and cancellation such that we always save the results.
 	if err := spanDir.Publish(context.WithoutCancel(ctx)); err != nil {
 		return serverFailure("spanDir.Publish", err)
 	}
 
-	// 11. Tell the caller that we succeeded.
+	// 12. Tell the caller that we succeeded.
 	resp.ExitCode = &exitCode
 	return resp
 }
