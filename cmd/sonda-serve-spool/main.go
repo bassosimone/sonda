@@ -31,6 +31,7 @@ func mainMain(ctx context.Context, args []string) error {
 	var (
 		maxMem     = uint64(spoolserver.DefaultMaxMemory)
 		socketPath = config.SpoolSocketPath
+		spoolDir   = config.SpoolDir
 	)
 
 	// Parse command line flags.
@@ -44,7 +45,8 @@ func mainMain(ctx context.Context, args []string) error {
 	fset.UsagePrinter = upr
 	upr.AddDescription(
 		"Memory-based spool implementation. Other sonda components use " +
-			"`--socket` to communicate with this service.")
+			"`--socket` to communicate with this service. Can also " +
+			"read and serve the `--spool-dir` data.")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 
@@ -54,6 +56,10 @@ func mainMain(ctx context.Context, args []string) error {
 
 	fset.StringVar(&socketPath, 0, "socket",
 		"Unix socket `PATH` to listen at.",
+		"Default: `@DEFAULT_VALUE@`.")
+
+	fset.StringVar(&spoolDir, 0, "spool-dir",
+		"Top-level spool `DIR` containing the data type directories.",
 		"Default: `@DEFAULT_VALUE@`.")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
@@ -69,7 +75,7 @@ func mainMain(ctx context.Context, args []string) error {
 
 	// Create the mux.
 	mux := http.NewServeMux()
-	handler := spoolserver.NewHandler(logger)
+	handler := spoolserver.NewHandler(env, logger, spoolDir)
 	handler.MaxMemory = maxMem
 	handler.Register(mux)
 

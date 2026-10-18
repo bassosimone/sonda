@@ -277,6 +277,23 @@ func (d *spanDir) ID() string {
 	return d.spanID.String()
 }
 
+// ResolveGzippedEntityPath takes in input the spoolDir, the dataType, the spanID, and the
+// entity name and returns either the path to the raw gzipped entity or an error.
+func ResolveGzippedEntityPath(spoolDir, dataType, spanID, entityName string) (string, error) {
+	if err := spool.ValidateName(dataType); err != nil {
+		return "", err
+	}
+	spanUUID, err := spool.ParseSpanUUID(spanID)
+	if err != nil {
+		return "", err
+	}
+	if err := spool.ValidateName(entityName); err != nil {
+		return "", err
+	}
+	dirPath := joinSpanDirPath(filepath.Join(spoolDir, dataType), spanUUID.String())
+	return filepath.Join(dirPath, entityName+".gz"), nil
+}
+
 // OpenEntity implements [spool.SpanDir].
 func (d *spanDir) OpenEntity(name string) (io.ReadCloser, error) {
 	if err := spool.ValidateName(name); err != nil {

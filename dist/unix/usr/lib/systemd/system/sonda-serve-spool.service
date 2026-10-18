@@ -12,7 +12,8 @@ UMask=0007
 Restart=on-failure
 ExecStartPre=rm -f /run/sonda/serve-spool/sock
 ExecStart=/usr/libexec/sonda/sonda-serve-spool \
-	--socket=/run/sonda/serve-spool/sock
+	--socket=/run/sonda/serve-spool/sock \
+	--spool-dir=/var/spool/sonda
 
 NoNewPrivileges=yes
 ProtectSystem=strict

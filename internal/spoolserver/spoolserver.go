@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"maps"
 	"net/http"
+	"os"
 	"slices"
 	"strings"
 	"sync"
@@ -18,6 +19,8 @@ import (
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/spool"
+	"github.com/bassosimone/sonda/internal/spoolfs"
+	"github.com/bassosimone/sonda/internal/testable"
 )
 
 // spanEntity models an entity within a [spanDir].
@@ -140,19 +143,23 @@ type Handler struct {
 	// Safe to modify before the [Handler] is used by an [*http.Server].
 	MaxMemory uint64
 
-	logger *slog.Logger
-	mu     sync.Mutex
-	spans  map[string]*spanDir
-	totMem uint64
+	env      *testable.Environ
+	logger   *slog.Logger
+	mu       sync.Mutex
+	spans    map[string]*spanDir
+	spoolDir string
+	totMem   uint64
 }
 
 // NewHandler constructs a new [*Handler] instance.
-func NewHandler(logger *slog.Logger) *Handler {
+func NewHandler(env *testable.Environ, logger *slog.Logger, spoolDir string) *Handler {
 	return &Handler{
 		MaxMemory: DefaultMaxMemory,
+		env:       env,
 		logger:    logger,
 		mu:        sync.Mutex{},
 		spans:     map[string]*spanDir{},
+		spoolDir:  spoolDir,
 		totMem:    0,
 	}
 }
@@ -314,7 +321,7 @@ func (h *Handler) entity(rw http.ResponseWriter, r *http.Request) {
 	dir, found := h.spans[spanID]
 	h.mu.Unlock()
 	if !found || dir.dataType != dataType {
-		h.fail(rw, "entity", "span not found", http.StatusNotFound)
+		h.serveFS(rw, dataType, spanID, name) // fallback
 		return
 	}
 
@@ -332,4 +339,28 @@ func (h *Handler) entity(rw http.ResponseWriter, r *http.Request) {
 		slog.String("spanId", spanID),
 	)
 	rw.Write(entity.data)
+}
+
+// serveFS tries to serve gzipped spool entities from the spool dir as a fallback.
+func (h *Handler) serveFS(rw http.ResponseWriter, dataType, spanID, name string) {
+	gzPath, err := spoolfs.ResolveGzippedEntityPath(h.spoolDir, dataType, spanID, name)
+	if err != nil {
+		h.fail(rw, "serveFS", err.Error(), http.StatusNotFound)
+		return
+	}
+	filep, err := h.env.OpenFile(gzPath, os.O_RDONLY, 0)
+	if err != nil {
+		h.fail(rw, "serveFS", err.Error(), http.StatusNotFound)
+		return
+	}
+	defer filep.Close()
+
+	h.logger.Info(
+		"serveFS",
+		slog.String("dataType", dataType),
+		slog.Int64("httpResponseStatusCode", http.StatusOK),
+		slog.String("name", name),
+		slog.String("spanId", spanID),
+	)
+	io.Copy(rw, filep)
 }
