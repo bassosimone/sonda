@@ -21,7 +21,7 @@ case "$1" in
             deb-systemd-helper purge 'sonda-etl-ptnop-qoe.timer' \
 				'sonda-etl-ptnop-archive.service' 'sonda-etl-ptnop-prom.service' \
 				'sonda-scan.timer' 'sonda-serve-ptnop.service' \
-				'sonda-spool-gc.timer' >/dev/null || true
+				'sonda-serve-spool.service' 'sonda-spool-gc.timer' >/dev/null || true
         fi
 
         # Remove the _sonda system user and group.

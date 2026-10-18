@@ -1,0 +1,36 @@
+# See docs/design/2026-10-04-01-config-file.md for the flags policy.
+
+[Unit]
+Description=Memory-based spool backend
+
+[Service]
+Slice=system-sonda.slice
+User=_sonda
+Group=_sonda
+Environment=SONDA_ETC_PATH=/etc/sonda
+UMask=0007
+Restart=on-failure
+ExecStartPre=rm -f /run/sonda/serve-spool/sock
+ExecStart=/usr/libexec/sonda/sonda-serve-spool \
+	--socket=/run/sonda/serve-spool/sock
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/run/sonda/serve-spool
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+CapabilityBoundingSet=
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallFilter=@system-service
+RestrictRealtime=yes
+
+[Install]
+WantedBy=multi-user.target
