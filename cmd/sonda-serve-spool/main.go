@@ -29,6 +29,7 @@ func mainMain(ctx context.Context, args []string) error {
 	presets := config.Defaults()
 	configErr := config.ReadDefaultsInto(env, presets)
 	var (
+		maxMem     = uint64(spoolserver.DefaultMaxMemory)
 		socketPath = config.SpoolSocketPath
 	)
 
@@ -46,6 +47,10 @@ func mainMain(ctx context.Context, args []string) error {
 			"`--socket` to communicate with this service.")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
+
+	fset.Uint64Var(&maxMem, 0, "max-memory",
+		"Set maximum memory for the span entity cache to `N` bytes.",
+		"Default: `@DEFAULT_VALUE@`.")
 
 	fset.StringVar(&socketPath, 0, "socket",
 		"Unix socket `PATH` to listen at.",
@@ -65,6 +70,7 @@ func mainMain(ctx context.Context, args []string) error {
 	// Create the mux.
 	mux := http.NewServeMux()
 	handler := spoolserver.NewHandler(logger)
+	handler.MaxMemory = maxMem
 	handler.Register(mux)
 
 	// Create the HTTP server.

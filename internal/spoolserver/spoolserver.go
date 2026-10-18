@@ -114,21 +114,46 @@ func (d *spanDir) AddEntity(entity *spanEntity) error {
 	return nil
 }
 
+// Size returns the size of all the cached entities.
+func (d *spanDir) Size() uint64 {
+	total := uint64(0)
+	for _, entity := range d.entities {
+		amount := uint64(len(entity.data))
+		runtimex.Assert(total <= maxSubmissionBodySize &&
+			amount <= maxSubmissionBodySize-total)
+		total += amount
+	}
+	return total
+}
+
+// DefaultMaxMemory is the default for [Handler.MaxMemory].
+const DefaultMaxMemory = 1 << 28
+
 // Handler handles the spool requests.
 //
 // Use [NewHandler] to construct.
 type Handler struct {
+	// MaxMemory is the maximum amount of bytes we can use to cache span entities.
+	//
+	// Set to [DefaultMaxMemory] by [NewHandler].
+	//
+	// Safe to modify before the [Handler] is used by an [*http.Server].
+	MaxMemory uint64
+
 	logger *slog.Logger
 	mu     sync.Mutex
 	spans  map[string]*spanDir
+	totMem uint64
 }
 
 // NewHandler constructs a new [*Handler] instance.
 func NewHandler(logger *slog.Logger) *Handler {
 	return &Handler{
-		logger: logger,
-		mu:     sync.Mutex{},
-		spans:  map[string]*spanDir{},
+		MaxMemory: DefaultMaxMemory,
+		logger:    logger,
+		mu:        sync.Mutex{},
+		spans:     map[string]*spanDir{},
+		totMem:    0,
 	}
 }
 
@@ -148,15 +173,29 @@ func (h *Handler) fail(rw http.ResponseWriter, fname string, err string, status 
 	rw.WriteHeader(status)
 }
 
-// addSpan adds a [*spanDir] to the tracked spans.
-func (h *Handler) addSpan(dir *spanDir) error {
+// addSpan adds a [*spanDir] to the tracked spans. The integer return value is zero
+// on success and the nonzero status code to use in case of error.
+func (h *Handler) addSpan(dir *spanDir) (int, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+
+	// 1. Do not bother computing the total memory if the span is a duplicate.
 	if _, exists := h.spans[dir.spanID]; exists {
-		return fmt.Errorf("span already exists: %q", dir.spanID)
+		return http.StatusBadRequest, fmt.Errorf("span already exists: %q", dir.spanID)
 	}
+
+	// 2. Make sure we're not going over the memory limit.
+	spanTotal := dir.Size()
+	if h.totMem > h.MaxMemory || spanTotal > h.MaxMemory-h.totMem {
+		return http.StatusInsufficientStorage, fmt.Errorf(
+			"MaxMemory (%d) exceeded by totMem (%d) + spanTotal (%d)",
+			h.MaxMemory, h.totMem, spanTotal)
+	}
+	h.totMem += spanTotal
+
+	// 3. Finally wire the new span in.
 	h.spans[dir.spanID] = dir
-	return nil
+	return 0, nil
 }
 
 // createSpan handles a `POST /span/create` request.
@@ -206,9 +245,9 @@ func (h *Handler) createSpan(rw http.ResponseWriter, r *http.Request) {
 	}
 	runtimex.Assert(dir.spanID != "") // any valid entity should set the spanID
 
-	// 7. Insert the span into the tracked spans
-	if err := h.addSpan(dir); err != nil {
-		h.fail(rw, "createSpan", err.Error(), http.StatusBadRequest)
+	// 7. Insert the span into the tracked spans.
+	if status, err := h.addSpan(dir); err != nil {
+		h.fail(rw, "createSpan", err.Error(), status)
 		return
 	}
 	h.logger.Info(
@@ -219,6 +258,25 @@ func (h *Handler) createSpan(rw http.ResponseWriter, r *http.Request) {
 		slog.String("spanId", dir.spanID),
 	)
 	rw.WriteHeader(http.StatusCreated)
+}
+
+// GarbageCollect removes all spans older than cutoff and returns their IDs.
+func (h *Handler) GarbageCollect(cutoff time.Time) []string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	var expired []string
+	for id, info := range h.spans {
+		if info.created.Before(cutoff) {
+			expired = append(expired, id)
+			spanTotal := info.Size()
+			runtimex.Assert(spanTotal <= h.totMem)
+			h.totMem -= spanTotal
+		}
+	}
+	for _, id := range expired {
+		delete(h.spans, id)
+	}
+	return expired
 }
 
 // gc handles a `POST /gc` request.
@@ -237,17 +295,7 @@ func (h *Handler) gc(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Remove all the spans that are before the cutoff.
-	h.mu.Lock()
-	var expired []string
-	for id, info := range h.spans {
-		if info.created.Before(cutoff) {
-			expired = append(expired, id)
-		}
-	}
-	for _, id := range expired {
-		delete(h.spans, id)
-	}
-	h.mu.Unlock()
+	expired := h.GarbageCollect(cutoff)
 
 	// 3. Inform the client that the gc was done (fast when using memory).
 	h.logger.Info("gc", slog.Any("deleted", expired))
