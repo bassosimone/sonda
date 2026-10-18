@@ -5,6 +5,7 @@ package ptnopspool
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 
@@ -58,21 +59,21 @@ func (e DataTypeError) Error() string {
 //  2. [ReadError] if we cannot open, scan, or parse the structured logs file
 //
 //  3. [DataTypeError] if the spanDir dataType is not "ptnop".
-func ResolvedAddrsA(spanDir spool.SpanDir) ([]string, error) {
-	return resolvedAddrs(spanDir, "sondaDnsRecordsA")
+func ResolvedAddrsA(ctx context.Context, spanDir spool.SpanDir) ([]string, error) {
+	return resolvedAddrs(ctx, spanDir, "sondaDnsRecordsA")
 }
 
 // ResolvedAddrsAAAA is like [ResolvedAddrsA] but for AAAA addrs.
-func ResolvedAddrsAAAA(spanDir spool.SpanDir) ([]string, error) {
-	return resolvedAddrs(spanDir, "sondaDnsRecordsAAAA")
+func ResolvedAddrsAAAA(ctx context.Context, spanDir spool.SpanDir) ([]string, error) {
+	return resolvedAddrs(ctx, spanDir, "sondaDnsRecordsAAAA")
 }
 
-func resolvedAddrs(spanDir spool.SpanDir, msgName string) ([]string, error) {
+func resolvedAddrs(ctx context.Context, spanDir spool.SpanDir, msgName string) ([]string, error) {
 	if value := spanDir.DataType(); value != "ptnop" {
 		return nil, DataTypeError{value}
 	}
 
-	filep, err := spanDir.OpenEntity("stdout.txt")
+	filep, err := spanDir.OpenEntity(ctx, "stdout.txt")
 	if err != nil {
 		return nil, ReadError{err}
 	}
@@ -111,12 +112,12 @@ func resolvedAddrs(spanDir spool.SpanDir, msgName string) ([]string, error) {
 //  2. [ReadError] if we cannot open, scan, or parse the structured logs file
 //
 //  3. [DataTypeError] if the spanDir dataType is not "ptnop".
-func ReflexiveAddr(spanDir spool.SpanDir) (string, error) {
+func ReflexiveAddr(ctx context.Context, spanDir spool.SpanDir) (string, error) {
 	if value := spanDir.DataType(); value != "ptnop" {
 		return "", DataTypeError{value}
 	}
 
-	filep, err := spanDir.OpenEntity("stdout.txt")
+	filep, err := spanDir.OpenEntity(ctx, "stdout.txt")
 	if err != nil {
 		return "", ReadError{err}
 	}

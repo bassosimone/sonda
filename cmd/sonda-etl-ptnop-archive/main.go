@@ -161,6 +161,7 @@ func processTriggersLoop(
 
 		// Process new trigger files.
 		_ = processTriggersDir(
+			context.WithoutCancel(ctx), // finish the pass on shutdown
 			cutoff,
 			env,
 			etlPtnopArchiveRunDir,
@@ -210,6 +211,7 @@ func processWaitEvents(ctx context.Context, ticker *time.Ticker, watcher *fsnoti
 // processTriggersDir does a pass over `/run/sonda/etl-ptnop-archive`, processing
 // and removing each trigger file, and generating archives as a side effect.
 func processTriggersDir(
+	ctx context.Context,
 	cutoff time.Time,
 	env *testable.Environ,
 	etlPtnopArchiveRunDir string,
@@ -228,6 +230,7 @@ func processTriggersDir(
 	var errv []error
 	for _, dentry := range dentries {
 		err := processDentry(
+			ctx,
 			cutoff,
 			dentry,
 			env,
@@ -248,6 +251,7 @@ func processTriggersDir(
 
 // processDentry drains a single dentry in the `/run/sonda/etl-ptnop-archive` dir.
 func processDentry(
+	ctx context.Context,
 	cutoff time.Time,
 	dentry fs.DirEntry,
 	env *testable.Environ,
@@ -302,7 +306,7 @@ func processDentry(
 
 		// 4.2. Otherwise process each span and collect errors to be
 		// reported all together at the end of the processing.
-		err := processSpanTrigger(cutoff, env, &info, logger, ptnopArchiveDir, spoolRootDir)
+		err := processSpanTrigger(ctx, cutoff, env, &info, logger, ptnopArchiveDir, spoolRootDir)
 		if err != nil {
 			logger.Warn("cannot process span", slog.Any("err", err))
 			errv = append(errv, err)
@@ -322,6 +326,7 @@ func processDentry(
 
 // processSpanTrigger processes a single created span.
 func processSpanTrigger(
+	ctx context.Context,
 	cutoff time.Time,
 	env *testable.Environ,
 	info *triggers.CreatedSpan,
@@ -346,7 +351,7 @@ func processSpanTrigger(
 	}
 
 	// 3. Extract events from the span `stdout.txt` entity.
-	numWritten, err := extractSpanDir(env, logger, ptnopArchiveDir, spanDir)
+	numWritten, err := extractSpanDir(ctx, env, logger, ptnopArchiveDir, spanDir)
 	if err != nil {
 		return fmt.Errorf("extractSpanDir: %s: %w", info.SpanID, err)
 	}

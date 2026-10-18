@@ -215,7 +215,15 @@ func processTriggersLoop(
 	defer ticker.Stop()
 	for {
 		cutoff := time.Now().Add(-maxSpanAge)
-		_ = processTriggersDir(cutoff, env, etlPtnopPromRunDir, logger, metrics, spoolRootDir)
+		_ = processTriggersDir(
+			context.WithoutCancel(ctx), // finish the pass on shutdown
+			cutoff,
+			env,
+			etlPtnopPromRunDir,
+			logger,
+			metrics,
+			spoolRootDir,
+		)
 		if !processWaitEvents(ctx, ticker, watcher) {
 			break
 		}
@@ -246,6 +254,7 @@ func processWaitEvents(ctx context.Context, ticker *time.Ticker, watcher *fsnoti
 // processTriggersDir does a pass over `/run/sonda/etl-ptnop-prom`, processing
 // and removing each trigger file, and generating metrics as a side effect.
 func processTriggersDir(
+	ctx context.Context,
 	cutoff time.Time,
 	env *testable.Environ,
 	etlPtnopPromRunDir string,
@@ -264,6 +273,7 @@ func processTriggersDir(
 	var errv []error
 	for _, dentry := range dentries {
 		err := processDentry(
+			ctx,
 			cutoff,
 			dentry,
 			env,
@@ -284,6 +294,7 @@ func processTriggersDir(
 
 // processDentry drains a single dentry in the `/run/sonda/etl-ptnop-prom` dir.
 func processDentry(
+	ctx context.Context,
 	cutoff time.Time,
 	dentry fs.DirEntry,
 	env *testable.Environ,
@@ -338,7 +349,7 @@ func processDentry(
 
 		// 4.2. Otherwise process each span and collect errors to be
 		// reported all together at the end of the processing.
-		err := processSpanTrigger(cutoff, env, &info, logger, metrics, spoolRootDir)
+		err := processSpanTrigger(ctx, cutoff, env, &info, logger, metrics, spoolRootDir)
 		if err != nil {
 			logger.Warn("cannot process span", slog.Any("err", err))
 			errv = append(errv, err)
@@ -358,6 +369,7 @@ func processDentry(
 
 // processSpanTrigger processes a single created span.
 func processSpanTrigger(
+	ctx context.Context,
 	cutoff time.Time,
 	env *testable.Environ,
 	info *triggers.CreatedSpan,
@@ -382,7 +394,7 @@ func processSpanTrigger(
 	}
 
 	// 3. Update Prometheus metrics using the span `stdout.txt` entity content.
-	numProcessed, err := updateMetrics(logger, metrics, spanDir)
+	numProcessed, err := updateMetrics(ctx, logger, metrics, spanDir)
 	if err != nil {
 		return fmt.Errorf("updateMetrics: %s: %w", info.SpanID, err)
 	}

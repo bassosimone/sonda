@@ -4,6 +4,7 @@
 package spool
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -29,7 +30,7 @@ type SLogger interface {
 // backing store is the file system, it does not create directories).
 type RootDir interface {
 	NewDataTypeDir(dataType string) (DataTypeDir, error)
-	GarbageCollect(cutoff time.Time, logger SLogger)
+	GarbageCollect(ctx context.Context, cutoff time.Time, logger SLogger)
 }
 
 // DataTypeDir models a data type directory inside the spool.
@@ -71,7 +72,7 @@ type TempSpanDir interface {
 	Close() error
 	ID() string
 	CreateEntity(name string) (io.Writer, error)
-	Publish() error
+	Publish(ctx context.Context) error
 }
 
 // SpanDir is a span directory containing named measurement entities.
@@ -83,7 +84,7 @@ type SpanDir interface {
 	Created() time.Time
 	DataType() string
 	ID() string
-	OpenEntity(name string) (io.ReadCloser, error)
+	OpenEntity(ctx context.Context, name string) (io.ReadCloser, error)
 }
 
 // SpanUUID is the type modeling a specific spanID.

@@ -80,7 +80,7 @@ func gcMain(ctx context.Context, args []string) error {
 
 	// Walk the spool structure: spoolDir/<dataType>/XXXX/X/X/<spanID>.
 	cutoff := time.Now().Add(-maxAge)
-	spoolRootDir.GarbageCollect(cutoff, logger)
+	spoolRootDir.GarbageCollect(ctx, cutoff, logger)
 
 	// Ask the spool service to run its in-memory GC cycle.
 	spoolRemoteDir, err := spoolclient.NewRootDir(env, spoolSocket)
@@ -88,6 +88,6 @@ func gcMain(ctx context.Context, args []string) error {
 		logger.Error("spoolclient.NewRootDir", slog.Any("err", err))
 		env.Exit(1)
 	}
-	spoolRemoteDir.GarbageCollect(cutoff, logger)
+	spoolRemoteDir.GarbageCollect(ctx, cutoff, logger)
 	return nil
 }

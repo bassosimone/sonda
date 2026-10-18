@@ -52,8 +52,7 @@ type rootDir struct {
 var _ spool.RootDir = &rootDir{}
 
 // GarbageCollect implements [spool.RootDir].
-func (d *rootDir) GarbageCollect(cutoff time.Time, logger spool.SLogger) {
-	ctx := context.Background() // TODO(bassosimone): maybe best to add this to the API?
+func (d *rootDir) GarbageCollect(ctx context.Context, cutoff time.Time, logger spool.SLogger) {
 	query := &url.Values{}
 	query.Add("cutoff", cutoff.Format(time.RFC3339))
 	target := &url.URL{
@@ -144,7 +143,7 @@ func (d *tempSpanDir) ID() string {
 }
 
 // Publish implements [spool.TempSpanDir].
-func (d *tempSpanDir) Publish() error {
+func (d *tempSpanDir) Publish(ctx context.Context) error {
 	// 1. Close all open files so that it becomes safe to read
 	// the buffers because no subsequent write lands.
 	if err := d.Close(); err != nil {
@@ -172,7 +171,6 @@ func (d *tempSpanDir) Publish() error {
 	}
 
 	// 3. Create the HTTP request.
-	ctx := context.Background() // same consideration as before regarding the context
 	target := &url.URL{
 		Scheme: "http",
 		Host:   "sonda.sock",
@@ -233,11 +231,10 @@ func (d *spanDir) ID() string {
 }
 
 // OpenEntity implements [spool.SpanDir].
-func (d *spanDir) OpenEntity(name string) (io.ReadCloser, error) {
+func (d *spanDir) OpenEntity(ctx context.Context, name string) (io.ReadCloser, error) {
 	if err := spool.ValidateName(name); err != nil {
 		return nil, err
 	}
-	ctx := context.Background() // same consideration as before regarding the context
 
 	target := &url.URL{
 		Scheme: "http",

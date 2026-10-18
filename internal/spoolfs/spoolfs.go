@@ -4,6 +4,7 @@
 package spoolfs
 
 import (
+	"context"
 	"io"
 	"log/slog"
 	"os"
@@ -55,7 +56,7 @@ type rootDir struct {
 var _ spool.RootDir = &rootDir{}
 
 // GarbageCollect implements [spool.RootDir].
-func (d *rootDir) GarbageCollect(cutoff time.Time, logger spool.SLogger) {
+func (d *rootDir) GarbageCollect(ctx context.Context, cutoff time.Time, logger spool.SLogger) {
 	entries, err := d.Env.ReadDir(d.Path)
 	if err != nil {
 		logger.Warn(
@@ -231,7 +232,7 @@ func (d *tempSpanDir) ID() string {
 }
 
 // Publish implements [spool.TempSpanDir].
-func (d *tempSpanDir) Publish() error {
+func (d *tempSpanDir) Publish(ctx context.Context) error {
 	if err := d.Close(); err != nil {
 		return err
 	}
@@ -295,7 +296,7 @@ func ResolveGzippedEntityPath(spoolDir, dataType, spanID, entityName string) (st
 }
 
 // OpenEntity implements [spool.SpanDir].
-func (d *spanDir) OpenEntity(name string) (io.ReadCloser, error) {
+func (d *spanDir) OpenEntity(ctx context.Context, name string) (io.ReadCloser, error) {
 	if err := spool.ValidateName(name); err != nil {
 		return nil, err
 	}

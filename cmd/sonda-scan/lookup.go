@@ -48,7 +48,7 @@ func lookupA(ctx context.Context, conn *ptnopclient.Conn,
 	if err != nil {
 		return nil, err
 	}
-	return ptnopspool.ResolvedAddrsA(spanDir)
+	return ptnopspool.ResolvedAddrsA(ctx, spanDir)
 }
 
 // lookupAAAA resolves a domain name to AAAA using 8.8.8.8:53/udp.
@@ -62,5 +62,5 @@ func lookupAAAA(ctx context.Context, conn *ptnopclient.Conn,
 	if err != nil {
 		return nil, err
 	}
-	return ptnopspool.ResolvedAddrsAAAA(spanDir)
+	return ptnopspool.ResolvedAddrsAAAA(ctx, spanDir)
 }

@@ -4,6 +4,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"io"
 	"log/slog"
 	"os"
@@ -18,13 +19,14 @@ import (
 //
 // Returns the number of lines written and/or an error.
 func extractSpanDir(
+	ctx context.Context,
 	env *testable.Environ,
 	logger *slog.Logger,
 	ptnopArchiveDir string,
 	spanDir spool.SpanDir,
 ) (int64, error) {
 	// Open the source entity: `stdout.txt` inside the current span.
-	source, err := spanDir.OpenEntity("stdout.txt")
+	source, err := spanDir.OpenEntity(ctx, "stdout.txt")
 	if err != nil {
 		return 0, err
 	}

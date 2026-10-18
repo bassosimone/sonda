@@ -334,7 +334,7 @@ func realMain(ctx context.Context, args []string) error {
 	}
 
 	// 10. Stream the structured logs to the stdout.
-	filep, err := spanDir.OpenEntity("stdout.txt")
+	filep, err := spanDir.OpenEntity(ctx, "stdout.txt")
 	if err != nil {
 		logger.Error("spanDir.OpenEntity", slog.Any("err", err))
 		env.Exit(4)

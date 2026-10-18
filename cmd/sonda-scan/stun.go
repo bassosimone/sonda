@@ -54,7 +54,7 @@ func (r *stunRunner) RunStep(ctx context.Context, with map[string]string) error 
 		if err != nil {
 			return fmt.Errorf("stun: %w", err)
 		}
-		refaddr, err := ptnopspool.ReflexiveAddr(spanDir)
+		refaddr, err := ptnopspool.ReflexiveAddr(ctx, spanDir)
 		if errors.Is(err, ptnopspool.ErrNoData) {
 			continue // typical case: we have no IPv6 support
 		}

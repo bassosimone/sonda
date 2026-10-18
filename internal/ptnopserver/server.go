@@ -177,8 +177,9 @@ func serveLine(
 	// 9. Run the pipeline.
 	exitCode := runPipeline(ctx, input)
 
-	// 10. Make sure we properly publish the temporary span.
-	if err := spanDir.Publish(); err != nil {
+	// 10. Make sure we properly publish the temporary span. Detach from context
+	// deadline and cancellation such that we always save the results.
+	if err := spanDir.Publish(context.WithoutCancel(ctx)); err != nil {
 		return serverFailure("spanDir.Publish", err)
 	}
 

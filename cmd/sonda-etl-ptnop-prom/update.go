@@ -4,6 +4,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"log/slog"
 	"time"
 
@@ -134,9 +135,9 @@ func (uue *updateUnifiedEvent) Update(ev *ptnopdata.Event) {
 // updateMetrics updates Prometheus metrics based on the spanDir content.
 //
 // Returns the number of processed events and/or an error.
-func updateMetrics(logger *slog.Logger, metrics *metricsSet, spanDir spool.SpanDir) (int64, error) {
+func updateMetrics(ctx context.Context, logger *slog.Logger, metrics *metricsSet, spanDir spool.SpanDir) (int64, error) {
 	// Open the source entity: `stdout.txt` inside the current span.
-	source, err := spanDir.OpenEntity("stdout.txt")
+	source, err := spanDir.OpenEntity(ctx, "stdout.txt")
 	if err != nil {
 		return 0, err
 	}
