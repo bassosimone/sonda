@@ -2,6 +2,8 @@
 
 [Unit]
 Description=Publish sonda Prometheus metrics
+After=sonda-serve-spool.service
+Requires=sonda-serve-spool.service
 
 [Service]
 Slice=system-sonda.slice
@@ -14,7 +16,7 @@ ExecStart=/usr/libexec/sonda/sonda-etl-ptnop-prom \
 	--http=127.0.0.1:9774 \
 	--run-dir=/run/sonda \
 	--slice-dir=/sys/fs/cgroup/system.slice/system-sonda.slice \
-	--spool-dir=/var/spool/sonda
+	--spool-socket=/run/sonda/serve-spool/sock
 
 # Keep the ETL from competing with the measurements for CPU and I/O.
 Nice=10
@@ -26,7 +28,7 @@ ReadWritePaths=/run/sonda/etl-ptnop-prom
 ProtectHome=yes
 PrivateTmp=yes
 PrivateDevices=yes
-RestrictAddressFamilies=AF_INET AF_INET6
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
 IPAddressDeny=any
 IPAddressAllow=localhost
 ProtectKernelTunables=yes
