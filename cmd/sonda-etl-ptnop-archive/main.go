@@ -19,7 +19,7 @@ import (
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/spool"
-	"github.com/bassosimone/sonda/internal/spoolfs"
+	"github.com/bassosimone/sonda/internal/spoolclient"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/sonda/internal/triggers"
 	"github.com/bassosimone/vflag"
@@ -42,11 +42,11 @@ func realMain(ctx context.Context, args []string) error {
 	presets := config.Defaults()
 	configErr := config.ReadDefaultsInto(env, presets)
 	var (
-		maxDays    = presets.Archive.Ptnop.MaxDays
-		maxSpanAge = 24 * time.Hour
-		archiveDir = config.ArchiveDir
-		spoolDir   = config.SpoolDir
-		runDir     = config.RunDir
+		maxDays     = presets.Archive.Ptnop.MaxDays
+		maxSpanAge  = 24 * time.Hour
+		archiveDir  = config.ArchiveDir
+		runDir      = config.RunDir
+		spoolSocket = config.SpoolSocketPath
 	)
 
 	// Parse command line flags.
@@ -61,7 +61,7 @@ func realMain(ctx context.Context, args []string) error {
 	upr.AddDescription(
 		"Archive the events in ptnop logs.",
 		"Read triggers from `$runDir/etl-ptnop-archive`.",
-		"Read the corresponding ptnop data from `$spoolDir/ptnop`.",
+		"Read the corresponding ptnop data from `sonda-serve-spool` at `--spool-socket`.",
 		"Archive ptnop data to `$archiveDir/ptnop`.",
 	)
 
@@ -82,8 +82,8 @@ func realMain(ctx context.Context, args []string) error {
 		"Top-level run `DIR` containing the trigger directories.",
 		"Default: `@DEFAULT_VALUE@`.")
 
-	fset.StringVar(&spoolDir, 0, "spool-dir",
-		"Top-level spool `DIR` containing the data type directories.",
+	fset.StringVar(&spoolSocket, 0, "spool-socket",
+		"Unix domain socket `PATH` of the `sonda-serve-spool` server.",
 		"Default: `@DEFAULT_VALUE@`.")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using ExitOnError
@@ -121,9 +121,9 @@ func realMain(ctx context.Context, args []string) error {
 	}
 
 	// Open the root spool directory using the spool API.
-	spoolRootDir, err := spoolfs.NewRootDir(env, spoolDir)
+	spoolRootDir, err := spoolclient.NewRootDir(env, spoolSocket)
 	if err != nil {
-		logger.Error("spoolfs.NewRootDir", slog.Any("err", err))
+		logger.Error("spoolclient.NewRootDir", slog.Any("err", err))
 		env.Exit(1)
 	}
 

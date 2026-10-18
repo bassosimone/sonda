@@ -2,6 +2,8 @@
 
 [Unit]
 Description=Archive sonda ptnop events
+After=sonda-serve-spool.service
+Requires=sonda-serve-spool.service
 
 [Service]
 Slice=system-sonda.slice
@@ -13,7 +15,7 @@ Environment=SONDA_ETC_PATH=/etc/sonda
 ExecStart=/usr/libexec/sonda/sonda-etl-ptnop-archive \
 	--archive-dir=/var/lib/sonda/archive \
 	--run-dir=/run/sonda \
-	--spool-dir=/var/spool/sonda
+	--spool-socket=/run/sonda/serve-spool/sock
 
 # Keep the ETL from competing with the measurements for CPU and I/O.
 Nice=10
