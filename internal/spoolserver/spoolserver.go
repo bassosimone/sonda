@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"maps"
 	"net/http"
@@ -345,12 +346,16 @@ func (h *Handler) entity(rw http.ResponseWriter, r *http.Request) {
 func (h *Handler) serveFS(rw http.ResponseWriter, dataType, spanID, name string) {
 	gzPath, err := spoolfs.ResolveGzippedEntityPath(h.spoolDir, dataType, spanID, name)
 	if err != nil {
-		h.fail(rw, "serveFS", err.Error(), http.StatusNotFound)
+		h.fail(rw, "serveFS", err.Error(), http.StatusBadRequest)
 		return
 	}
 	filep, err := h.env.OpenFile(gzPath, os.O_RDONLY, 0)
 	if err != nil {
-		h.fail(rw, "serveFS", err.Error(), http.StatusNotFound)
+		status := http.StatusInternalServerError
+		if errors.Is(err, fs.ErrNotExist) {
+			status = http.StatusNotFound
+		}
+		h.fail(rw, "serveFS", err.Error(), status)
 		return
 	}
 	defer filep.Close()
