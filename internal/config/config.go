@@ -26,6 +26,11 @@ func DefaultConfigFilePath(env *testable.Environ) string {
 	return filepath.Join(etcPath, "config.toml")
 }
 
+// SpoolSocketPath is the `sonda-serve-spool` socket path.
+//
+// Not configurable: it must match the value in `sonda-serve-spool.service`.
+const SpoolSocketPath = "/run/sonda/serve-spool/sock"
+
 // PtnopSocketPath is the `sonda-serve-ptnop` socket path.
 //
 // Not configurable: it must match the value in `sonda-serve-ptnop.service`.

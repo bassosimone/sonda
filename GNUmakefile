@@ -4,6 +4,7 @@ sonda_plugins = \
 	sonda-measure-ptnop \
 	sonda-scan \
 	sonda-serve-ptnop \
+	sonda-serve-spool \
 	sonda-spool-gc \
 	sonda-spool-run
 
