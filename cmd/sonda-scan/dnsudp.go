@@ -35,7 +35,7 @@ func (r *dnsOverUDPRunner) RunStep(ctx context.Context, with map[string]string) 
 	}
 
 	// Resolve the server hostname to addresses.
-	addrs, err := lookupHost(ctx, r.Conn, r.State, server)
+	addrs, err := lookupHost(ctx, r.Conn, r.State, with, server)
 	if err != nil {
 		return fmt.Errorf("dns-over-udp: resolving %s: %w", server, err)
 	}

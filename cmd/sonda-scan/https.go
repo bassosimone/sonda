@@ -35,7 +35,7 @@ func (r *httpsRunner) RunStep(ctx context.Context, with map[string]string) error
 	}
 
 	// Resolve the host to addresses.
-	addrs, err := lookupHost(ctx, r.Conn, r.State, host)
+	addrs, err := lookupHost(ctx, r.Conn, r.State, with, host)
 	if err != nil {
 		return fmt.Errorf("https: resolving %s: %w", host, err)
 	}

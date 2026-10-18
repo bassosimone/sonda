@@ -35,7 +35,7 @@ func (r *stunRunner) RunStep(ctx context.Context, with map[string]string) error 
 	}
 
 	// Resolve the server hostname to addresses.
-	addrs, err := lookupHost(ctx, r.Conn, r.State, server)
+	addrs, err := lookupHost(ctx, r.Conn, r.State, with, server)
 	if err != nil {
 		return fmt.Errorf("stun: resolving %s: %w", server, err)
 	}
