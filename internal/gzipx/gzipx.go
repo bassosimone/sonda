@@ -68,7 +68,9 @@ type ReadCloser struct {
 	p *closepool.Pool
 }
 
-func newReadCloser(r io.ReadCloser) (*ReadCloser, error) {
+// NewReadCloser creates and returns a new [*ReadCloser]. This function
+// takes ownership of `r` and closes it on failure.
+func NewReadCloser(r io.ReadCloser) (*ReadCloser, error) {
 	pool := &closepool.Pool{}
 	pool.Add(r)
 
@@ -86,18 +88,13 @@ func newReadCloser(r io.ReadCloser) (*ReadCloser, error) {
 	return out, nil
 }
 
-// NewReadCloser creates and returns a new [*ReadCloser].
-func NewReadCloser(r io.Reader) (*ReadCloser, error) {
-	return newReadCloser(io.NopCloser(r))
-}
-
 // OpenReadCloser opens a [*ReadCloser] for reading the given path.
 func OpenReadCloser(env *testable.Environ, path string) (*ReadCloser, error) {
 	filep, err := env.OpenFile(path, os.O_RDONLY, 0)
 	if err != nil {
 		return nil, err
 	}
-	return newReadCloser(filep) // takes ownership
+	return NewReadCloser(filep) // takes ownership
 }
 
 // Close implements [io.Closer].
