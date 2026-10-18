@@ -177,29 +177,29 @@ var _ spool.DataTypeDir = &dataTypeDir{}
 // CreateTempSpanDir implements [spool.DataTypeDir].
 func (d *dataTypeDir) CreateTempSpanDir() (spool.TempSpanDir, error) {
 	spanID := spool.NewSpanUUID().String()
-	spanPath := joinSpanDirPath(d.path, spanID)
-	tmpDir := joinTempSpanDirPath(d.path, spanID)
+	publishPath := joinSpanDirPath(d.path, spanID)
+	tmpPath := joinTempSpanDirPath(d.path, spanID)
 
 	// Note: this also creates the root, data type, and shard directories if needed.
-	if err := d.env.MkdirAll(tmpDir, dirMode); err != nil {
+	if err := d.env.MkdirAll(tmpPath, dirMode); err != nil {
 		return nil, err
 	}
 	tsd := &tempSpanDir{
-		closers: closepool.Pool{},
-		env:     d.env,
-		spanDir: spanPath,
-		spanID:  spanID,
-		tmpDir:  tmpDir,
+		closers:     closepool.Pool{},
+		env:         d.env,
+		publishPath: publishPath,
+		spanID:      spanID,
+		tmpPath:     tmpPath,
 	}
 	return tsd, nil
 }
 
 type tempSpanDir struct {
-	closers closepool.Pool
-	env     *testable.Environ
-	spanDir string
-	spanID  string
-	tmpDir  string
+	closers     closepool.Pool
+	env         *testable.Environ
+	publishPath string
+	spanID      string
+	tmpPath     string
 }
 
 var _ spool.TempSpanDir = &tempSpanDir{}
@@ -215,7 +215,7 @@ func (d *tempSpanDir) CreateEntity(name string) (io.Writer, error) {
 		return nil, err
 	}
 	openFlags := os.O_CREATE | os.O_EXCL | os.O_WRONLY
-	filep, err := d.env.OpenFile(filepath.Join(d.tmpDir, name+".gz"), openFlags, fileMode)
+	filep, err := d.env.OpenFile(filepath.Join(d.tmpPath, name+".gz"), openFlags, fileMode)
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +235,7 @@ func (d *tempSpanDir) Publish() error {
 	if err := d.Close(); err != nil {
 		return err
 	}
-	return d.env.Rename(d.tmpDir, d.spanDir)
+	return d.env.Rename(d.tmpPath, d.publishPath)
 }
 
 // OpenSpanDir implements [spool.DataTypeDir].
@@ -247,7 +247,7 @@ func (d *dataTypeDir) OpenSpanDir(spanID string) (spool.SpanDir, error) {
 	sd := &spanDir{
 		env:      d.env,
 		dataType: d.name,
-		spanDir:  joinSpanDirPath(d.path, parsed.String()), // make sure we normalize the UUID
+		path:     joinSpanDirPath(d.path, parsed.String()), // make sure we normalize the UUID
 		spanID:   parsed,
 	}
 	return sd, nil
@@ -257,7 +257,7 @@ type spanDir struct {
 	env      *testable.Environ
 	dataType string
 	spanID   spool.SpanUUID
-	spanDir  string
+	path     string
 }
 
 var _ spool.SpanDir = &spanDir{}
@@ -282,5 +282,5 @@ func (d *spanDir) OpenEntity(name string) (io.ReadCloser, error) {
 	if err := spool.ValidateName(name); err != nil {
 		return nil, err
 	}
-	return gzipx.OpenReadCloser(d.env, filepath.Join(d.spanDir, name+".gz"))
+	return gzipx.OpenReadCloser(d.env, filepath.Join(d.path, name+".gz"))
 }
