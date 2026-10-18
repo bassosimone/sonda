@@ -339,6 +339,8 @@ func (h *Handler) entity(rw http.ResponseWriter, r *http.Request) {
 		slog.String("name", name),
 		slog.String("spanId", spanID),
 	)
+
+	rw.Header().Set("Content-Encoding", "gzip")
 	rw.Write(entity.data)
 }
 
@@ -367,5 +369,7 @@ func (h *Handler) serveFS(rw http.ResponseWriter, dataType, spanID, name string)
 		slog.String("name", name),
 		slog.String("spanId", spanID),
 	)
+
+	rw.Header().Set("Content-Encoding", "gzip")
 	io.Copy(rw, filep)
 }

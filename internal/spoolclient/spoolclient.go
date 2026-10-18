@@ -180,6 +180,7 @@ func (d *tempSpanDir) Publish() error {
 	}
 	req := runtimex.PanicOnError1(
 		http.NewRequestWithContext(ctx, http.MethodPost, target.String(), rawBody))
+	req.Header.Set("Content-Type", "application/x-tar")
 
 	// 4. Perform the HTTP round trip.
 	resp, err := d.clnt.Do(req)
@@ -245,6 +246,7 @@ func (d *spanDir) OpenEntity(name string) (io.ReadCloser, error) {
 	}
 	req := runtimex.PanicOnError1(
 		http.NewRequestWithContext(ctx, http.MethodGet, target.String(), http.NoBody))
+	req.Header.Set("Accept-Encoding", "gzip")
 
 	resp, err := d.clnt.Do(req)
 	if err != nil {
