@@ -10,6 +10,7 @@ import (
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
+	"github.com/bassosimone/sonda/internal/spoolclient"
 	"github.com/bassosimone/sonda/internal/spoolfs"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
@@ -29,8 +30,9 @@ func gcMain(ctx context.Context, args []string) error {
 	presets := config.Defaults()
 	configErr := config.ReadDefaultsInto(env, presets)
 	var (
-		maxAge   = time.Duration(presets.Spool.GC.MaxAge)
-		spoolDir = config.SpoolDir
+		maxAge      = time.Duration(presets.Spool.GC.MaxAge)
+		spoolDir    = config.SpoolDir
+		spoolSocket = config.SpoolSocketPath
 	)
 
 	// Parse command line flags.
@@ -46,10 +48,15 @@ func gcMain(ctx context.Context, args []string) error {
 		"Remove span directories whose UUIDv7 timestamp is older than " +
 			"`--max-age`, including incomplete `.tmp` ones, for every data type " +
 			"directory under `--spool-dir` (e.g., `<spool-dir>/ptnop`). Also " +
-			"remove the sharding directories left empty.")
+			"remove the sharding directories left empty. Then send a GC " +
+			"request to the spool service at `--spool-socket`.")
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 	fset.DurationVar(&maxAge, 0, "max-age", "Remove spans older than `DURATION`.",
+		"Default: `@DEFAULT_VALUE@`.")
+
+	fset.StringVar(&spoolSocket, 0, "spool-socket",
+		"Unix domain socket `PATH` of the `sonda-serve-spool` server.",
 		"Default: `@DEFAULT_VALUE@`.")
 
 	fset.StringVar(&spoolDir, 0, "spool-dir",
@@ -74,5 +81,13 @@ func gcMain(ctx context.Context, args []string) error {
 	// Walk the spool structure: spoolDir/<dataType>/XXXX/X/X/<spanID>.
 	cutoff := time.Now().Add(-maxAge)
 	spoolRootDir.GarbageCollect(cutoff, logger)
+
+	// Ask the spool service to run its in-memory GC cycle.
+	spoolRemoteDir, err := spoolclient.NewRootDir(env, spoolSocket)
+	if err != nil {
+		logger.Error("spoolclient.NewRootDir", slog.Any("err", err))
+		env.Exit(1)
+	}
+	spoolRemoteDir.GarbageCollect(cutoff, logger)
 	return nil
 }

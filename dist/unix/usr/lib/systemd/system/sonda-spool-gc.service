@@ -9,7 +9,9 @@ Type=oneshot
 User=_sonda
 Group=_sonda
 Environment=SONDA_ETC_PATH=/etc/sonda
-ExecStart=/usr/libexec/sonda/sonda-spool-gc --spool-dir=/var/spool/sonda
+ExecStart=/usr/libexec/sonda/sonda-spool-gc \
+	--spool-dir=/var/spool/sonda \
+	--spool-socket=/run/sonda/serve-spool/sock
 
 NoNewPrivileges=yes
 ProtectSystem=strict
