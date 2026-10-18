@@ -230,6 +230,10 @@ func realMain(ctx context.Context, args []string) error {
 		"A zero (or negative) value disables this functionality.",
 		"Default: `@DEFAULT_VALUE@`.")
 
+	fset.StringVar(&opts.Optimize, 0, "optimize",
+		"Ask `sonda-serve-ptnop` to optimize the events for `GOAL` (`size`).",
+		"Default: empty, meaning emit all events.")
+
 	fset.StringVar(&opts.Pipeline, 0, "pipeline",
 		"Use `PIPELINE` as the measurement pipeline.")
 
