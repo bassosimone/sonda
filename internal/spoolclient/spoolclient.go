@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
@@ -251,7 +252,11 @@ func (d *spanDir) OpenEntity(name string) (io.ReadCloser, error) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		resp.Body.Close()
-		return nil, fmt.Errorf("expected %d, got %d", http.StatusOK, resp.StatusCode)
+		err := fmt.Errorf("expected %d, got %d", http.StatusOK, resp.StatusCode)
+		if resp.StatusCode == http.StatusNotFound {
+			err = fmt.Errorf("%w: %w", fs.ErrNotExist, err)
+		}
+		return nil, err
 	}
 
 	return gzipx.NewReadCloser(resp.Body) // takes ownership
