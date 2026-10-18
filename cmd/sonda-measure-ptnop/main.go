@@ -17,7 +17,7 @@ import (
 	"github.com/bassosimone/sonda/internal/ptnopclient"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/bassosimone/sonda/internal/spool"
-	"github.com/bassosimone/sonda/internal/spoolfs"
+	"github.com/bassosimone/sonda/internal/spoolclient"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 )
@@ -39,7 +39,7 @@ func realMain(ctx context.Context, args []string) error {
 	var (
 		dryRun      = false
 		ptnopSocket = config.PtnopSocketPath
-		spoolDir    = config.SpoolDir
+		spoolSocket = config.SpoolSocketPath
 	)
 	fset := vflag.NewFlagSet("sonda-measure-ptnop", vflag.ExitOnError)
 
@@ -51,7 +51,8 @@ func realMain(ctx context.Context, args []string) error {
 	fset.UsagePrinter = upr
 	upr.AddDescription(shortDescr,
 		"The measurement runs in the remote `sonda-serve-ptnop` process, with "+
-			"which we communicate using a Unix domain socket.",
+			"which we communicate using a Unix domain socket. We read the "+
+			"structured logs from the `sonda-serve-spool` process.",
 		"Output",
 		"    NDJSON. The first line is a `sondaRemoteMeasurementResult` event containing:",
 		"        exitCode",
@@ -244,8 +245,12 @@ func realMain(ctx context.Context, args []string) error {
 	fset.StringVar(&opts.SNI, 0, "sni",
 		"Use `HOST` in the TLS SNI extension.")
 
-	fset.StringVar(&spoolDir, 0, "spool-dir",
-		"Top-level spool `DIR` containing the data type directories.",
+	fset.StringVar(&opts.Spool, 0, "spool",
+		"Ask `sonda-serve-ptnop` to spool using `STRATEGY` (`fs` or `service`).",
+		"Default: empty, meaning `fs`.")
+
+	fset.StringVar(&spoolSocket, 0, "spool-socket",
+		"Unix domain socket `PATH` of the `sonda-serve-spool` server.",
 		"Default: `@DEFAULT_VALUE@`.")
 
 	fset.StringSliceVar(&opts.Tags, 0, "tag",
@@ -322,9 +327,9 @@ func realMain(ctx context.Context, args []string) error {
 	)
 
 	// 9. Open the root spool directory using the spool API.
-	spoolRootDir, err := spoolfs.NewRootDir(env, spoolDir)
+	spoolRootDir, err := spoolclient.NewRootDir(env, spoolSocket)
 	if err != nil {
-		logger.Error("spoolfs.NewRootDir", slog.Any("err", err))
+		logger.Error("spoolclient.NewRootDir", slog.Any("err", err))
 		env.Exit(4)
 	}
 	spanDir, err := spool.OpenSpanDir(spoolRootDir, "ptnop", result.SpanID)
