@@ -68,18 +68,13 @@ type ReadCloser struct {
 	p *closepool.Pool
 }
 
-// OpeReadCloser opens a [*ReadCloser] for reading the given path.
-func OpenReadCloser(env *testable.Environ, path string) (*ReadCloser, error) {
+func newReadCloser(r io.ReadCloser) (*ReadCloser, error) {
 	pool := &closepool.Pool{}
-	filep, err := env.OpenFile(path, os.O_RDONLY, 0)
-	if err != nil {
-		return nil, err
-	}
-	pool.Add(filep)
+	pool.Add(r)
 
-	reader, err := gzip.NewReader(filep)
+	reader, err := gzip.NewReader(r)
 	if err != nil {
-		pool.Close()
+		pool.Close() // make sure we close `r`
 		return nil, err
 	}
 	pool.Add(reader)
@@ -89,6 +84,20 @@ func OpenReadCloser(env *testable.Environ, path string) (*ReadCloser, error) {
 		p:      pool,
 	}
 	return out, nil
+}
+
+// NewReadCloser creates and returns a new [*ReadCloser].
+func NewReadCloser(r io.Reader) (*ReadCloser, error) {
+	return newReadCloser(io.NopCloser(r))
+}
+
+// OpenReadCloser opens a [*ReadCloser] for reading the given path.
+func OpenReadCloser(env *testable.Environ, path string) (*ReadCloser, error) {
+	filep, err := env.OpenFile(path, os.O_RDONLY, 0)
+	if err != nil {
+		return nil, err
+	}
+	return newReadCloser(filep) // takes ownership
 }
 
 // Close implements [io.Closer].
