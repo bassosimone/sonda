@@ -10,7 +10,7 @@ import (
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
-	"github.com/bassosimone/sonda/internal/spool"
+	"github.com/bassosimone/sonda/internal/spoolfs"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 )
@@ -65,9 +65,9 @@ func gcMain(ctx context.Context, args []string) error {
 	}
 
 	// Open the root spool directory using the spool API.
-	spoolRootDir, err := spool.NewRootDirFS(env, spoolDir)
+	spoolRootDir, err := spoolfs.NewRootDir(env, spoolDir)
 	if err != nil {
-		logger.Error("spool.NewRootDirFS", slog.Any("err", err))
+		logger.Error("spoolfs.NewRootDir", slog.Any("err", err))
 		env.Exit(1)
 	}
 

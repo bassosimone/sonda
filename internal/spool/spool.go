@@ -42,8 +42,8 @@ type RootDir interface {
 //
 // Typical implementations will create persistent state (e.g. directories) on
 // demand in [DataTypeDir.CreateTempSpanDir]. A permission denied error when
-// using a file-system-based backend such as [NewRootDirFS] will thus only surface
-// when executing this operation, since previous operations are lazy.
+// using a file-system-based backend will thus only surface when executing
+// this operation, since previous operations are lazy.
 //
 // Note that [DataTypeDir.OpenSpanDir] may be a lazy operation that does not
 // check its backing store until you try to open resources.
@@ -86,38 +86,38 @@ type SpanDir interface {
 	OpenEntity(name string) (io.ReadCloser, error)
 }
 
-// spanUUID is the internal type modeling a specific spanID.
-type spanUUID uuid.UUID
+// SpanUUID is the type modeling a specific spanID.
+type SpanUUID uuid.UUID
 
-// newSpanUUID constructs and return a new [spanUUID].
-func newSpanUUID() spanUUID {
-	return spanUUID(uuid.Must(uuid.NewV7()))
+// NewSpanUUID constructs and returns a new [SpanUUID].
+func NewSpanUUID() SpanUUID {
+	return SpanUUID(uuid.Must(uuid.NewV7()))
 }
 
-// CreationTime returns the creation time of the given [spanUUID].
-func (su spanUUID) CreationTime() time.Time {
+// CreationTime returns the creation time of the given [SpanUUID].
+func (su SpanUUID) CreationTime() time.Time {
 	sec, nsec := uuid.UUID(su).Time().UnixTime()
 	return time.Unix(sec, nsec)
 }
 
-// String returns the canonical string representation of the given [spanUUID].
-func (su spanUUID) String() string {
+// String returns the canonical string representation of the given [SpanUUID].
+func (su SpanUUID) String() string {
 	return uuid.UUID(su).String()
 }
 
-// ErrInvalidSpanID indicates that a span ID is invalid.
-var ErrInvalidSpanID = errors.New("invalid spanID")
+// ErrInvalidSpanUUID indicates that a [SpanUUID] is invalid.
+var ErrInvalidSpanUUID = errors.New("invalid SpanUUID")
 
-// parseSpanUUID parses a [spanUUID] from string.
-func parseSpanUUID(value string) (spanUUID, error) {
+// ParseSpanUUID parses a [SpanUUID] from string.
+func ParseSpanUUID(value string) (SpanUUID, error) {
 	spanID, err := uuid.Parse(value)
 	if err != nil {
-		return spanUUID{}, fmt.Errorf("%w %q: %w", ErrInvalidSpanID, value, err)
+		return SpanUUID{}, fmt.Errorf("%w %q: %w", ErrInvalidSpanUUID, value, err)
 	}
 	if spanID.Version() != 7 {
-		return spanUUID{}, fmt.Errorf("%w %q: invalid UUID version", ErrInvalidSpanID, value)
+		return SpanUUID{}, fmt.Errorf("%w %q: invalid UUID version", ErrInvalidSpanUUID, value)
 	}
-	return spanUUID(spanID), nil
+	return SpanUUID(spanID), nil
 }
 
 // NamePattern is the pattern that dataType and entity names must match.
@@ -126,10 +126,11 @@ const NamePattern = `^[a-zA-Z][a-zA-Z0-9_.-]*$`
 // ErrInvalidName indicates that a name does not match [NamePattern].
 var ErrInvalidName = errors.New("invalid name")
 
-var nameRegexp = regexp.MustCompile(NamePattern)
+var nameRe = regexp.MustCompile(NamePattern)
 
-func validateName(name string) error {
-	if !nameRegexp.MatchString(name) {
+// ValidateName validates a dataType or entity name.
+func ValidateName(name string) error {
+	if !nameRe.MatchString(name) {
 		return fmt.Errorf("%w: expected %q, got %q", ErrInvalidName, NamePattern, name)
 	}
 	return nil

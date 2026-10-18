@@ -17,6 +17,7 @@ import (
 	"github.com/bassosimone/sonda/internal/ptnopclient"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/bassosimone/sonda/internal/spool"
+	"github.com/bassosimone/sonda/internal/spoolfs"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/vflag"
 )
@@ -317,9 +318,9 @@ func realMain(ctx context.Context, args []string) error {
 	)
 
 	// 9. Open the root spool directory using the spool API.
-	spoolRootDir, err := spool.NewRootDirFS(env, spoolDir)
+	spoolRootDir, err := spoolfs.NewRootDir(env, spoolDir)
 	if err != nil {
-		logger.Error("spool.NewRootDirFS", slog.Any("err", err))
+		logger.Error("spoolfs.NewRootDir", slog.Any("err", err))
 		env.Exit(4)
 	}
 	spanDir, err := spool.OpenSpanDir(spoolRootDir, "ptnop", result.SpanID)

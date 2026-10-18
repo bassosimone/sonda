@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package spool
+// Package spoolfs implements [spool] using the filesystem as the backing store.
+package spoolfs
 
 import (
 	"io"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/bassosimone/closepool"
 	"github.com/bassosimone/sonda/internal/gzipx"
+	"github.com/bassosimone/sonda/internal/spool"
 	"github.com/bassosimone/sonda/internal/testable"
 )
 
@@ -21,21 +23,21 @@ const fsDirMode = 0750
 // fsFileMode is the file mode for files.
 const fsFileMode = 0640
 
-// fsJoinSpanDirPath returns the [SpanDir] path.
+// fsJoinSpanDirPath returns the [spool.SpanDir] path.
 func fsJoinSpanDirPath(parent, spanID string) string {
 	return filepath.Join(parent, spanID[:4], spanID[4:5], spanID[5:6], spanID)
 }
 
-// fsJoinTempSpanDirPath returns the [TempSpanDir] path.
+// fsJoinTempSpanDirPath returns the [spool.TempSpanDir] path.
 func fsJoinTempSpanDirPath(parent, spanID string) string {
 	return fsJoinSpanDirPath(parent, spanID) + ".tmp"
 }
 
-// NewRootDirFS constructs a new [RootDir] using the file system as a backing store.
+// NewRootDir constructs a new [spool.RootDir] using the file system as a backing store.
 //
 // This operation is lazy: directories are created on demand. The only possible failure
 // mode is that we fail to transform the given path into an absolute path.
-func NewRootDirFS(env *testable.Environ, path string) (RootDir, error) {
+func NewRootDir(env *testable.Environ, path string) (spool.RootDir, error) {
 	path, err := env.Abs(path)
 	if err != nil {
 		return nil, err
@@ -50,10 +52,10 @@ type fsRootDir struct {
 	Path string
 }
 
-var _ RootDir = &fsRootDir{}
+var _ spool.RootDir = &fsRootDir{}
 
-// GarbageCollect implements [RootDir].
-func (d *fsRootDir) GarbageCollect(cutoff time.Time, logger SLogger) {
+// GarbageCollect implements [spool.RootDir].
+func (d *fsRootDir) GarbageCollect(cutoff time.Time, logger spool.SLogger) {
 	entries, err := d.Env.ReadDir(d.Path)
 	if err != nil {
 		logger.Warn(
@@ -79,7 +81,7 @@ func (d *fsRootDir) GarbageCollect(cutoff time.Time, logger SLogger) {
 	}
 }
 
-func (d *fsRootDir) gcWalkShard(cutoff time.Time, logger SLogger, path string, z int) {
+func (d *fsRootDir) gcWalkShard(cutoff time.Time, logger spool.SLogger, path string, z int) {
 	entries, err := d.Env.ReadDir(path)
 	if err != nil {
 		logger.Warn(
@@ -111,10 +113,10 @@ func (d *fsRootDir) gcWalkShard(cutoff time.Time, logger SLogger, path string, z
 	}
 }
 
-func (d *fsRootDir) gcMaybeRemoveSpan(cutoff time.Time, logger SLogger, name, parent string) {
+func (d *fsRootDir) gcMaybeRemoveSpan(cutoff time.Time, logger spool.SLogger, name, parent string) {
 	// Make sure we gc ".tmp" entries as well by removing the optional `.tmp` suffix.
 	candidateSpanID := strings.TrimSuffix(name, ".tmp")
-	spanID, err := parseSpanUUID(candidateSpanID)
+	spanID, err := spool.ParseSpanUUID(candidateSpanID)
 	if err != nil {
 		logger.Warn(
 			"parseSpanID",
@@ -155,9 +157,9 @@ func (d *fsRootDir) gcMaybeRemoveSpan(cutoff time.Time, logger SLogger, name, pa
 	)
 }
 
-// NewDataTypeDir implements [RootDir].
-func (d *fsRootDir) NewDataTypeDir(dataType string) (DataTypeDir, error) {
-	if err := validateName(dataType); err != nil {
+// NewDataTypeDir implements [spool.RootDir].
+func (d *fsRootDir) NewDataTypeDir(dataType string) (spool.DataTypeDir, error) {
+	if err := spool.ValidateName(dataType); err != nil {
 		return nil, err
 	}
 	dpath := filepath.Join(d.Path, dataType)
@@ -170,11 +172,11 @@ type fsDataTypeDir struct {
 	path string
 }
 
-var _ DataTypeDir = &fsDataTypeDir{}
+var _ spool.DataTypeDir = &fsDataTypeDir{}
 
-// CreateTempSpanDir implements [DataTypeDir].
-func (d *fsDataTypeDir) CreateTempSpanDir() (TempSpanDir, error) {
-	spanID := newSpanUUID().String()
+// CreateTempSpanDir implements [spool.DataTypeDir].
+func (d *fsDataTypeDir) CreateTempSpanDir() (spool.TempSpanDir, error) {
+	spanID := spool.NewSpanUUID().String()
 	spanDir := fsJoinSpanDirPath(d.path, spanID)
 	tmpDir := fsJoinTempSpanDirPath(d.path, spanID)
 
@@ -200,16 +202,16 @@ type fsTempSpanDir struct {
 	tmpDir  string
 }
 
-var _ TempSpanDir = &fsTempSpanDir{}
+var _ spool.TempSpanDir = &fsTempSpanDir{}
 
-// Close implements [TempSpanDir].
+// Close implements [spool.TempSpanDir].
 func (d *fsTempSpanDir) Close() error {
 	return d.closers.Close()
 }
 
-// CreateEntity implements [TempSpanDir].
+// CreateEntity implements [spool.TempSpanDir].
 func (d *fsTempSpanDir) CreateEntity(name string) (io.Writer, error) {
-	if err := validateName(name); err != nil {
+	if err := spool.ValidateName(name); err != nil {
 		return nil, err
 	}
 	openFlags := os.O_CREATE | os.O_EXCL | os.O_WRONLY
@@ -223,12 +225,12 @@ func (d *fsTempSpanDir) CreateEntity(name string) (io.Writer, error) {
 	return gzWriteCloser, nil
 }
 
-// ID implements [TempSpanDir].
+// ID implements [spool.TempSpanDir].
 func (d *fsTempSpanDir) ID() string {
 	return d.spanID
 }
 
-// Publish implements [TempSpanDir].
+// Publish implements [spool.TempSpanDir].
 func (d *fsTempSpanDir) Publish() error {
 	if err := d.Close(); err != nil {
 		return err
@@ -236,9 +238,9 @@ func (d *fsTempSpanDir) Publish() error {
 	return d.env.Rename(d.tmpDir, d.spanDir)
 }
 
-// OpenSpanDir implements [DataTypeDir].
-func (d *fsDataTypeDir) OpenSpanDir(spanID string) (SpanDir, error) {
-	parsed, err := parseSpanUUID(spanID)
+// OpenSpanDir implements [spool.DataTypeDir].
+func (d *fsDataTypeDir) OpenSpanDir(spanID string) (spool.SpanDir, error) {
+	parsed, err := spool.ParseSpanUUID(spanID)
 	if err != nil {
 		return nil, err
 	}
@@ -254,30 +256,30 @@ func (d *fsDataTypeDir) OpenSpanDir(spanID string) (SpanDir, error) {
 type fsSpanDir struct {
 	env      *testable.Environ
 	dataType string
-	spanID   spanUUID
+	spanID   spool.SpanUUID
 	spanDir  string
 }
 
-var _ SpanDir = &fsSpanDir{}
+var _ spool.SpanDir = &fsSpanDir{}
 
-// Created implements [SpanDir].
+// Created implements [spool.SpanDir].
 func (d *fsSpanDir) Created() time.Time {
 	return d.spanID.CreationTime()
 }
 
-// DataType implements [SpanDir].
+// DataType implements [spool.SpanDir].
 func (d *fsSpanDir) DataType() string {
 	return d.dataType
 }
 
-// ID implements [SpanDir].
+// ID implements [spool.SpanDir].
 func (d *fsSpanDir) ID() string {
 	return d.spanID.String()
 }
 
-// OpenEntity implements [SpanDir].
+// OpenEntity implements [spool.SpanDir].
 func (d *fsSpanDir) OpenEntity(name string) (io.ReadCloser, error) {
-	if err := validateName(name); err != nil {
+	if err := spool.ValidateName(name); err != nil {
 		return nil, err
 	}
 	return gzipx.OpenReadCloser(d.env, filepath.Join(d.spanDir, name+".gz"))
