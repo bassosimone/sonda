@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package spool
+// Package gzipx facilitates reading and writing gzipped streams.
+package gzipx
 
 import (
 	"compress/gzip"
@@ -14,31 +15,31 @@ import (
 	"github.com/bassosimone/sonda/internal/testable"
 )
 
-// gzipLockedWriteCloser is a [*gzip.Writer] that ensures that no write can land after close.
+// LockedWriteCloser is a [*gzip.Writer] that ensures that no write lands after close.
 //
 // The purpose of this type is to ensure that writes from other goroutines landing during
 // or after close fail. This outcome is better than (a) crashing inside [compress/flate] or
 // (b) corrupting the gzip stream and making it impossible to read.
 //
-// Use [newGzipLockedWriteCloser] to construct.
-type gzipLockedWriteCloser struct {
+// Use [NewLockedWriteCloser] to construct.
+type LockedWriteCloser struct {
 	done bool
 	mu   sync.Mutex
 	w    *gzip.Writer
 }
 
-// newGzipLockedWriteCloser creates and returns a new [*gzipLockedWriteCloser].
-func newGzipLockedWriteCloser(w io.Writer) *gzipLockedWriteCloser {
-	return &gzipLockedWriteCloser{
+// NewLockedWriteCloser creates and returns a new [*LockedWriteCloser].
+func NewLockedWriteCloser(w io.Writer) *LockedWriteCloser {
+	return &LockedWriteCloser{
 		w:  runtimex.PanicOnError1(gzip.NewWriterLevel(w, gzip.BestSpeed)),
 		mu: sync.Mutex{},
 	}
 }
 
-var _ io.WriteCloser = &gzipLockedWriteCloser{}
+var _ io.WriteCloser = &LockedWriteCloser{}
 
 // Close implements [io.WriteCloser].
-func (w *gzipLockedWriteCloser) Close() error {
+func (w *LockedWriteCloser) Close() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.done {
@@ -48,27 +49,27 @@ func (w *gzipLockedWriteCloser) Close() error {
 	return w.w.Close()
 }
 
-// errWriteAfterClose indicates that a write was attempted after close.
-var errWriteAfterClose = errors.New("write after close")
+// ErrWriteAfterClose indicates that a write was attempted after close.
+var ErrWriteAfterClose = errors.New("write after close")
 
 // Write implements [io.Writer].
-func (w *gzipLockedWriteCloser) Write(data []byte) (int, error) {
+func (w *LockedWriteCloser) Write(data []byte) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.done {
-		return 0, errWriteAfterClose
+		return 0, ErrWriteAfterClose
 	}
 	return w.w.Write(data)
 }
 
-// gzipReadCloser is an [io.ReadCloser] for reading a gzip-compressed entity.
-type gzipReadCloser struct {
+// ReadCloser is an [io.ReadCloser] for reading a gzip-compressed stream.
+type ReadCloser struct {
 	io.Reader
 	p *closepool.Pool
 }
 
-// openGzipReadCloser opens a [*gzipReadCloser] for reading the given path.
-func openGzipReadCloser(env *testable.Environ, path string) (*gzipReadCloser, error) {
+// OpeReadCloser opens a [*ReadCloser] for reading the given path.
+func OpenReadCloser(env *testable.Environ, path string) (*ReadCloser, error) {
 	pool := &closepool.Pool{}
 	filep, err := env.OpenFile(path, os.O_RDONLY, 0)
 	if err != nil {
@@ -83,13 +84,14 @@ func openGzipReadCloser(env *testable.Environ, path string) (*gzipReadCloser, er
 	}
 	pool.Add(reader)
 
-	out := &gzipReadCloser{
+	out := &ReadCloser{
 		Reader: reader,
 		p:      pool,
 	}
 	return out, nil
 }
 
-func (rc *gzipReadCloser) Close() error {
+// Close implements [io.Closer].
+func (rc *ReadCloser) Close() error {
 	return rc.p.Close()
 }

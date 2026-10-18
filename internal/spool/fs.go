@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/bassosimone/closepool"
+	"github.com/bassosimone/sonda/internal/gzipx"
 	"github.com/bassosimone/sonda/internal/testable"
 )
 
@@ -217,7 +218,7 @@ func (d *fsTempSpanDir) CreateEntity(name string) (io.Writer, error) {
 		return nil, err
 	}
 	d.closers.Add(filep)
-	gzWriteCloser := newGzipLockedWriteCloser(filep)
+	gzWriteCloser := gzipx.NewLockedWriteCloser(filep)
 	d.closers.Add(gzWriteCloser)
 	return gzWriteCloser, nil
 }
@@ -279,5 +280,5 @@ func (d *fsSpanDir) OpenEntity(name string) (io.ReadCloser, error) {
 	if err := validateName(name); err != nil {
 		return nil, err
 	}
-	return openGzipReadCloser(d.env, filepath.Join(d.spanDir, name+".gz"))
+	return gzipx.OpenReadCloser(d.env, filepath.Join(d.spanDir, name+".gz"))
 }
