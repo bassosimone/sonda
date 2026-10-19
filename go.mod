@@ -7,7 +7,7 @@ require (
 	github.com/bassosimone/closepool v0.0.0-20261005144423-6328e0244d72
 	github.com/bassosimone/deferexit v0.0.0-20261005144642-cbfbd3aa5dc7
 	github.com/bassosimone/dnscodec v0.0.0-20261016120219-b9b5e002d0a4
-	github.com/bassosimone/ptnop v0.0.0-20261019101506-a49a5001bcb2
+	github.com/bassosimone/ptnop v0.0.0-20261019180804-7b88bb9b09d9
 	github.com/bassosimone/runtimex v0.0.0-20261005144844-77dc639b0e90
 	github.com/bassosimone/vclip v0.0.0-20261006070757-1ed765ad0339
 	github.com/bassosimone/vflag v0.0.0-20261006065510-ce05c7d76a28
