@@ -24,6 +24,13 @@ import (
 	"github.com/pion/stun/v3"
 )
 
+// pipelineSLogger is the [*slog.Logger] used by [runPipeline].
+type pipelineSLogger interface {
+	ptnop.SLogger
+	Error(msg string, args ...any)
+	Warn(msg string, args ...any)
+}
+
 // pipelineInput contains the validated inputs shared by all pipelines.
 //
 // Fields that are nil under some configurations are explicitly documented as such.
@@ -44,7 +51,7 @@ type pipelineInput struct {
 	httpReq *http.Request
 
 	// logger emits the structured logs (nil until [serveLine] creates the span dir).
-	logger *slog.Logger
+	logger pipelineSLogger
 
 	// maxResponseBodySize is the maximum response body size.
 	maxResponseBodySize int64
@@ -402,7 +409,7 @@ func runPipelineSTUN(ctx context.Context, input *pipelineInput,
 }
 
 // logPipelineFailure logs a sondaFailure event and returns the exit code.
-func logPipelineFailure(logger *slog.Logger, operation string, err error, exitCode int) int {
+func logPipelineFailure(logger pipelineSLogger, operation string, err error, exitCode int) int {
 	logger.Error(
 		"sondaFailure",
 		slog.String("operation", operation),

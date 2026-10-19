@@ -231,7 +231,9 @@ func realMain(ctx context.Context, args []string) error {
 		"Default: `@DEFAULT_VALUE@`.")
 
 	fset.StringVar(&opts.Optimize, 0, "optimize",
-		"Ask `sonda-serve-ptnop` to optimize the events for `GOAL` (`size`).",
+		"Ask `sonda-serve-ptnop` to optimize the events for `GOAL` (`size`, `speed`).",
+		"    - size: optimizes for reducing the structured logs size",
+		"    - speed: like size but includes some I/O events to compute speeds",
 		"Default: empty, meaning emit all events.")
 
 	fset.StringVar(&opts.Pipeline, 0, "pipeline",

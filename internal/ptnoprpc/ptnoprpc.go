@@ -22,10 +22,16 @@ const UsageErrorPrefix = "usage error: "
 
 // Request is the request sent by the client.
 //
+// # ID
+//
 // The ID is opaque: the server echoes it back in the [Response], so the client
 // can match responses to requests. A missing ID is echoed as a missing ID.
 //
+// # Timeout
+//
 // A Timeout <= 0 means the server default.
+//
+// # Optimize
 //
 // The Optimize field indicates what we should optimize for in terms of the
 // generated events. When Optimize is empty, the `serve-ptnop` service collects
@@ -49,7 +55,16 @@ const UsageErrorPrefix = "usage error: "
 // With these events and their full keys, one should still be able to figure
 // out what happened, and yet the output file is leaner.
 //
+// Use "optimize=speed" to optimize the logging output for computing the
+// download/upload speed at the socket I/O level. The output when using
+// this configuration is like "size" plus readDone and writeDone events.
+// These events are decimated to reduce the overall event volume. However, when a
+// readDone/writeDone event includes an error, we include it regardless
+// of whether it should have been decimated.
+//
 // Any unknown value is silently equal to empty and emits everything.
+//
+// # MaxHTTPResponseBodySize
 //
 // The MaxHTTPResponseBodySize optional setting controls whether we
 // should cap the maximum response body size. A zero (or negative) value

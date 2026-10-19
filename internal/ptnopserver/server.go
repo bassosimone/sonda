@@ -190,8 +190,11 @@ func serveLine(
 // newServeLogger creates the JSON logger writing to w and bound to tags. When optimize
 // is "size", we trim the emitted events as documented by [*ptnoprpc.Request].
 //
+// When optimize is "speed" we keep INFO events and decimated readDone and writeDone
+// events, so that it is still possible to compute speed stats.
+//
 // We omit the top-level time field: library events carry their own times.
-func newServeLogger(w io.Writer, spanID string, tags []string, optimize string) *slog.Logger {
+func newServeLogger(w io.Writer, spanID string, tags []string, optimize string) pipelineSLogger {
 	// Configure the JSON handler.
 	level := slog.LevelDebug
 	if optimize == "size" {
@@ -222,5 +225,12 @@ func newServeLogger(w io.Writer, spanID string, tags []string, optimize string) 
 	for _, key := range slices.Sorted(maps.Keys(uniq)) {
 		logger = logger.With(key, uniq[key])
 	}
-	return logger
+
+	// When optimizing for speed, use the decimating logger.
+	switch optimize {
+	case "speed":
+		return newDecimateLogger(logger)
+	default:
+		return logger
+	}
 }
