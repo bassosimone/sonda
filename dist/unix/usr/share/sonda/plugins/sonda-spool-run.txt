@@ -1,1 +1,0 @@
-Execute a sonda subcommand and collect its output in the spool.
