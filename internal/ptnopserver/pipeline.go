@@ -196,13 +196,15 @@ func runPipeline(ctx context.Context, input *pipelineInput) int {
 		runtimex.Assert(input.tlsConfig != nil)
 		runtimex.Assert(input.httpReq != nil)
 		runtimex.Assert(input.httpReq.URL != nil)
+		doh := ptnop.NewDNSOverHTTPSConnFunc(cfg, input.httpReq.URL.String())
+		doh.OverrideHeader = input.httpReq.Header // possibly override request headers
 		return runPipelineDNS(ctx, input, ptnop.Compose6(
 			ptnop.NewConnectFunc(cfg, "tcp"),
 			ptnop.NewObserveConnFunc(cfg),
 			ptnop.NewCancelWatchFunc(),
 			ptnop.NewTLSHandshakeFunc(cfg, input.tlsConfig),
 			ptnop.NewHTTPConnFunc(cfg),
-			ptnop.NewDNSOverHTTPSConnFunc(cfg, input.httpReq.URL.String()),
+			doh,
 		))
 
 	case "dns-over-tcp":
