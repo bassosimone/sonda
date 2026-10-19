@@ -33,6 +33,10 @@ func (r *httpsRunner) RunStep(ctx context.Context, with map[string]string) error
 	if urlPath == "" {
 		urlPath = "/"
 	}
+	var headers []string
+	if value := with["user_agent"]; value != "" {
+		headers = append(headers, "User-Agent: "+value)
+	}
 
 	// Resolve the host to addresses.
 	addrs, err := lookupHost(ctx, r.Conn, r.State, with, host)
@@ -46,6 +50,7 @@ func (r *httpsRunner) RunStep(ctx context.Context, with map[string]string) error
 			ALPN:         []string{"h2", "http/1.1"},
 			AddrPort:     net.JoinHostPort(addr, port),
 			HTTPBodyFile: false,
+			HTTPHeaders:  headers,
 			HTTPHost:     host,
 			HTTPMethod:   "GET",
 			HTTPScheme:   "https",

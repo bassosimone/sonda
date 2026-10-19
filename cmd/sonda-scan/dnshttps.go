@@ -33,6 +33,10 @@ func (r *dnsOverHTTPSRunner) RunStep(ctx context.Context, with map[string]string
 	if query == "" {
 		return fmt.Errorf("dns-over-https: missing 'query' parameter")
 	}
+	var headers []string
+	if value := with["user_agent"]; value != "" {
+		headers = append(headers, "User-Agent: "+value)
+	}
 
 	// Resolve the server hostname to addresses.
 	addrs, err := lookupHost(ctx, r.Conn, r.State, with, server)
@@ -47,6 +51,7 @@ func (r *dnsOverHTTPSRunner) RunStep(ctx context.Context, with map[string]string
 			AddrPort:     net.JoinHostPort(addr, port),
 			DNSQueryName: query,
 			DNSQueryType: "A",
+			HTTPHeaders:  headers,
 			HTTPHost:     server,
 			HTTPMethod:   "POST",
 			HTTPScheme:   "https",
