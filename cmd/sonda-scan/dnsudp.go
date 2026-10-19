@@ -48,6 +48,7 @@ func (r *dnsOverUDPRunner) RunStep(ctx context.Context, with map[string]string) 
 			DNSQueryType: "A",
 			Optimize:     with["optimize"],
 			Pipeline:     "dns-over-udp",
+			Spool:        with["spool"],
 			Tags:         r.State.Tags(),
 			Timeout:      5 * time.Second,
 		}

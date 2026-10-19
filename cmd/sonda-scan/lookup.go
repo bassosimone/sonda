@@ -15,7 +15,7 @@ import (
 
 // lookupHost resolves a domain name using 8.8.8.8:53/udp.
 //
-// We honor the "optimize" setting of the calling step.
+// We honor the "optimize" and "spool" settings of the calling step.
 func lookupHost(ctx context.Context, conn *ptnopclient.Conn,
 	state *sharedState, with map[string]string, domain string) ([]string, error) {
 	a, errA := lookupA(ctx, conn, state, with, domain)
@@ -36,6 +36,7 @@ func newLookupRequest(state *sharedState,
 		DNSQueryType: queryType,
 		Optimize:     with["optimize"],
 		Pipeline:     "dns-over-udp",
+		Spool:        with["spool"],
 		Tags:         state.Tags(),
 		Timeout:      5 * time.Second,
 	}

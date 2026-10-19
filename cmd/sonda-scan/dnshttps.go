@@ -53,6 +53,7 @@ func (r *dnsOverHTTPSRunner) RunStep(ctx context.Context, with map[string]string
 			Optimize:     with["optimize"],
 			Pipeline:     "dns-over-https",
 			SNI:          server,
+			Spool:        with["spool"],
 			Tags:         r.State.Tags(),
 			Timeout:      5 * time.Second,
 			URLPath:      "/dns-query",

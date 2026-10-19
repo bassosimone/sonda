@@ -47,6 +47,7 @@ func (r *stunRunner) RunStep(ctx context.Context, with map[string]string) error 
 			AddrPort: net.JoinHostPort(addr, port),
 			Optimize: with["optimize"],
 			Pipeline: "stun",
+			Spool:    with["spool"],
 			Tags:     r.State.Tags(),
 			Timeout:  5 * time.Second,
 		}

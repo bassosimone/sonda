@@ -52,6 +52,7 @@ func (r *httpsRunner) RunStep(ctx context.Context, with map[string]string) error
 			Optimize:     with["optimize"],
 			Pipeline:     "https",
 			SNI:          host,
+			Spool:        with["spool"],
 			Tags:         r.State.Tags(),
 			Timeout:      30 * time.Second,
 			URLPath:      urlPath,
