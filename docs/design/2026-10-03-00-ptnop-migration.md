@@ -41,8 +41,8 @@ and give the caller accessors over the resulting span (now
 than one way of processing each engine's output.
 
 - So, the code that only makes sense for ptnop says so in its name:
-`internal/ptnopdata` (structured log schema), `internal/ptnoppaths`
-(spool files), `internal/ptnopspool` (span accessors).
+`internal/ptnopdata` (structured log schema) and `internal/ptnopspool`
+(span accessors).
 
 - Likewise, plugins carry the engine and the data they produce:
 `measure-<engine>` (e.g., `measure-ptnop`) and
