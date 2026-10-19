@@ -13,7 +13,7 @@ case "$1" in
         # chroot) and respecting policy-rc.d.
         if [ -z "$DPKG_ROOT" ] && [ -d /run/systemd/system ]; then
             deb-systemd-invoke stop 'sonda-etl-ptnop-archive.service' \
-				'sonda-etl-ptnop-prom.service' 'sonda-scan.timer'\
+				'sonda-etl-ptnop-prom.service' 'sonda-scan.timer' \
 				'sonda-serve-ptnop.service' 'sonda-spool-gc.timer' >/dev/null || true
         fi
         ;;
