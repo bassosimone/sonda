@@ -31,11 +31,12 @@ func newHTTPSAction(conn WorkflowPtnopConn, runner *WorkflowRunner) workflowActi
 
 // HTTPSWith contains the "with" block parsed by https.
 type HTTPSWith struct {
-	Host      string `yaml:"host"`
-	Optimize  string `yaml:"optimize"`
-	Port      uint16 `yaml:"port"`
-	URLPath   string `yaml:"url_path"`
-	UserAgent string `yaml:"user_agent"`
+	Host        string `yaml:"host"`
+	MaxBodySize int64  `yaml:"max_body_size"`
+	Optimize    string `yaml:"optimize"`
+	Port        uint16 `yaml:"port"`
+	URLPath     string `yaml:"url_path"`
+	UserAgent   string `yaml:"user_agent"`
 }
 
 var _ workflowAction = &httpsAction{}
@@ -73,19 +74,20 @@ func (a *httpsAction) Run(
 	// 3. Perform an HTTPS GET against each resolved address.
 	for _, addr := range addrs {
 		req := &ptnoprpc.Request{
-			ALPN:         []string{"h2", "http/1.1"},
-			AddrPort:     net.JoinHostPort(addr, strconv.Itoa(int(withData.Port))), // uint16 -> int
-			HTTPBodyFile: false,
-			HTTPHeaders:  headers,
-			HTTPHost:     withData.Host,
-			HTTPMethod:   "GET",
-			HTTPScheme:   "https",
-			Optimize:     withData.Optimize,
-			Pipeline:     "https",
-			SNI:          withData.Host,
-			Tags:         a.Runner.tags(),
-			Timeout:      30 * time.Second,
-			URLPath:      withData.URLPath,
+			ALPN:                    []string{"h2", "http/1.1"},
+			AddrPort:                net.JoinHostPort(addr, strconv.Itoa(int(withData.Port))), // uint16 -> int
+			HTTPBodyFile:            false,
+			HTTPHeaders:             headers,
+			HTTPHost:                withData.Host,
+			HTTPMethod:              "GET",
+			HTTPScheme:              "https",
+			MaxHTTPResponseBodySize: withData.MaxBodySize,
+			Optimize:                withData.Optimize,
+			Pipeline:                "https",
+			SNI:                     withData.Host,
+			Tags:                    a.Runner.tags(),
+			Timeout:                 30 * time.Second,
+			URLPath:                 withData.URLPath,
 		}
 		if _, err := a.Runner.runPtnop(ctx, a.Conn, logger, req); err != nil {
 			return fmt.Errorf("https: ptnop: %w", err)
