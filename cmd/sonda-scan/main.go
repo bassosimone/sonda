@@ -4,12 +4,9 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"io/fs"
 	"log/slog"
-	"os"
-	"path/filepath"
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
@@ -21,7 +18,6 @@ import (
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/sonda/internal/triggers"
 	"github.com/bassosimone/vflag"
-	"github.com/google/uuid"
 )
 
 func main() {
@@ -167,21 +163,23 @@ func scanMain(ctx context.Context, args []string) error {
 		// such that we avoid emitting all triggers at once.
 		runner := actions.NewWorkflowRunner(spoolRootDir)
 
-		// Defer acting upon the result of running because syncing the state
-		// and processing triggers should run first.
+		// Defer acting upon the errors until we have synced the state.
 		runSpecErr := runner.RunSpec(ctx, conn, logger, spec.Data)
+		triggersErr := triggers.Write(env, logger, runDir, runner, spec.Data.Triggers)
 
 		if err := state.DidRun(env, spec); err != nil {
 			logger.Error("state.DidRun", slog.Any("err", err))
 			env.Exit(1)
 		}
 
-		// TODO(bassosimone): this should not crash the process on failure
-		scanMustWriteTriggers(env, logger, runDir, runner, spec.Data.Triggers)
-
-		// Finally account for a possible RunSpec error
-		if runSpecErr != nil {
-			errv = append(errv, runSpecErr)
+		// Finally account for nonfatal errors
+		if err := runSpecErr; err != nil {
+			// warning already printed by runner.RunSpec
+			errv = append(errv, err)
+		}
+		if err := triggersErr; err != nil {
+			logger.Warn("triggers.Write", slog.Any("err", err))
+			errv = append(errv, err)
 		}
 	}
 
@@ -190,65 +188,4 @@ func scanMain(ctx context.Context, args []string) error {
 		env.Exit(1)
 	}
 	return nil
-}
-
-// scanMustWriteTriggers writes triggers if necessary and exits on failure.
-func scanMustWriteTriggers(
-	env *testable.Environ, logger *slog.Logger, runDir string,
-	runner *actions.WorkflowRunner, triggerNames []string) {
-	// 1. Determine whether we actually need to write triggers.
-	if len(triggerNames) <= 0 {
-		return
-	}
-	created := runner.CreatedSpans()
-	if len(created) <= 0 {
-		return
-	}
-
-	// 2. Determine the work unit ID.
-	workUnitID := uuid.Must(uuid.NewV7()).String()
-
-	// 3. Write the work unit inside the `$runDir/scan` directory.
-	workUnitPath := filepath.Join(runDir, "scan", workUnitID+".jsonl")
-	filep, err := env.OpenFile(workUnitPath, os.O_CREATE|os.O_WRONLY, 0640)
-	if err != nil {
-		logger.Error("env.OpenFile", slog.Any("err", err))
-		env.Exit(1)
-	}
-	for _, entry := range created {
-		data := runtimex.PanicOnError1(json.Marshal(entry))
-		data = append(data, '\n')
-		if _, err := filep.Write(data); err != nil {
-			logger.Error("filep.Write", slog.Any("err", err))
-			env.Exit(1)
-		}
-	}
-	if err := filep.Close(); err != nil {
-		logger.Error("filep.Close", slog.Any("err", err))
-		env.Exit(1)
-	}
-
-	// 4. Create hard links to trigger the pipelines.
-	for _, tname := range triggerNames {
-		if !triggers.ValidName[tname] {
-			logger.Warn(
-				"trigger.ValidName",
-				slog.String("err", "invalid trigger name"),
-				slog.String("name", tname),
-			)
-			continue
-		}
-		tdirpath := triggers.Directory(runDir, tname)
-		tfilepath := filepath.Join(tdirpath, workUnitID+".jsonl")
-		if err := env.Link(workUnitPath, tfilepath); err != nil {
-			logger.Error("env.Link", slog.Any("err", err))
-			env.Exit(1)
-		}
-	}
-
-	// 5. Unlink the `scan` file.
-	if err := env.Remove(workUnitPath); err != nil {
-		logger.Error("env.Remove", slog.Any("err", err))
-		env.Exit(1)
-	}
 }
