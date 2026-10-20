@@ -5,6 +5,8 @@ package scheduler
 
 import (
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"math/rand/v2"
 	"time"
 
@@ -36,9 +38,9 @@ type WorkflowState struct {
 }
 
 // LoadState loads the serialized state from the given path. On error, the
-// return value contains a valid [*State] in all cases except the one in which
-// we cannot make the given path absolute. This behavior allows you to deal
-// with a missing or corrupt state file and recover.
+// return value contains a valid [*State] when the file does not exist or parsing
+// the file is not possible (indicating a corrupt file). In both cases, you
+// should just log a warning and continue with the returned [*State].
 //
 // We unconditionally prune [*State] entries whose LastRun is older than a week.
 func LoadState(env *testable.Environ, path string) (*State, error) {
@@ -49,7 +51,10 @@ func LoadState(env *testable.Environ, path string) (*State, error) {
 
 	data, err := env.ReadFile(path)
 	if err != nil {
-		return newState(path), err
+		if errors.Is(err, fs.ErrNotExist) {
+			return newState(path), err
+		}
+		return nil, err
 	}
 
 	var state State

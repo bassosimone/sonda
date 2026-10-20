@@ -5,6 +5,8 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -14,6 +16,7 @@ import (
 	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/ptnopclient"
 	"github.com/bassosimone/sonda/internal/scan/actions"
+	"github.com/bassosimone/sonda/internal/scan/scheduler"
 	"github.com/bassosimone/sonda/internal/spoolfs"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/sonda/internal/triggers"
@@ -32,11 +35,12 @@ func scanMain(ctx context.Context, args []string) error {
 
 	// Set the command defaults.
 	var (
-		fail         = false
-		ptnopSocket  = config.PtnopSocketPath
-		runDir       = config.RunDir
-		spoolDir     = config.SpoolDir
-		workflowFile = ""
+		fail           = false
+		ptnopSocket    = config.PtnopSocketPath
+		runDir         = config.RunDir
+		schedStateFile = config.ScanSchedulerState
+		spoolDir       = config.SpoolDir
+		workflowFiles  = []string{}
 	)
 
 	// Parse command line flags.
@@ -66,11 +70,18 @@ func scanMain(ctx context.Context, args []string) error {
 		"Directory `PATH` in which to write trigger files.",
 		"Default: `@DEFAULT_VALUE@`.")
 
+	fset.StringVar(&schedStateFile, 0, "scheduler-state",
+		"File `PATH` in which to write the scheduler state.",
+		"Default: `@DEFAULT_VALUE@`.")
+
 	fset.StringVar(&spoolDir, 0, "spool-dir",
 		"Top-level spool `DIR` containing the data type directories.",
 		"Default: `@DEFAULT_VALUE@`.")
 
-	fset.StringVar(&workflowFile, 0, "workflow-file", "Load steps from `FILE` (required).")
+	fset.StringSliceVar(
+		&workflowFiles, 0, "workflow-file",
+		"Load the workflow steps from `FILE` (required).",
+		"Can be repeated to run multiple workflows.")
 
 	runtimex.PanicOnError0(fset.Parse(args)) // cannot fail: using vflag.ExitOnError
 
@@ -83,15 +94,44 @@ func scanMain(ctx context.Context, args []string) error {
 		env.Exit(0)
 	}
 
-	// Determine which steps to execute.
-	if workflowFile == "" {
+	// Determine which steps to execute. Load all specs in advance so that
+	// we can exit 2 and inform the user about issues.
+	var specs []*scheduler.WorkflowSpec
+	if len(workflowFiles) <= 0 {
 		logger.Error("no `--workflow-file` specified; nothing to do.")
 		env.Exit(2)
 	}
-	spec, err := actions.LoadWorkflowSpec(env, workflowFile)
-	if err != nil {
-		logger.Error("loading workflow", slog.Any("err", err))
-		env.Exit(2)
+
+	state, err := scheduler.LoadState(env, schedStateFile)
+	switch {
+	case err != nil && state == nil:
+		logger.Error(
+			"opening scheduler state",
+			slog.Any("err", err),
+			slog.String("path", schedStateFile),
+		)
+		env.Exit(1)
+
+	case err != nil && !errors.Is(err, fs.ErrNotExist):
+		logger.Warn(
+			"opening scheduler state",
+			slog.Any("err", err),
+			slog.String("path", schedStateFile),
+		)
+		// continue like we succeeded
+	}
+
+	for _, entry := range workflowFiles {
+		spec, err := state.LoadWorkflowSpec(env, entry)
+		if err != nil {
+			logger.Error(
+				"loading workflow spec",
+				slog.Any("err", err),
+				slog.String("path", entry),
+			)
+			env.Exit(2)
+		}
+		specs = append(specs, spec)
 	}
 
 	// Connect to the ptnop server, using a single connection for all the steps.
@@ -111,16 +151,42 @@ func scanMain(ctx context.Context, args []string) error {
 		logger.Error("spoolfs.NewRootDir", slog.Any("err", err))
 		env.Exit(1)
 	}
-	runner := actions.NewWorkflowRunner(spoolRootDir)
 
-	// Run all the steps in the spec.
-	err = runner.RunSpec(ctx, conn, logger, spec)
+	// Loop over all workflows syncing the scheduler as we proceed
+	var errv []error
+	for _, spec := range specs {
+		if !state.ShouldRun(spec) {
+			continue
+		}
+		if err := state.WillStart(env, spec); err != nil {
+			logger.Error("state.WillStart", slog.Any("err", err))
+			env.Exit(1)
+		}
 
-	// Execute triggers for the created spans.
-	scanMustWriteTriggers(env, logger, runDir, runner, spec.Triggers)
+		// A single runner per loop to collect and emit triggers per workflow
+		// such that we avoid emitting all triggers at once.
+		runner := actions.NewWorkflowRunner(spoolRootDir)
 
-	// Deferred exit from running the spec.
-	if err != nil && fail {
+		// Defer acting upon the result of running because syncing the state
+		// and processing triggers should run first.
+		runSpecErr := runner.RunSpec(ctx, conn, logger, spec.Data)
+
+		if err := state.DidRun(env, spec); err != nil {
+			logger.Error("state.DidRun", slog.Any("err", err))
+			env.Exit(1)
+		}
+
+		// TODO(bassosimone): this should not crash the process on failure
+		scanMustWriteTriggers(env, logger, runDir, runner, spec.Data.Triggers)
+
+		// Finally account for a possible RunSpec error
+		if runSpecErr != nil {
+			errv = append(errv, runSpecErr)
+		}
+	}
+
+	// Deferred exit from running the spec if there were errors.
+	if len(errv) > 0 && fail {
 		env.Exit(1)
 	}
 	return nil

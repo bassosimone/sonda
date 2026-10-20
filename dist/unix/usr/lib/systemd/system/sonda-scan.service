@@ -13,11 +13,12 @@ Environment=SONDA_ETC_PATH=/etc/sonda
 ExecStart=/usr/libexec/sonda/sonda-scan \
 	--ptnop-socket=/run/sonda/serve-ptnop/sock \
 	--run-dir=/run/sonda \
+	--scheduler-state=/var/lib/sonda/scan/sched.json \
 	--workflow-file=/etc/sonda/scan/default.yml
 
-# Must have access to the whole of `/run/sonda` otherwise it cannot
-# perform hard linking for ETL services.
-ReadWritePaths=/run/sonda
+# Important: *must* have access to the whole of `/run/sonda` otherwise it
+# cannot perform triggers hard linking for ETL services.
+ReadWritePaths=/run/sonda /var/lib/sonda/scan
 
 User=_sonda
 Group=_sonda

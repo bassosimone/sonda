@@ -26,6 +26,11 @@ func DefaultConfigFilePath(env *testable.Environ) string {
 	return filepath.Join(etcPath, "config.toml")
 }
 
+// ScanSchedulerState is the scheduler state used by `sonda-scan`
+//
+// Not configurable: it must match the value in `sonda-scan.service`.
+const ScanSchedulerState = "/var/lib/sonda/scan/sched.json"
+
 // PtnopSocketPath is the `sonda-serve-ptnop` socket path.
 //
 // Not configurable: it must match the value in `sonda-serve-ptnop.service`.
