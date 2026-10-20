@@ -1,0 +1,39 @@
+name: "dns_https"
+
+cadence: "@hourly/4"
+
+steps:
+  - name: "STUN lookup"
+    run: stun
+    with:
+      optimize: size
+      port: 19302
+      server: stun.l.google.com
+
+  - name: "DNS over HTTPS via Google"
+    run: dns-over-https
+    with:
+      optimize: size
+      query_name: www.example.com
+      server: dns.google
+
+  - name: "DNS over HTTPS via Quad9"
+    run: dns-over-https
+    with:
+      optimize: size
+      query_name: www.example.com
+      server: dns.quad9.net
+
+  - name: "DNS over HTTPS via Cloudflare"
+    run: dns-over-https
+    with:
+      optimize: size
+      query_name: www.example.com
+      server: cloudflare-dns.com
+
+triggers:
+  # Uncomment to archive at /var/lib/sonda/archive.
+  #- "etl-ptnop-archive"
+
+  # Comment out to stop updating the Prometheus exporter.
+  - "etl-ptnop-prom"

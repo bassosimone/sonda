@@ -550,14 +550,6 @@ def render_overview_tab(df):
     st.subheader("Raw data sample")
     st.dataframe(df.head(500), width="stretch")
 
-    config_path = Path("/etc/sonda/scan/default.yml")
-    if config_path.is_file():
-        config_text = config_path.read_text()
-        if config_text.strip():
-            st.divider()
-            st.subheader("Configuration")
-            st.code(config_text, language="yaml")
-
 
 def render_waterfall_tab(fdf):
     st.markdown(

@@ -14,7 +14,9 @@ ExecStart=/usr/libexec/sonda/sonda-scan \
 	--ptnop-socket=/run/sonda/serve-ptnop/sock \
 	--run-dir=/run/sonda \
 	--scheduler-state=/var/lib/sonda/scan/sched.json \
-	--workflow-file=/etc/sonda/scan/default.yml
+	--workflow-file=/etc/sonda/scan/dns_https.yml \
+	--workflow-file=/etc/sonda/scan/dns_udp.yml \
+	--workflow-file=/etc/sonda/scan/https_lite.yml
 
 # Important: *must* have access to the whole of `/run/sonda` otherwise it
 # cannot perform triggers hard linking for ETL services.

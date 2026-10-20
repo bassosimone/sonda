@@ -1,0 +1,41 @@
+# Frequent lightweight DNS-over-UDP measurements.
+
+name: "dns_udp"
+
+cadence: "@frequent"
+
+steps:
+  - name: "STUN lookup"
+    run: stun
+    with:
+      optimize: size
+      port: 19302
+      server: stun.l.google.com
+
+  - name: "DNS over UDP via Google"
+    run: dns-over-udp
+    with:
+      optimize: size
+      query_name: www.example.com
+      server: dns.google
+
+  - name: "DNS over UDP via Quad9"
+    run: dns-over-udp
+    with:
+      optimize: size
+      query_name: www.example.com
+      server: dns.quad9.net
+
+  - name: "DNS over UDP via Cloudflare"
+    run: dns-over-udp
+    with:
+      optimize: size
+      query_name: www.example.com
+      server: one.one.one.one
+
+triggers:
+  # Uncomment to archive at /var/lib/sonda/archive.
+  #- "etl-ptnop-archive"
+
+  # Comment out to stop updating the Prometheus exporter.
+  - "etl-ptnop-prom"

@@ -26,6 +26,7 @@ type WorkflowSpec struct {
 	// Valid values:
 	//
 	// - "@frequent" runs on the average every five minutes.
+	// - "@hourly/4" runs on the average every 15 minutes.
 	// - "@hourly" runs on the average every hour.
 	// - "@daily/4" runs on the average every six hours.
 	// - "@daily" runs on the average every 24 hours.

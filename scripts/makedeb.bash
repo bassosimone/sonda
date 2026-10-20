@@ -82,7 +82,7 @@ install -m 644 dist/unix/usr/lib/systemd/system/system-sonda.slice "$stage/usr/l
 
 # Install config files.
 install -d "$stage/etc/sonda/scan"
-install -m 644 dist/unix/etc/sonda/scan/default.yml "$stage/etc/sonda/scan/"
+install -m 644 dist/unix/etc/sonda/scan/*.yml "$stage/etc/sonda/scan/"
 install -m 644 dist/unix/etc/sonda/config.toml "$stage/etc/sonda"
 
 # Install copyright.
@@ -117,7 +117,9 @@ install -m 755 dist/debian/prerm "$stage/DEBIAN/"
 
 # Declare conffiles so dpkg preserves local edits on upgrade.
 cat > "$stage/DEBIAN/conffiles" <<'CONFFILES'
-/etc/sonda/scan/default.yml
+/etc/sonda/scan/dns_https.yml
+/etc/sonda/scan/dns_udp.yml
+/etc/sonda/scan/https_lite.yml
 /etc/sonda/config.toml
 CONFFILES
 chmod 644 "$stage/DEBIAN/conffiles"

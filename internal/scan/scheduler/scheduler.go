@@ -160,6 +160,8 @@ func (wfs *WorkflowSpec) NextRunTime() time.Time {
 	switch wfs.Data.Cadence {
 	case "@frequent":
 		expected = float64(5 * time.Minute)
+	case "@hourly/4":
+		expected = float64(15 * time.Minute)
 	case "@hourly":
 		expected = float64(time.Hour)
 	case "@daily/4":

@@ -15,8 +15,9 @@ It then archives the raw events into daily files for later analysis.
 The Debian package installs a systemd timer that runs
 .B sonda scan
 five minutes after the previous scan finishes.
-Each scan runs the measurements listed in
-.IR /etc/sonda/scan/default.yml .
+Each scan runs the workflows in
+.I /etc/sonda/scan/
+that are due according to their cadence.
 A long\-running
 .B sonda etl\-ptnop\-archive
 service archives the events of each new spool entry.
@@ -40,8 +41,8 @@ Settings for the
 commands, such as the maximum age of spool entries.
 The commented\-out values are the defaults.
 .TP
-.I /etc/sonda/scan/default.yml
-Steps executed by the periodic scan.
+.I /etc/sonda/scan/*.yml
+Workflows executed by the periodic scan.
 .TP
 .I /var/spool/sonda/
 Spool with one directory per measurement, containing the request,
