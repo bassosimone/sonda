@@ -14,18 +14,21 @@ steps:
     run: https
     with:
       host: www.instagram.com
+      max_body_size: 4194304
       optimize: speed
 
   - name: "HTTPS GET www.facebook.com"
     run: https
     with:
       host: www.facebook.com
+      max_body_size: 4194304
       optimize: speed
 
   - name: "HTTPS GET www.youtube.com"
     run: https
     with:
       host: www.youtube.com
+      max_body_size: 4194304
       optimize: speed
 
 triggers:
