@@ -92,6 +92,17 @@ func (s *State) Store(env *testable.Environ) error {
 	return env.Rename(tmpPath, s.path)
 }
 
+// GetOrCreateWorkflowState returns the [*WorkflowState] if it already
+// exists and otherwise registers and returns an empty state.
+func (s *State) GetOrCreateWorkflowState(spec *WorkflowSpec) *WorkflowState {
+	state, found := s.Workflows[spec.Path]
+	if !found {
+		state = &WorkflowState{}
+		s.Workflows[spec.Path] = state
+	}
+	return state
+}
+
 // WorkflowSpec wraps [*actions.WorkflowSpec] to add the absolute
 // file path from which the spec has been loaded.
 //
@@ -124,19 +135,7 @@ func (s *State) LoadWorkflowSpec(env *testable.Environ, path string) (*WorkflowS
 	return wrapper, nil
 }
 
-// ShouldRun returns whether the given [*WorkflowSpec] should run now
-// based on its NextRun value and the current time.
-func (s *State) ShouldRun(spec *WorkflowSpec) bool {
-	state, found := s.Workflows[spec.Path]
-	if !found {
-		state = &WorkflowState{}
-		s.Workflows[spec.Path] = state
-	}
-	return state.NextRun.Before(time.Now())
-}
-
-// DidRun registers that the given [*WorkflowSpec] did actually run
-// and computes when the next run should occur.
+// NextRunTime computes the next run time for this [*WorkflowSpec].
 //
 // The algorithm for doing so is brutally simple:
 //
@@ -149,22 +148,11 @@ func (s *State) ShouldRun(spec *WorkflowSpec) bool {
 //     bound is 250% of the expected value (thus restricting the
 //     sampling between ~10p and ~90p).
 //
-//  3. record the NextRun as the current time plus the clamped delay.
-//
-// Regardless of whether a run failed or not, we expect the caller
-// to always register it using this method.
-func (s *State) DidRun(spec *WorkflowSpec) {
-	state, found := s.Workflows[spec.Path]
-	if !found {
-		state = &WorkflowState{}
-		s.Workflows[spec.Path] = state
-	}
-
-	state.LastRun = time.Now()
-
+//  3. return current time plus the clamped delay.
+func (wfs *WorkflowSpec) NextRunTime() time.Time {
 	// (1)
 	var expected float64
-	switch spec.Data.Cadence {
+	switch wfs.Data.Cadence {
 	case "@frequent":
 		expected = float64(5 * time.Minute)
 	case "@hourly":
@@ -181,5 +169,38 @@ func (s *State) DidRun(spec *WorkflowSpec) {
 	sample = max(minSample, min(maxSample, sample))
 
 	// (3)
-	state.NextRun = state.LastRun.Add(time.Duration(sample))
+	return time.Now().Add(time.Duration(sample))
+}
+
+// ShouldRun returns whether the given [*WorkflowSpec] should run now
+// based on its NextRun value and the current time.
+func (s *State) ShouldRun(spec *WorkflowSpec) bool {
+	return s.GetOrCreateWorkflowState(spec).NextRun.Before(time.Now())
+}
+
+func (s *State) setTimesAndSync(env *testable.Environ, spec *WorkflowSpec) error {
+	state := s.GetOrCreateWorkflowState(spec)
+	state.LastRun = time.Now()
+	state.NextRun = spec.NextRunTime()
+	return s.Store(env)
+}
+
+// WillStart marks the [*WorkflowSpec] as about to start.
+//
+// To be robust against crashes causing workflows to loop we update the
+// LastRun and recompute NextRun and then sync the state to disk.
+//
+// If this method fails, you should not start the workflow because it
+// means the state has not been persisted to disk.
+func (s *State) WillStart(env *testable.Environ, spec *WorkflowSpec) error {
+	return s.setTimesAndSync(env, spec)
+}
+
+// DidRun marks the [*WorkflowSpec] as terminated.
+//
+// We update LastRun and recompute NextRun, then sync the state to disk. We do this,
+// and specifically recompute NextRun, so that the delay between two subsequent
+// workflow invocations is not reduced by the total workflow runtime.
+func (s *State) DidRun(env *testable.Environ, spec *WorkflowSpec) error {
+	return s.setTimesAndSync(env, spec)
 }
