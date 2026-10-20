@@ -5,6 +5,7 @@ package actions
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/bassosimone/runtimex"
@@ -17,10 +18,11 @@ func (r *WorkflowRunner) lookupHost(
 	ctx context.Context,
 	conn WorkflowPtnopConn,
 	domain string,
+	logger *slog.Logger,
 	optimize string,
 ) ([]string, error) {
-	a, errA := r.lookupA(ctx, conn, domain, optimize)
-	aaaa, errAAAA := r.lookupAAAA(ctx, conn, domain, optimize)
+	a, errA := r.lookupA(ctx, conn, domain, logger, optimize)
+	aaaa, errAAAA := r.lookupAAAA(ctx, conn, domain, logger, optimize)
 	if errA != nil && errAAAA != nil {
 		return nil, errors.Join(errA, errAAAA)
 	}
@@ -43,8 +45,8 @@ func (r *WorkflowRunner) newLookupRequest(
 }
 
 func (r *WorkflowRunner) lookupA(ctx context.Context, conn WorkflowPtnopConn,
-	domain string, optimize string) ([]string, error) {
-	spanDir, err := r.runPtnop(ctx, conn, r.newLookupRequest(domain, optimize, "A"))
+	domain string, logger *slog.Logger, optimize string) ([]string, error) {
+	spanDir, err := r.runPtnop(ctx, conn, logger, r.newLookupRequest(domain, optimize, "A"))
 	if err != nil {
 		return nil, err
 	}
@@ -52,12 +54,12 @@ func (r *WorkflowRunner) lookupA(ctx context.Context, conn WorkflowPtnopConn,
 }
 
 func (r *WorkflowRunner) lookupAAAA(ctx context.Context, conn WorkflowPtnopConn,
-	domain string, optimize string) ([]string, error) {
+	domain string, logger *slog.Logger, optimize string) ([]string, error) {
 	v6sup := r.supportsV6()
 	if v6sup != nil && !*v6sup {
 		return nil, errors.New("no answer") // same suffix as the stdlib error for EAI_NODATA
 	}
-	spanDir, err := r.runPtnop(ctx, conn, r.newLookupRequest(domain, optimize, "AAAA"))
+	spanDir, err := r.runPtnop(ctx, conn, logger, r.newLookupRequest(domain, optimize, "AAAA"))
 	if err != nil {
 		return nil, err
 	}

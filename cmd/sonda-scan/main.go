@@ -56,7 +56,7 @@ func scanMain(ctx context.Context, args []string) error {
 
 	fset.AutoHelp('h', "help", "Show this help message and exit.")
 
-	fset.BoolVar(&fail, 0, "fail", "Exit with error on first failure.")
+	fset.BoolVar(&fail, 0, "fail", "Exit with error if any failure occurs.")
 
 	fset.StringVar(&ptnopSocket, 0, "ptnop-socket",
 		"Unix domain socket `PATH` of the `sonda-serve-ptnop` server.",
@@ -113,16 +113,16 @@ func scanMain(ctx context.Context, args []string) error {
 	}
 	runner := actions.NewWorkflowRunner(spoolRootDir)
 
-	// Execute each step in order.
-	for _, step := range spec.Steps {
-		err := runner.NewAction(conn, step.Run).Run(ctx, logger, step.With)
-		if err != nil && fail {
-			env.Exit(1)
-		}
-	}
+	// Run all the steps in the spec.
+	err = runner.RunSpec(ctx, conn, logger, spec)
 
 	// Execute triggers for the created spans.
 	scanMustWriteTriggers(env, logger, runDir, runner, spec.Triggers)
+
+	// Deferred exit from running the spec.
+	if err != nil && fail {
+		env.Exit(1)
+	}
 	return nil
 }
 

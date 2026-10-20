@@ -1,5 +1,9 @@
 # Default scan workflow for sonda.
 
+name: "default"
+
+cadence: "@frequent"
+
 steps:
   # STUN
   - name: "STUN lookup"

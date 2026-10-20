@@ -4,9 +4,11 @@ package actions
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/bassosimone/sonda/internal/ptnopclient"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
@@ -27,6 +29,9 @@ type WorkflowSpec struct {
 	// - "@hourly" runs on the average every hour.
 	// - "@sporadic" runs on the average every six hours.
 	Cadence string `yaml:"cadence"`
+
+	// Name is the name of the workflow spec.
+	Name string `yaml:"name"`
 
 	// Steps contains the workflow steps.
 	Steps []WorkflowStep `yaml:"steps"`
@@ -74,26 +79,13 @@ type WorkflowStep struct {
 	With ast.Node `yaml:"with"`
 }
 
-// WorkflowAction abstracts over measurement actions.
-type WorkflowAction interface {
-	Run(ctx context.Context, logger *slog.Logger, with ast.Node) error
+// workflowAction abstracts over measurement actions.
+type workflowAction interface {
+	Run(ctx context.Context, logger *slog.Logger, step *WorkflowStep) error
 }
 
-// unknownAction is the action returned if the action name is unknown.
-type unknownAction struct {
-	name string
-}
-
-var _ WorkflowAction = unknownAction{}
-
-// Run implements [WorkflowAction].
-func (a unknownAction) Run(ctx context.Context, logger *slog.Logger, with ast.Node) error {
-	logger.Warn("unknownAction", slog.String("name", a.name))
-	return nil
-}
-
-// actionConstructor is the type of the func that constructs a new [WorkflowAction].
-type actionConstructor func(WorkflowPtnopConn, *WorkflowRunner) WorkflowAction
+// actionConstructor is the type of the func that constructs a new [workflowAction].
+type actionConstructor func(WorkflowPtnopConn, *WorkflowRunner) workflowAction
 
 // WorkflowRunner runs a workflow and keeps shared state.
 //
@@ -124,40 +116,77 @@ func NewWorkflowRunner(rootDir spool.RootDir) *WorkflowRunner {
 	}
 }
 
-// NewAction constructs a new [WorkflowAction] by name.
-func (r *WorkflowRunner) NewAction(conn WorkflowPtnopConn, name string) WorkflowAction {
-	ctor := r.actions[name]
-	if ctor == nil {
-		return unknownAction{name} // no need to wrap since it's a no-op
+// RunSpec runs the given [WorkflowSpec].
+func (r *WorkflowRunner) RunSpec(
+	ctx context.Context, conn WorkflowPtnopConn, logger *slog.Logger, spec *WorkflowSpec) error {
+	logger = logger.With("workflowName", spec.Name)
+	var errv []error
+	for _, step := range spec.Steps {
+		if ctx.Err() != nil {
+			errv = append(errv, ctx.Err())
+			break
+		}
+		action, err := r.newAction(conn, &step)
+		if err != nil {
+			logger.Warn(
+				"r.newAction",
+				slog.String("actionName", step.Name),
+				slog.Any("err", err),
+			)
+			continue
+		}
+		if err := action.Run(ctx, logger, &step); err != nil {
+			errv = append(errv, err) // log message already printed
+			continue
+		}
 	}
-	return newActionWrapper(ctor(conn, r), name)
+	return errors.Join(errv...)
+}
+
+// newAction constructs a new [workflowAction] by name.
+func (r *WorkflowRunner) newAction(
+	conn WorkflowPtnopConn, step *WorkflowStep) (workflowAction, error) {
+	ctor, ok := r.actions[step.Run]
+	if !ok || ctor == nil {
+		return nil, fmt.Errorf("unknown action: %q", step.Run)
+	}
+	return newActionWrapper(ctor(conn, r)), nil
 }
 
 // actionWrapper wraps an action execution.
 type actionWrapper struct {
-	child WorkflowAction
-	name  string
+	child workflowAction
 }
 
 // newActionWrapper creates a new [*actionWrapper].
-func newActionWrapper(child WorkflowAction, name string) *actionWrapper {
-	return &actionWrapper{
-		child: child,
-		name:  name,
-	}
+func newActionWrapper(child workflowAction) actionWrapper {
+	return actionWrapper{child: child}
 }
 
-var _ WorkflowAction = &actionWrapper{}
+var _ workflowAction = &actionWrapper{}
 
-// Run implements [WorkflowAction].
-func (a *actionWrapper) Run(ctx context.Context, logger *slog.Logger, with ast.Node) error {
-	if with == nil {
-		logger.Warn("missingActionWith", slog.String("name", a.name))
+// Run implements [workflowAction].
+func (a actionWrapper) Run(ctx context.Context, logger *slog.Logger, step *WorkflowStep) error {
+	logger = logger.
+		With("actionName", step.Name).
+		With("actionRun", step.Run)
+	if step.With == nil {
+		logger.Warn("missingActionWith")
 		return nil
 	}
-	logger.Info("actionStarted", slog.String("name", a.name))
-	err := a.child.Run(ctx, logger, with)
-	logger.Info("actionDone", slog.Any("err", err), slog.String("name", a.name))
+	logger.Info("actionStarted")
+	t0 := time.Now()
+	err := a.child.Run(ctx, logger, step)
+	elapsed := time.Since(t0)
+	emit := logger.Info
+	if err != nil {
+		emit = logger.Warn
+	}
+	emit(
+		"actionDone",
+		slog.Duration("elapsed", elapsed),
+		slog.Any("err", err),
+	)
 	return err
 }
 
@@ -203,15 +232,18 @@ type WorkflowPtnopConn interface {
 }
 
 // runPtnop runs a submeasurement using ptnop and returns the related [spool.SpanDir].
-func (r *WorkflowRunner) runPtnop(
-	ctx context.Context, conn WorkflowPtnopConn, req *ptnoprpc.Request) (spool.SpanDir, error) {
+func (r *WorkflowRunner) runPtnop(ctx context.Context, conn WorkflowPtnopConn,
+	logger *slog.Logger, req *ptnoprpc.Request) (spool.SpanDir, error) {
 	result, err := conn.Run(ctx, req)
 	if err != nil {
+		logger.Warn("conn.Run", slog.Any("err", err))
 		return nil, err
 	}
+	logger.Debug("conn.Run", slog.String("spanId", result.SpanID))
 
 	spanDir, err := spool.OpenSpanDir(r.spoolRootDir, "ptnop", result.SpanID)
 	if err != nil {
+		logger.Warn("spool.OpenSpanDir", slog.Any("err", err))
 		return nil, err
 	}
 
@@ -222,6 +254,7 @@ func (r *WorkflowRunner) runPtnop(
 	r.mu.Lock()
 	r.spans = append(r.spans, cs)
 	r.mu.Unlock()
+	logger.Debug("registeredTriggerFor", slog.String("spanId", result.SpanID))
 
 	return spanDir, nil
 }

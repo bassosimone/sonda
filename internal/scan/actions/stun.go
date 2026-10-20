@@ -16,7 +16,6 @@ import (
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/bassosimone/sonda/internal/ptnopspool"
 	"github.com/goccy/go-yaml"
-	"github.com/goccy/go-yaml/ast"
 )
 
 // stunAction is the action that measures stun endpoints.
@@ -28,7 +27,7 @@ type stunAction struct {
 }
 
 // newSTUNAction constructs a new [*stunAction] instance.
-func newSTUNAction(conn WorkflowPtnopConn, runner *WorkflowRunner) WorkflowAction {
+func newSTUNAction(conn WorkflowPtnopConn, runner *WorkflowRunner) workflowAction {
 	return &stunAction{
 		Conn:   conn,
 		Runner: runner,
@@ -42,11 +41,13 @@ type STUNWith struct {
 	Server   string `yaml:"server"`
 }
 
-var _ WorkflowAction = &stunAction{}
+var _ workflowAction = &stunAction{}
 
-// Run implements [WorkflowAction].
-func (a *stunAction) Run(ctx context.Context, logger *slog.Logger, with ast.Node) error {
+// Run implements [workflowAction].
+func (a *stunAction) Run(
+	ctx context.Context, logger *slog.Logger, step *WorkflowStep) error {
 	// 1. Parse arguments passed to the step.
+	with := step.With
 	runtimex.Assert(with != nil)
 	var withData STUNWith
 	if err := yaml.NodeToValue(with, &withData); err != nil {
@@ -60,7 +61,7 @@ func (a *stunAction) Run(ctx context.Context, logger *slog.Logger, with ast.Node
 	}
 
 	// 2. Resolve the server hostname to addresses.
-	addrs, err := a.Runner.lookupHost(ctx, a.Conn, withData.Server, withData.Optimize)
+	addrs, err := a.Runner.lookupHost(ctx, a.Conn, withData.Server, logger, withData.Optimize)
 	if err != nil {
 		return fmt.Errorf("stun: resolving %s: %w", withData.Server, err)
 	}
@@ -75,7 +76,7 @@ func (a *stunAction) Run(ctx context.Context, logger *slog.Logger, with ast.Node
 			Tags:     a.Runner.tags(),
 			Timeout:  5 * time.Second,
 		}
-		spanDir, err := a.Runner.runPtnop(ctx, a.Conn, req)
+		spanDir, err := a.Runner.runPtnop(ctx, a.Conn, logger, req)
 		if err != nil {
 			return fmt.Errorf("stun: ptnop: %w", err)
 		}

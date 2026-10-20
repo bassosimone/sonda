@@ -13,7 +13,6 @@ import (
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/goccy/go-yaml"
-	"github.com/goccy/go-yaml/ast"
 )
 
 // httpsAction is the action that measures HTTPS endpoints.
@@ -23,7 +22,7 @@ type httpsAction struct {
 }
 
 // newHTTPSAction constructs a new [*httpsAction] instance.
-func newHTTPSAction(conn WorkflowPtnopConn, runner *WorkflowRunner) WorkflowAction {
+func newHTTPSAction(conn WorkflowPtnopConn, runner *WorkflowRunner) workflowAction {
 	return &httpsAction{
 		Conn:   conn,
 		Runner: runner,
@@ -39,11 +38,13 @@ type HTTPSWith struct {
 	UserAgent string `yaml:"user_agent"`
 }
 
-var _ WorkflowAction = &httpsAction{}
+var _ workflowAction = &httpsAction{}
 
-// Run implements [WorkflowAction].
-func (a *httpsAction) Run(ctx context.Context, logger *slog.Logger, with ast.Node) error {
+// Run implements [workflowAction].
+func (a *httpsAction) Run(
+	ctx context.Context, logger *slog.Logger, step *WorkflowStep) error {
 	// 1. Parse arguments passed to the step.
+	with := step.With
 	runtimex.Assert(with != nil)
 	var withData HTTPSWith
 	if err := yaml.NodeToValue(with, &withData); err != nil {
@@ -64,7 +65,7 @@ func (a *httpsAction) Run(ctx context.Context, logger *slog.Logger, with ast.Nod
 	}
 
 	// 2. Resolve the host to addresses.
-	addrs, err := a.Runner.lookupHost(ctx, a.Conn, withData.Host, withData.Optimize)
+	addrs, err := a.Runner.lookupHost(ctx, a.Conn, withData.Host, logger, withData.Optimize)
 	if err != nil {
 		return fmt.Errorf("https: resolving %s: %w", withData.Host, err)
 	}
@@ -86,7 +87,7 @@ func (a *httpsAction) Run(ctx context.Context, logger *slog.Logger, with ast.Nod
 			Timeout:      30 * time.Second,
 			URLPath:      withData.URLPath,
 		}
-		if _, err := a.Runner.runPtnop(ctx, a.Conn, req); err != nil {
+		if _, err := a.Runner.runPtnop(ctx, a.Conn, logger, req); err != nil {
 			return fmt.Errorf("https: ptnop: %w", err)
 		}
 	}

@@ -13,7 +13,6 @@ import (
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/goccy/go-yaml"
-	"github.com/goccy/go-yaml/ast"
 )
 
 // dnsOverHTTPSAction is the action that measures dns-over-https endpoints.
@@ -23,7 +22,7 @@ type dnsOverHTTPSAction struct {
 }
 
 // newDNSOverHTTPSAction constructs a new [*dnsOverHTTPSAction] instance.
-func newDNSOverHTTPSAction(conn WorkflowPtnopConn, runner *WorkflowRunner) WorkflowAction {
+func newDNSOverHTTPSAction(conn WorkflowPtnopConn, runner *WorkflowRunner) workflowAction {
 	return &dnsOverHTTPSAction{
 		Conn:   conn,
 		Runner: runner,
@@ -39,11 +38,13 @@ type DNSOverHTTPSWith struct {
 	UserAgent string `yaml:"user_agent"`
 }
 
-var _ WorkflowAction = &dnsOverHTTPSAction{}
+var _ workflowAction = &dnsOverHTTPSAction{}
 
-// Run implements [WorkflowAction].
-func (a *dnsOverHTTPSAction) Run(ctx context.Context, logger *slog.Logger, with ast.Node) error {
+// Run implements [workflowAction].
+func (a *dnsOverHTTPSAction) Run(
+	ctx context.Context, logger *slog.Logger, step *WorkflowStep) error {
 	// 1. Parse arguments passed to the step.
+	with := step.With
 	runtimex.Assert(with != nil)
 	var withData DNSOverHTTPSWith
 	if err := yaml.NodeToValue(with, &withData); err != nil {
@@ -64,7 +65,7 @@ func (a *dnsOverHTTPSAction) Run(ctx context.Context, logger *slog.Logger, with 
 	}
 
 	// 2. Resolve the server hostname to addresses.
-	addrs, err := a.Runner.lookupHost(ctx, a.Conn, withData.Server, withData.Optimize)
+	addrs, err := a.Runner.lookupHost(ctx, a.Conn, withData.Server, logger, withData.Optimize)
 	if err != nil {
 		return fmt.Errorf("dns-over-https: resolving %s: %w", withData.Server, err)
 	}
@@ -87,7 +88,7 @@ func (a *dnsOverHTTPSAction) Run(ctx context.Context, logger *slog.Logger, with 
 			Timeout:      5 * time.Second,
 			URLPath:      "/dns-query",
 		}
-		if _, err := a.Runner.runPtnop(ctx, a.Conn, req); err != nil {
+		if _, err := a.Runner.runPtnop(ctx, a.Conn, logger, req); err != nil {
 			return fmt.Errorf("dns-over-https: ptnop: %w", err)
 		}
 	}

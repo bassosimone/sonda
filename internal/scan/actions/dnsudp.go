@@ -13,7 +13,6 @@ import (
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/internal/ptnoprpc"
 	"github.com/goccy/go-yaml"
-	"github.com/goccy/go-yaml/ast"
 )
 
 // dnsOverUDPAction is the action that measures dns-over-udp endpoints.
@@ -23,7 +22,7 @@ type dnsOverUDPAction struct {
 }
 
 // newDNSOverUDPAction constructs a new [*dnsOverUDPAction] instance.
-func newDNSOverUDPAction(conn WorkflowPtnopConn, runner *WorkflowRunner) WorkflowAction {
+func newDNSOverUDPAction(conn WorkflowPtnopConn, runner *WorkflowRunner) workflowAction {
 	return &dnsOverUDPAction{
 		Conn:   conn,
 		Runner: runner,
@@ -38,11 +37,13 @@ type DNSOverUDPWith struct {
 	Server    string `yaml:"server"`
 }
 
-var _ WorkflowAction = &dnsOverUDPAction{}
+var _ workflowAction = &dnsOverUDPAction{}
 
-// Run implements [WorkflowAction].
-func (a *dnsOverUDPAction) Run(ctx context.Context, logger *slog.Logger, with ast.Node) error {
+// Run implements [workflowAction].
+func (a *dnsOverUDPAction) Run(
+	ctx context.Context, logger *slog.Logger, step *WorkflowStep) error {
 	// 1. Parse arguments passed to the step.
+	with := step.With
 	runtimex.Assert(with != nil)
 	var withData DNSOverUDPWith
 	if err := yaml.NodeToValue(with, &withData); err != nil {
@@ -59,7 +60,7 @@ func (a *dnsOverUDPAction) Run(ctx context.Context, logger *slog.Logger, with as
 	}
 
 	// 2. Resolve the server hostname to addresses.
-	addrs, err := a.Runner.lookupHost(ctx, a.Conn, withData.Server, withData.Optimize)
+	addrs, err := a.Runner.lookupHost(ctx, a.Conn, withData.Server, logger, withData.Optimize)
 	if err != nil {
 		return fmt.Errorf("dns-over-udp: resolving %s: %w", withData.Server, err)
 	}
@@ -75,7 +76,7 @@ func (a *dnsOverUDPAction) Run(ctx context.Context, logger *slog.Logger, with as
 			Tags:         a.Runner.tags(),
 			Timeout:      5 * time.Second,
 		}
-		if _, err := a.Runner.runPtnop(ctx, a.Conn, req); err != nil {
+		if _, err := a.Runner.runPtnop(ctx, a.Conn, logger, req); err != nil {
 			return fmt.Errorf("dns-over-udp: ptnop: %w", err)
 		}
 	}
