@@ -78,7 +78,7 @@ func newPipelineInput(
 		env:                 env,
 		httpReq:             nil,
 		logger:              nil,
-		maxResponseBodySize: req.MaxHTTPResponseBodySize,
+		maxResponseBodySize: req.HTTPMaxResponseBodySize,
 		name:                req.Pipeline,
 		query:               nil,
 		tlsConfig:           nil,
@@ -323,7 +323,7 @@ func runPipelineHTTP(ctx context.Context, input *pipelineInput,
 		input.logger.Info(
 			"sondaHttpResponseBodyMaybeTruncated",
 			slog.Int64("bodySize", count),
-			slog.Int64("maxHttpResponseBodySize", maxSize),
+			slog.Int64("httpMaxResponseBodySize", maxSize),
 		)
 	}
 	return 0

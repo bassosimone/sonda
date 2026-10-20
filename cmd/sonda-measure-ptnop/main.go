@@ -93,7 +93,7 @@ func realMain(ctx context.Context, args []string) error {
 		"        Requires: `--url-path <path>`",
 		"        Suggests: `--http-header <key:value> ...`",
 		"        Suggests: `--http-body-file <path>`",
-		"        Suggests: `--max-http-response-body-size <size>`",
+		"        Suggests: `--http-max-response-body-size <size>`",
 		"        Suggests: `--url-query <query>`",
 		"    https",
 		"        Requires: `--addr-port <addrport>`",
@@ -105,7 +105,7 @@ func realMain(ctx context.Context, args []string) error {
 		"        Suggests: `--alpn h2 --alpn http/1.1`",
 		"        Suggests: `--http-header <key:value> ...`",
 		"        Suggests: `--http-body-file <path>`",
-		"        Suggests: `--max-http-response-body-size <size>`",
+		"        Suggests: `--http-max-response-body-size <size>`",
 		"        Suggests: `--url-query <query>`",
 		"    tcp",
 		"        Requires: `--addr-port <addrport>`",
@@ -218,17 +218,17 @@ func realMain(ctx context.Context, args []string) error {
 	fset.StringVar(&opts.HTTPHost, 0, "http-host",
 		"Use `HOST` as the host header value.")
 
+	fset.Int64Var(&opts.HTTPMaxResponseBodySize, 0, "http-max-response-body-size",
+		"Stop reading the HTTP response body after `N` bytes.",
+		"This setting only applies to the `http` and `https` pipelines.",
+		"A zero (or negative) value disables this functionality.",
+		"Default: `@DEFAULT_VALUE@`.")
+
 	fset.StringVar(&opts.HTTPMethod, 0, "http-method",
 		"Use `METHOD` as the request method.")
 
 	fset.StringVar(&opts.HTTPScheme, 0, "http-scheme",
 		"Use `SCHEME` as the URL scheme.")
-
-	fset.Int64Var(&opts.MaxHTTPResponseBodySize, 0, "max-http-response-body-size",
-		"Stop reading the HTTP response body after `N` bytes.",
-		"This setting only applies to the `http` and `https` pipelines.",
-		"A zero (or negative) value disables this functionality.",
-		"Default: `@DEFAULT_VALUE@`.")
 
 	fset.StringVar(&opts.Optimize, 0, "optimize",
 		"Ask `sonda-serve-ptnop` to optimize the events for `GOAL` (`size`, `speed`).",

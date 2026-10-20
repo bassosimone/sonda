@@ -64,9 +64,9 @@ const UsageErrorPrefix = "usage error: "
 //
 // Any unknown value is silently equal to empty and emits everything.
 //
-// # MaxHTTPResponseBodySize
+// # HTTPMaxResponseBodySize
 //
-// The MaxHTTPResponseBodySize optional setting controls whether we
+// The HTTPMaxResponseBodySize optional setting controls whether we
 // should cap the maximum response body size. A zero (or negative) value
 // disables this functionality. Otherwise, we stop reading the response
 // body after the given number of bytes has been read. When scanning
@@ -81,9 +81,9 @@ type Request struct {
 	HTTPBodyFile            bool            `json:"httpBodyFile"`
 	HTTPHeaders             []string        `json:"httpHeaders"`
 	HTTPHost                string          `json:"httpHost"`
+	HTTPMaxResponseBodySize int64           `json:"httpMaxResponseBodySize"`
 	HTTPMethod              string          `json:"httpMethod"`
 	HTTPScheme              string          `json:"httpScheme"`
-	MaxHTTPResponseBodySize int64           `json:"maxHttpResponseBodySize"`
 	Optimize                string          `json:"optimize"`
 	Pipeline                string          `json:"pipeline"`
 	SNI                     string          `json:"sni"`
