@@ -27,7 +27,10 @@ type WorkflowSpec struct {
 	//
 	// - "@frequent" runs on the average every five minutes.
 	// - "@hourly" runs on the average every hour.
-	// - "@sporadic" runs on the average every six hours.
+	// - "@daily/4" runs on the average every six hours.
+	// - "@daily" runs on the average every 24 hours.
+	//
+	// If empty or invalid the cadence is "@daily".
 	Cadence string `yaml:"cadence"`
 
 	// Name is the name of the workflow spec.
