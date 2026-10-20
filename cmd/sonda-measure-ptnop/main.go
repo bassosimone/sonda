@@ -94,6 +94,7 @@ func realMain(ctx context.Context, args []string) error {
 		"        Suggests: `--http-header <key:value> ...`",
 		"        Suggests: `--http-body-file <path>`",
 		"        Suggests: `--http-max-response-body-size <size>`",
+		"        Suggests: `--http-response-body-timeout-is-ok`",
 		"        Suggests: `--url-query <query>`",
 		"    https",
 		"        Requires: `--addr-port <addrport>`",
@@ -106,6 +107,7 @@ func realMain(ctx context.Context, args []string) error {
 		"        Suggests: `--http-header <key:value> ...`",
 		"        Suggests: `--http-body-file <path>`",
 		"        Suggests: `--http-max-response-body-size <size>`",
+		"        Suggests: `--http-response-body-timeout-is-ok`",
 		"        Suggests: `--url-query <query>`",
 		"    tcp",
 		"        Requires: `--addr-port <addrport>`",
@@ -226,6 +228,11 @@ func realMain(ctx context.Context, args []string) error {
 
 	fset.StringVar(&opts.HTTPMethod, 0, "http-method",
 		"Use `METHOD` as the request method.")
+
+	fset.BoolVar(&opts.HTTPResponseBodyTimeoutIsOK, 0, "http-response-body-timeout-is-ok",
+		"Treat a timeout while reading the HTTP response body as a success.",
+		"This setting only applies to the `http` and `https` pipelines.",
+		"Default: @DEFAULT_VALUE@.")
 
 	fset.StringVar(&opts.HTTPScheme, 0, "http-scheme",
 		"Use `SCHEME` as the URL scheme.")
