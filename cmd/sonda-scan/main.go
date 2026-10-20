@@ -8,14 +8,12 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"github.com/bassosimone/runtimex"
 	"github.com/bassosimone/sonda/cmd/internal/plugincommand"
 	"github.com/bassosimone/sonda/internal/config"
 	"github.com/bassosimone/sonda/internal/ptnopclient"
-	"github.com/bassosimone/sonda/internal/ptnoprpc"
-	"github.com/bassosimone/sonda/internal/spool"
+	"github.com/bassosimone/sonda/internal/scan/actions"
 	"github.com/bassosimone/sonda/internal/spoolfs"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/sonda/internal/triggers"
@@ -79,13 +77,6 @@ func scanMain(ctx context.Context, args []string) error {
 	// Emit structured logs to stderr.
 	logger := slog.New(slog.NewTextHandler(env.Stderr, nil))
 
-	// TODO(bassosimone): probe IPv6 connectivity here using a UDP connect
-	// to a well-known v6 address (e.g., net.Dial("udp6", "[2001:4860:4860::8888]:53")).
-	// If it fails with syscall.ENETUNREACH, store "no_ipv6" in sharedState so
-	// that runners can skip v6 addresses in their loops. This avoids ~8k rows/day
-	// of ENETUNREACH noise on v4-only hosts. Consider a rfc6724.go file that
-	// performs the check and returns a boolean. See also RFC 6724 §6 Rule 1.
-
 	// Provide useful output when no flags were specified.
 	if len(args) <= 0 {
 		fset.PrintUsageString(fset.Stdout)
@@ -97,7 +88,7 @@ func scanMain(ctx context.Context, args []string) error {
 		logger.Error("no `--workflow-file` specified; nothing to do.")
 		env.Exit(2)
 	}
-	wff, err := loadWorkflowFile(env, workflowFile)
+	spec, err := actions.LoadWorkflowSpec(env, workflowFile)
 	if err != nil {
 		logger.Error("loading workflow", slog.Any("err", err))
 		env.Exit(2)
@@ -120,45 +111,30 @@ func scanMain(ctx context.Context, args []string) error {
 		logger.Error("spoolfs.NewRootDir", slog.Any("err", err))
 		env.Exit(1)
 	}
-	state := &sharedState{spoolRootDir: spoolRootDir}
-
-	// Build the runner registry.
-	runners := map[string]stepRunner{
-		"stun":           &stunRunner{Conn: conn, State: state},
-		"dns-over-udp":   &dnsOverUDPRunner{Conn: conn, State: state},
-		"dns-over-https": &dnsOverHTTPSRunner{Conn: conn, State: state},
-		"https":          &httpsRunner{Conn: conn, State: state},
-	}
+	runner := actions.NewWorkflowRunner(spoolRootDir)
 
 	// Execute each step in order.
-	for _, step := range wff.Steps {
-		runner, ok := runners[step.Run]
-		if !ok {
-			logger.Warn("unknown step", slog.String("run", step.Run))
-			continue
-		}
-		if err := runner.RunStep(ctx, step.With); err != nil {
-			logger.Warn("step failed", slog.String("name", step.Name), slog.Any("err", err))
-			if fail {
-				env.Exit(1)
-			}
+	for _, step := range spec.Steps {
+		err := runner.NewAction(conn, step.Run).Run(ctx, logger, step.With)
+		if err != nil && fail {
+			env.Exit(1)
 		}
 	}
 
 	// Execute triggers for the created spans.
-	scanMustWriteTriggers(env, logger, runDir, state, wff.Triggers)
+	scanMustWriteTriggers(env, logger, runDir, runner, spec.Triggers)
 	return nil
 }
 
 // scanMustWriteTriggers writes triggers if necessary and exits on failure.
 func scanMustWriteTriggers(
 	env *testable.Environ, logger *slog.Logger, runDir string,
-	state *sharedState, triggerNames []string) {
+	runner *actions.WorkflowRunner, triggerNames []string) {
 	// 1. Determine whether we actually need to write triggers.
 	if len(triggerNames) <= 0 {
 		return
 	}
-	created := state.CreatedSpans()
+	created := runner.CreatedSpans()
 	if len(created) <= 0 {
 		return
 	}
@@ -209,105 +185,4 @@ func scanMustWriteTriggers(
 		logger.Error("env.Remove", slog.Any("err", err))
 		env.Exit(1)
 	}
-}
-
-// singleStep describes a single operation in a scan workflow.
-type singleStep struct {
-	// Name is a human-readable label for this step.
-	Name string `yaml:"name"`
-
-	// Run selects the operation to execute (e.g., "stun",
-	// "dns-over-udp", "dns-over-https", "https").
-	Run string `yaml:"run"`
-
-	// With contains operation-specific parameters (e.g., "server",
-	// "query", "host").
-	With map[string]string `yaml:"with"`
-}
-
-// stepRunner executes a step's operation.
-type stepRunner interface {
-	RunStep(ctx context.Context, with map[string]string) error
-}
-
-// sharedState holds state that steps can read and write during a scan.
-type sharedState struct {
-	mu           sync.Mutex
-	spans        []triggers.CreatedSpan
-	spoolRootDir spool.RootDir
-	tags         map[string]string
-	v6sup        *bool
-}
-
-// SetSupportsV6 sets the value of the "supportsV6" internal variable.
-func (s *sharedState) SetSupportsV6(value bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.v6sup = &value
-}
-
-// SupportsV6 returns whether we support IPv6 or nil if unknown.
-func (s *sharedState) SupportsV6() *bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.v6sup == nil {
-		return nil
-	}
-	value := *s.v6sup
-	return &value
-}
-
-// SetTag sets a tag by key, overwriting any previous value.
-func (s *sharedState) SetTag(key, value string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.tags == nil {
-		s.tags = make(map[string]string)
-	}
-	s.tags[key] = value
-}
-
-// Tags returns the current tags as a slice of "key=value" strings.
-func (s *sharedState) Tags() []string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	result := make([]string, 0, len(s.tags))
-	for k, v := range s.tags {
-		result = append(result, k+"="+v)
-	}
-	return result
-}
-
-// RunAndSave runs the req request with the given client and saves a [triggers.CreatedSpan]
-// entry inside the [*sharedState] so that, at the end of the scan, we can write trigger
-// files for the ETL processing pipeline according to the registered triggers.
-func (s *sharedState) RunAndSave(ctx context.Context,
-	conn *ptnopclient.Conn, req *ptnoprpc.Request) (spool.SpanDir, error) {
-	result, err := conn.Run(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	spanDir, err := spool.OpenSpanDir(s.spoolRootDir, "ptnop", result.SpanID)
-	if err != nil {
-		return nil, err
-	}
-
-	cs := triggers.CreatedSpan{
-		DataType: spanDir.DataType(),
-		SpanID:   spanDir.ID(),
-	}
-
-	s.mu.Lock()
-	s.spans = append(s.spans, cs)
-	s.mu.Unlock()
-
-	return spanDir, nil
-}
-
-// CreatedSpans returns the [trigger.CreatedSpan] that were added.
-func (s *sharedState) CreatedSpans() []triggers.CreatedSpan {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return append([]triggers.CreatedSpan{}, s.spans...)
 }

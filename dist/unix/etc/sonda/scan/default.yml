@@ -1,68 +1,59 @@
 # Default scan workflow for sonda.
-#
-# This file is installed to `/etc/sonda/scan/default.yml`.
 
 steps:
-  #
   # STUN
-  #
   - name: "STUN lookup"
     run: stun
     with:
       optimize: size
+      port: 19302
       server: stun.l.google.com
 
-  #
   # DNS over UDP
-  #
   - name: "DNS over UDP via Google"
     run: dns-over-udp
     with:
       optimize: size
-      query: www.example.com
+      query_name: www.example.com
       server: dns.google
 
   - name: "DNS over UDP via Quad9"
     run: dns-over-udp
     with:
       optimize: size
-      query: www.example.com
+      query_name: www.example.com
       server: dns.quad9.net
 
   - name: "DNS over UDP via Cloudflare"
     run: dns-over-udp
     with:
       optimize: size
-      query: www.example.com
+      query_name: www.example.com
       server: one.one.one.one
 
-  #
   # DNS over HTTPS
-  #
   - name: "DNS over HTTPS via Google"
     run: dns-over-https
     with:
       optimize: size
-      query: www.example.com
+      query_name: www.example.com
       server: dns.google
 
   - name: "DNS over HTTPS via Quad9"
     run: dns-over-https
     with:
       optimize: size
-      query: www.example.com
+      query_name: www.example.com
       server: dns.quad9.net
 
   - name: "DNS over HTTPS via Cloudflare"
     run: dns-over-https
     with:
       optimize: size
-      query: www.example.com
+      query_name: www.example.com
       server: cloudflare-dns.com
 
-  #
   # HTTPS
-  #
   - name: "HTTPS GET www.example.com"
     run: https
     with:
@@ -84,4 +75,8 @@ steps:
       url_path: /cdn-cgi/trace
 
 triggers:
+  # Uncomment to archive at /var/lib/sonda/archive.
+  #- "etl-ptnop-archive"
+
+  # Comment out to stop updating the Prometheus exporter.
   - "etl-ptnop-prom"
