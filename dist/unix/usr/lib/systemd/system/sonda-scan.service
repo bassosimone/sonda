@@ -16,7 +16,8 @@ ExecStart=/usr/libexec/sonda/sonda-scan \
 	--scheduler-state=/var/lib/sonda/scan/sched.json \
 	--workflow-file=/etc/sonda/scan/dns_https.yml \
 	--workflow-file=/etc/sonda/scan/dns_udp.yml \
-	--workflow-file=/etc/sonda/scan/https_lite.yml
+	--workflow-file=/etc/sonda/scan/https_lite.yml \
+	--workflow-file=/etc/sonda/scan/https_page.yml
 
 # Important: *must* have access to the whole of `/run/sonda` otherwise it
 # cannot perform triggers hard linking for ETL services.

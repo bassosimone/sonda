@@ -1,0 +1,36 @@
+name: "https_page"
+
+cadence: "@hourly"
+
+steps:
+  - name: "STUN lookup"
+    run: stun
+    with:
+      optimize: size
+      port: 19302
+      server: stun.l.google.com
+
+  - name: "HTTPS GET www.instagram.com"
+    run: https
+    with:
+      host: www.instagram.com
+      optimize: speed
+
+  - name: "HTTPS GET www.facebook.com"
+    run: https
+    with:
+      host: www.facebook.com
+      optimize: speed
+
+  - name: "HTTPS GET www.youtube.com"
+    run: https
+    with:
+      host: www.youtube.com
+      optimize: speed
+
+triggers:
+  # Uncomment to archive at /var/lib/sonda/archive.
+  #- "etl-ptnop-archive"
+
+  # Comment out to stop updating the Prometheus exporter.
+  - "etl-ptnop-prom"

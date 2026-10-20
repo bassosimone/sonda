@@ -120,6 +120,7 @@ cat > "$stage/DEBIAN/conffiles" <<'CONFFILES'
 /etc/sonda/scan/dns_https.yml
 /etc/sonda/scan/dns_udp.yml
 /etc/sonda/scan/https_lite.yml
+/etc/sonda/scan/https_page.yml
 /etc/sonda/config.toml
 CONFFILES
 chmod 644 "$stage/DEBIAN/conffiles"
