@@ -47,6 +47,12 @@ type pipelineInput struct {
 	// env is the testable environ.
 	env *testable.Environ
 
+	// httpBodyTimeoutIsOK tells HTTP pipelines to treat a timeout when
+	// reading the response body exactly like a success.
+	//
+	// Useful when we download large bodies for speed testing.
+	httpBodyTimeoutIsOK bool
+
 	// httpReq is the HTTP request (nil except for http, https, dns-over-https).
 	httpReq *http.Request
 
@@ -76,6 +82,7 @@ func newPipelineInput(
 		addrPort:            netip.AddrPort{},
 		bodyFp:              io.Discard, // we are always able to "write"
 		env:                 env,
+		httpBodyTimeoutIsOK: req.HTTPResponseBodyTimeoutIsOK,
 		httpReq:             nil,
 		logger:              nil,
 		maxResponseBodySize: req.HTTPMaxResponseBodySize,
@@ -314,6 +321,10 @@ func runPipelineHTTP(ctx context.Context, input *pipelineInput,
 
 	// 4. Drain the response body.
 	count, err := io.Copy(input.bodyFp, reader)
+	if input.httpBodyTimeoutIsOK && errors.Is(err, context.DeadlineExceeded) {
+		input.logger.Info("sondaHttpResponseBodyTimeoutTolerated", slog.Int64("bodySize", count))
+		err = nil // honor the user desire to ignore timeout errors
+	}
 	if err != nil {
 		return logPipelineFailure(input.logger, "httpReadResponseBody", err, 1)
 	}

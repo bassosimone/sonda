@@ -72,25 +72,33 @@ const UsageErrorPrefix = "usage error: "
 // body after the given number of bytes has been read. When scanning
 // multiple URLs that may have relatively large bodies, it is advisable
 // to use this functionality, to limit the overall network I/O.
+//
+// # HTTPResponseBodyTimeoutIsOK
+//
+// This setting instructs the `ptnop` server to tolerate a timeout
+// when reading the HTTP response body and treat it like the response
+// was fully and successfully downloaded. Useful when you are using
+// a large response to measure the internet performance.
 type Request struct {
-	ID                      json.RawMessage `json:"id,omitempty"`
-	ALPN                    []string        `json:"alpn"`
-	AddrPort                string          `json:"addrPort"`
-	DNSQueryName            string          `json:"dnsQueryName"`
-	DNSQueryType            string          `json:"dnsQueryType"`
-	HTTPBodyFile            bool            `json:"httpBodyFile"`
-	HTTPHeaders             []string        `json:"httpHeaders"`
-	HTTPHost                string          `json:"httpHost"`
-	HTTPMaxResponseBodySize int64           `json:"httpMaxResponseBodySize"`
-	HTTPMethod              string          `json:"httpMethod"`
-	HTTPScheme              string          `json:"httpScheme"`
-	Optimize                string          `json:"optimize"`
-	Pipeline                string          `json:"pipeline"`
-	SNI                     string          `json:"sni"`
-	Tags                    []string        `json:"tags"`
-	Timeout                 time.Duration   `json:"timeout"`
-	URLPath                 string          `json:"urlPath"`
-	URLQuery                string          `json:"urlQuery"`
+	ID                          json.RawMessage `json:"id,omitempty"`
+	ALPN                        []string        `json:"alpn"`
+	AddrPort                    string          `json:"addrPort"`
+	DNSQueryName                string          `json:"dnsQueryName"`
+	DNSQueryType                string          `json:"dnsQueryType"`
+	HTTPBodyFile                bool            `json:"httpBodyFile"`
+	HTTPHeaders                 []string        `json:"httpHeaders"`
+	HTTPHost                    string          `json:"httpHost"`
+	HTTPMaxResponseBodySize     int64           `json:"httpMaxResponseBodySize"`
+	HTTPMethod                  string          `json:"httpMethod"`
+	HTTPResponseBodyTimeoutIsOK bool            `json:"httpResponseBodyTimeoutIsOk"`
+	HTTPScheme                  string          `json:"httpScheme"`
+	Optimize                    string          `json:"optimize"`
+	Pipeline                    string          `json:"pipeline"`
+	SNI                         string          `json:"sni"`
+	Tags                        []string        `json:"tags"`
+	Timeout                     time.Duration   `json:"timeout"`
+	URLPath                     string          `json:"urlPath"`
+	URLQuery                    string          `json:"urlQuery"`
 }
 
 // Response is the response sent by the server.
