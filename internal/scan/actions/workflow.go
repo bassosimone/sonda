@@ -235,9 +235,15 @@ type WorkflowPtnopConn interface {
 	Run(ctx context.Context, req *ptnoprpc.Request) (*ptnopclient.RunResult, error)
 }
 
-// runPtnop runs a submeasurement using ptnop and returns the related [spool.SpanDir].
+// runPtnopResult is the result returned by [*WorkflowRunner.runPtnop].
+type runPtnopResult struct {
+	ExitCode int
+	SpanDir  spool.SpanDir
+}
+
+// runPtnop runs a submeasurement using ptnop and returns the related [*runPtnopResult].
 func (r *WorkflowRunner) runPtnop(ctx context.Context, conn WorkflowPtnopConn,
-	logger *slog.Logger, req *ptnoprpc.Request) (spool.SpanDir, error) {
+	logger *slog.Logger, req *ptnoprpc.Request) (*runPtnopResult, error) {
 	result, err := conn.Run(ctx, req)
 	if err != nil {
 		logger.Warn("conn.Run", slog.Any("err", err))
@@ -260,7 +266,11 @@ func (r *WorkflowRunner) runPtnop(ctx context.Context, conn WorkflowPtnopConn,
 	r.mu.Unlock()
 	logger.Debug("registeredTriggerFor", slog.String("spanId", result.SpanID))
 
-	return spanDir, nil
+	output := &runPtnopResult{
+		ExitCode: result.ExitCode,
+		SpanDir:  spanDir,
+	}
+	return output, nil
 }
 
 // CreatedSpans returns the [triggers.CreatedSpan] added as part of the run.

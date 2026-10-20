@@ -31,12 +31,13 @@ func newHTTPSAction(conn WorkflowPtnopConn, runner *WorkflowRunner) workflowActi
 
 // HTTPSWith contains the "with" block parsed by https.
 type HTTPSWith struct {
-	Host        string `yaml:"host"`
-	MaxBodySize int64  `yaml:"max_body_size"`
-	Optimize    string `yaml:"optimize"`
-	Port        uint16 `yaml:"port"`
-	URLPath     string `yaml:"url_path"`
-	UserAgent   string `yaml:"user_agent"`
+	Host               string `yaml:"host"`
+	MaxBodySize        int64  `yaml:"max_body_size"`
+	Optimize           string `yaml:"optimize"`
+	Port               uint16 `yaml:"port"`
+	StopOnFirstSuccess bool   `yaml:"stop_on_first_success"`
+	URLPath            string `yaml:"url_path"`
+	UserAgent          string `yaml:"user_agent"`
 }
 
 var _ workflowAction = &httpsAction{}
@@ -89,8 +90,12 @@ func (a *httpsAction) Run(
 			Timeout:                 30 * time.Second,
 			URLPath:                 withData.URLPath,
 		}
-		if _, err := a.Runner.runPtnop(ctx, a.Conn, logger, req); err != nil {
+		result, err := a.Runner.runPtnop(ctx, a.Conn, logger, req)
+		if err != nil {
 			return fmt.Errorf("https: ptnop: %w", err)
+		}
+		if result.ExitCode == 0 && withData.StopOnFirstSuccess {
+			return nil
 		}
 	}
 	return nil

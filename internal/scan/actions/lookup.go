@@ -46,11 +46,11 @@ func (r *WorkflowRunner) newLookupRequest(
 
 func (r *WorkflowRunner) lookupA(ctx context.Context, conn WorkflowPtnopConn,
 	domain string, logger *slog.Logger, optimize string) ([]string, error) {
-	spanDir, err := r.runPtnop(ctx, conn, logger, r.newLookupRequest(domain, optimize, "A"))
+	result, err := r.runPtnop(ctx, conn, logger, r.newLookupRequest(domain, optimize, "A"))
 	if err != nil {
 		return nil, err
 	}
-	return ptnopspool.ResolvedAddrsA(spanDir)
+	return ptnopspool.ResolvedAddrsA(result.SpanDir)
 }
 
 func (r *WorkflowRunner) lookupAAAA(ctx context.Context, conn WorkflowPtnopConn,
@@ -59,9 +59,9 @@ func (r *WorkflowRunner) lookupAAAA(ctx context.Context, conn WorkflowPtnopConn,
 	if v6sup != nil && !*v6sup {
 		return nil, errors.New("no answer") // same suffix as the stdlib error for EAI_NODATA
 	}
-	spanDir, err := r.runPtnop(ctx, conn, logger, r.newLookupRequest(domain, optimize, "AAAA"))
+	result, err := r.runPtnop(ctx, conn, logger, r.newLookupRequest(domain, optimize, "AAAA"))
 	if err != nil {
 		return nil, err
 	}
-	return ptnopspool.ResolvedAddrsAAAA(spanDir)
+	return ptnopspool.ResolvedAddrsAAAA(result.SpanDir)
 }

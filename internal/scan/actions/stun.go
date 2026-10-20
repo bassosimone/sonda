@@ -76,11 +76,11 @@ func (a *stunAction) Run(
 			Tags:     a.Runner.tags(),
 			Timeout:  5 * time.Second,
 		}
-		spanDir, err := a.Runner.runPtnop(ctx, a.Conn, logger, req)
+		result, err := a.Runner.runPtnop(ctx, a.Conn, logger, req)
 		if err != nil {
 			return fmt.Errorf("stun: ptnop: %w", err)
 		}
-		refaddr, err := ptnopspool.ReflexiveAddr(spanDir)
+		refaddr, err := ptnopspool.ReflexiveAddr(result.SpanDir)
 		if errors.Is(err, ptnopspool.ErrNoData) {
 			continue // typical case: we have no IPv6 support
 		}
