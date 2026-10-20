@@ -1,0 +1,38 @@
+name: "https_speed"
+
+cadence: "@daily/4"
+
+steps:
+  - name: "STUN lookup"
+    run: stun
+    with:
+      optimize: size
+      port: 19302
+      server: stun.l.google.com
+
+  - name: "HTTPS GET proof.ovh.net 100Mb.dat"
+    run: https
+    with:
+      host: proof.ovh.net
+      optimize: speed
+      response_body_timeout_is_ok: true
+      stop_on_first_success: true
+      timeout: 10s
+      url_path: /files/100Mb.dat
+
+  - name: "HTTPS GET speedtest.fremont.linode.com 100MB-fremont.bin"
+    run: https
+    with:
+      host: speedtest.fremont.linode.com
+      optimize: speed
+      response_body_timeout_is_ok: true
+      stop_on_first_success: true
+      timeout: 10s
+      url_path: /100MB-fremont.bin
+
+triggers:
+  # Uncomment to archive at /var/lib/sonda/archive.
+  #- "etl-ptnop-archive"
+
+  # Comment out to stop updating the Prometheus exporter.
+  - "etl-ptnop-prom"
