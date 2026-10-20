@@ -31,13 +31,15 @@ func newHTTPSAction(conn WorkflowPtnopConn, runner *WorkflowRunner) workflowActi
 
 // HTTPSWith contains the "with" block parsed by https.
 type HTTPSWith struct {
-	Host               string `yaml:"host"`
-	MaxBodySize        int64  `yaml:"max_body_size"`
-	Optimize           string `yaml:"optimize"`
-	Port               uint16 `yaml:"port"`
-	StopOnFirstSuccess bool   `yaml:"stop_on_first_success"`
-	URLPath            string `yaml:"url_path"`
-	UserAgent          string `yaml:"user_agent"`
+	Host                    string        `yaml:"host"`
+	MaxBodySize             int64         `yaml:"max_body_size"`
+	Optimize                string        `yaml:"optimize"`
+	Port                    uint16        `yaml:"port"`
+	ResponseBodyTimeoutIsOK bool          `yaml:"response_body_timeout_is_ok"`
+	StopOnFirstSuccess      bool          `yaml:"stop_on_first_success"`
+	Timeout                 time.Duration `yaml:"timeout"`
+	URLPath                 string        `yaml:"url_path"`
+	UserAgent               string        `yaml:"user_agent"`
 }
 
 var _ workflowAction = &httpsAction{}
@@ -58,6 +60,9 @@ func (a *httpsAction) Run(
 	if withData.Port == 0 {
 		withData.Port = 443
 	}
+	if withData.Timeout <= 0 {
+		withData.Timeout = 30 * time.Second
+	}
 	if withData.URLPath == "" {
 		withData.URLPath = "/"
 	}
@@ -75,20 +80,21 @@ func (a *httpsAction) Run(
 	// 3. Perform an HTTPS GET against each resolved address.
 	for _, addr := range addrs {
 		req := &ptnoprpc.Request{
-			ALPN:                    []string{"h2", "http/1.1"},
-			AddrPort:                net.JoinHostPort(addr, strconv.Itoa(int(withData.Port))), // uint16 -> int
-			HTTPBodyFile:            false,
-			HTTPHeaders:             headers,
-			HTTPHost:                withData.Host,
-			HTTPMaxResponseBodySize: withData.MaxBodySize,
-			HTTPMethod:              "GET",
-			HTTPScheme:              "https",
-			Optimize:                withData.Optimize,
-			Pipeline:                "https",
-			SNI:                     withData.Host,
-			Tags:                    a.Runner.tags(),
-			Timeout:                 30 * time.Second,
-			URLPath:                 withData.URLPath,
+			ALPN:                        []string{"h2", "http/1.1"},
+			AddrPort:                    net.JoinHostPort(addr, strconv.Itoa(int(withData.Port))), // uint16 -> int
+			HTTPBodyFile:                false,
+			HTTPHeaders:                 headers,
+			HTTPHost:                    withData.Host,
+			HTTPMaxResponseBodySize:     withData.MaxBodySize,
+			HTTPMethod:                  "GET",
+			HTTPResponseBodyTimeoutIsOK: withData.ResponseBodyTimeoutIsOK,
+			HTTPScheme:                  "https",
+			Optimize:                    withData.Optimize,
+			Pipeline:                    "https",
+			SNI:                         withData.Host,
+			Tags:                        a.Runner.tags(),
+			Timeout:                     withData.Timeout,
+			URLPath:                     withData.URLPath,
 		}
 		result, err := a.Runner.runPtnop(ctx, a.Conn, logger, req)
 		if err != nil {
