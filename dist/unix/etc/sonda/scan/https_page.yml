@@ -16,6 +16,7 @@ steps:
       host: www.instagram.com
       max_body_size: 4194304
       optimize: speed
+      stop_on_first_success: true
 
   - name: "HTTPS GET www.facebook.com"
     run: https
@@ -23,6 +24,7 @@ steps:
       host: www.facebook.com
       max_body_size: 4194304
       optimize: speed
+      stop_on_first_success: true
 
   - name: "HTTPS GET www.youtube.com"
     run: https
@@ -30,6 +32,7 @@ steps:
       host: www.youtube.com
       max_body_size: 4194304
       optimize: speed
+      stop_on_first_success: true
 
 triggers:
   # Uncomment to archive at /var/lib/sonda/archive.
