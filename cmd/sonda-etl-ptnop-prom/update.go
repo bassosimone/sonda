@@ -50,8 +50,9 @@ type updateUnifiedEvent struct {
 	DNSQueryType      string
 	DNSServerProtocol string
 
-	ReadBytes  int64
-	WriteBytes int64
+	ReadBytesTot  int64
+	WriteBytesTot int64
+	ConnLifetime  time.Duration
 
 	// FailedAt is the `msg` of the first stage that failed with an error
 	// other than `ESKIP`, or empty if no stage failed.
@@ -117,8 +118,9 @@ func (uue *updateUnifiedEvent) Update(ev *ptnopdata.Event) {
 		uue.HTTPResponseStatusCode = ev.HTTPResponseStatusCode
 
 	case "closeDone":
-		uue.ReadBytes = ev.IOTotalBytesRead
-		uue.WriteBytes = ev.IOTotalBytesWritten
+		uue.ReadBytesTot = ev.IOTotalBytesRead
+		uue.WriteBytesTot = ev.IOTotalBytesWritten
+		uue.ConnLifetime = ev.ConnLifetime
 
 	case "tlsHandshakeDone":
 		uue.TLSHandshakeDuration = ev.T.Sub(ev.T0)
