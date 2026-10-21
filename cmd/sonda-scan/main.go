@@ -16,7 +16,7 @@ import (
 	"github.com/bassosimone/sonda/internal/scan/scheduler"
 	"github.com/bassosimone/sonda/internal/spoolfs"
 	"github.com/bassosimone/sonda/internal/testable"
-	"github.com/bassosimone/sonda/internal/triggers"
+	"github.com/bassosimone/sonda/internal/triggerswriter"
 	"github.com/bassosimone/vflag"
 )
 
@@ -165,7 +165,7 @@ func scanMain(ctx context.Context, args []string) error {
 
 		// Defer acting upon the errors until we have synced the state.
 		runSpecErr := runner.RunSpec(ctx, conn, logger, spec.Data)
-		triggersErr := triggers.Write(env, logger, runDir, runner, spec.Data.Triggers)
+		triggersErr := triggerswriter.Write(env, logger, runDir, runner, spec.Data.Triggers)
 
 		if err := state.DidRun(env, spec); err != nil {
 			logger.Error("state.DidRun", slog.Any("err", err))
@@ -178,7 +178,7 @@ func scanMain(ctx context.Context, args []string) error {
 			errv = append(errv, err)
 		}
 		if err := triggersErr; err != nil {
-			logger.Warn("triggers.Write", slog.Any("err", err))
+			logger.Warn("triggerswriter.Write", slog.Any("err", err))
 			errv = append(errv, err)
 		}
 	}

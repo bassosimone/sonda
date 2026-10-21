@@ -15,6 +15,7 @@ import (
 	"github.com/bassosimone/sonda/internal/spool"
 	"github.com/bassosimone/sonda/internal/testable"
 	"github.com/bassosimone/sonda/internal/triggers"
+	"github.com/bassosimone/sonda/internal/triggerswriter"
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
 )
@@ -43,7 +44,7 @@ type WorkflowSpec struct {
 	// Triggers contains the names of the ETLs to trigger
 	// once the workflow results are ready.
 	//
-	// See [triggers.ValidName].
+	// See [triggerswriter.ValidName].
 	Triggers []string `yaml:"triggers"`
 }
 
@@ -63,7 +64,7 @@ func LoadWorkflowSpec(env *testable.Environ, path string) (*WorkflowSpec, error)
 	}
 
 	for _, t := range wf.Triggers {
-		if ok := triggers.ValidName[t]; !ok {
+		if ok := triggerswriter.ValidName(t); !ok {
 			return nil, fmt.Errorf("invalid trigger name: %s", t)
 		}
 	}
