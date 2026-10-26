@@ -38,6 +38,10 @@ replace the QoE pipeline.
 costs. Read from `closeDone`, below TLS, so it is a lower bound on
 wire bytes.
 
+- `sonda_ptnop_conn_avg_speed_bits_per_second`: per-connection bytes
+read (or written) times 8, divided by the time between `connectDone`
+and `closeStart`.
+
 - `sonda_slice_*` (cgroup): resource usage of sonda as a whole, since
 except for this service sonda consists of short-lived processes.
 

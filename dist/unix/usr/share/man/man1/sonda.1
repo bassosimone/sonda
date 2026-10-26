@@ -10,7 +10,7 @@ sonda \- network quality of experience probe
 is an experimental network probe.
 It measures STUN, DNS over UDP, DNS over HTTPS, and HTTPS, and
 stores the raw results in a local spool.
-It then archives the raw events into daily files for later analysis.
+It can also archive the raw events into daily files for later analysis.
 .PP
 The Debian package installs a systemd timer that runs
 .B sonda scan
@@ -20,7 +20,8 @@ Each scan runs the workflows in
 that are due according to their cadence.
 A long\-running
 .B sonda etl\-ptnop\-archive
-service archives the events of each new spool entry.
+service archives the events of the spool entries created by
+workflows listing it among their triggers.
 A second timer runs
 .B sonda spool\-gc
 every hour to remove old spool entries.
@@ -43,6 +44,10 @@ The commented\-out values are the defaults.
 .TP
 .I /etc/sonda/scan/*.yml
 Workflows executed by the periodic scan.
+.TP
+.I /var/lib/sonda/scan/sched.json
+Scheduler state recording when each workflow last ran and
+when it is next due.
 .TP
 .I /var/spool/sonda/
 Spool with one directory per measurement, containing the request,

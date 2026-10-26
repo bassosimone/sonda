@@ -39,7 +39,10 @@ type Event struct {
 	RemoteAddr string    `json:"remoteAddr,omitempty"`
 	Protocol   string    `json:"protocol,omitempty"`
 
-	// --- nop pipeline: closeDone fields ---
+	// --- nop pipeline: connection lifetime and cumulative I/O fields ---
+	// Used by: closeDone (all three), readDone (IOTotalBytesRead),
+	// writeDone (IOTotalBytesWritten)
+
 	ConnLifetime        time.Duration `json:"connLifetime,omitempty"`
 	IOTotalBytesRead    int64         `json:"ioTotalBytesRead,omitempty"`
 	IOTotalBytesWritten int64         `json:"ioTotalBytesWritten,omitempty"`
