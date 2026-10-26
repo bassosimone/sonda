@@ -33,6 +33,13 @@ type WorkflowSpec struct {
 	// - "@daily" runs on the average every 24 hours.
 	//
 	// If empty or invalid the cadence is "@daily".
+	//
+	// Next run times are computed using a clamped exponential distribution
+	// where the cadence average documented above is used as the distribution
+	// average and the clamping is between 10% and 250% of the average. The
+	// next tick is further influenced by the systemd scheduler granularity of
+	// five minutes. Thus `@frequent` is mostly periodic while less
+	// frequent cadences are much more random.
 	Cadence string `yaml:"cadence"`
 
 	// Name is the name of the workflow spec.
