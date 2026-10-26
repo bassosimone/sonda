@@ -13,9 +13,8 @@ You need the go version specified in [go.mod](go.mod).
 ### From source
 
 For local development, build using `make`. This command compiles
-`sonda` and its plugins in the top-level directory.
-
-The compiled `sonda` binary will report its version as `(devel)`.
+`sonda` and its plugins in the top-level directory. The
+compiled `sonda` binary will report its version as `(devel)`.
 
 To run the compiled `sonda` binary use:
 
